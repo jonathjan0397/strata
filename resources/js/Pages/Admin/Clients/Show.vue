@@ -194,37 +194,39 @@ function deleteNote(clientId, noteId) {
     </div>
   </div>
 
-  <!-- Send Email Modal -->
-  <div v-if="showEmailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-base font-semibold text-gray-900">Send Email to {{ client.name }}</h2>
-        <button @click="showEmailModal = false; emailForm.reset()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
-        <input :value="client.email" disabled
-          class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500" />
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
-        <input v-model="emailForm.subject" type="text" placeholder="Subject…"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        <p v-if="emailForm.errors.subject" class="text-red-500 text-xs mt-1">{{ emailForm.errors.subject }}</p>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Message</label>
-        <textarea v-model="emailForm.body" rows="6" placeholder="Type your message…"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
-        <p v-if="emailForm.errors.body" class="text-red-500 text-xs mt-1">{{ emailForm.errors.body }}</p>
-      </div>
-      <div class="flex justify-end gap-3">
-        <button @click="showEmailModal = false; emailForm.reset()" class="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
-        <button @click="sendEmail(client.id)" :disabled="emailForm.processing || !emailForm.subject || !emailForm.body"
-          class="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-          {{ emailForm.processing ? 'Sending…' : 'Send' }}
-        </button>
+  <!-- Send Email Modal — teleported to body to avoid layout stacking context -->
+  <Teleport to="body">
+    <div v-if="showEmailModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" @click.self="showEmailModal = false; emailForm.reset()">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-semibold text-gray-900">Send Email to {{ client.name }}</h2>
+          <button @click="showEmailModal = false; emailForm.reset()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
+          <input :value="client.email" disabled
+            class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+          <input v-model="emailForm.subject" type="text" placeholder="Subject…"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <p v-if="emailForm.errors.subject" class="text-red-500 text-xs mt-1">{{ emailForm.errors.subject }}</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Message</label>
+          <textarea v-model="emailForm.body" rows="6" placeholder="Type your message…"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+          <p v-if="emailForm.errors.body" class="text-red-500 text-xs mt-1">{{ emailForm.errors.body }}</p>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button @click="showEmailModal = false; emailForm.reset()" class="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+          <button @click="sendEmail(client.id)" :disabled="emailForm.processing || !emailForm.subject || !emailForm.body"
+            class="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+            {{ emailForm.processing ? 'Sending…' : 'Send' }}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
