@@ -94,7 +94,7 @@ function deleteNote(clientId, noteId) {
               class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none" />
             <p v-if="emailForm.errors.body" class="text-red-500 text-xs mt-0.5">{{ emailForm.errors.body }}</p>
           </div>
-          <button @click="sendEmail(client.id)" :disabled="emailForm.processing || !emailForm.subject || !emailForm.body"
+          <button @click="sendEmail(client.id)" :disabled="emailForm.processing"
             class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-medium rounded-lg py-1.5 transition-colors">
             {{ emailForm.processing ? 'Sending…' : 'Send Email' }}
           </button>
