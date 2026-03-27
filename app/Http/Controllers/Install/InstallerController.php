@@ -178,8 +178,8 @@ class InstallerController extends Controller
                 'port'    => $request->db_port,
                 'db'      => $request->db_name,
                 'user'    => $request->db_username,
-                'b64_len' => strlen($rawB64),
-                'dec_len' => strlen($decoded),
+                'b64'     => $rawB64,
+                'dec_hex' => bin2hex($decoded),
                 'error'   => $e->getMessage(),
             ]);
             return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
