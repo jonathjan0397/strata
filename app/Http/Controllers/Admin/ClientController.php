@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClientCredit;
 use App\Models\ClientNote;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,8 @@ class ClientController extends Controller
         ]);
         $user->assignRole('client');
 
+        AuditLogger::log('client.created', $user);
+
         return redirect()->route('admin.clients.show', $user)
             ->with('success', 'Client created.');
     }
@@ -84,6 +87,8 @@ class ClientController extends Controller
         ]);
 
         $client->update($request->only('name', 'email'));
+
+        AuditLogger::log('client.updated', $client);
 
         return back()->with('success', 'Client updated.');
     }

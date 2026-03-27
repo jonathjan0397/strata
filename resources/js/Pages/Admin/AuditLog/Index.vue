@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { router } from '@inertiajs/vue3';
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 
 const props = defineProps({
     logs: Object,
@@ -11,19 +11,36 @@ const props = defineProps({
 
 const f = reactive({ ...props.filters });
 
+// Tab = actor_type filter: '' (all), 'admin', 'client'
+const tab = ref(props.filters.actor_type || '');
+
+function setTab(value) {
+    tab.value = value;
+    f.actor_type = value;
+    applyFilters();
+}
+
 function applyFilters() {
     router.get(route('admin.audit-log.index'), f, { preserveState: true, replace: true });
 }
 
 function clearFilters() {
     Object.keys(f).forEach(k => f[k] = '');
+    f.actor_type = tab.value; // keep current tab
     applyFilters();
 }
 
 const actionColor = (action) => {
-    if (action.includes('delete') || action.includes('suspend') || action.includes('cancel')) return 'bg-red-50 text-red-700';
-    if (action.includes('create') || action.includes('register') || action.includes('paid')) return 'bg-green-50 text-green-700';
+    if (action.includes('delete') || action.includes('suspend') || action.includes('cancel') || action.includes('logout')) return 'bg-red-50 text-red-700';
+    if (action.includes('create') || action.includes('register') || action.includes('paid') || action.includes('login')) return 'bg-green-50 text-green-700';
+    if (action.includes('update') || action.includes('updated')) return 'bg-blue-50 text-blue-700';
     return 'bg-gray-100 text-gray-600';
+};
+
+const actorBadge = (actorType) => {
+    if (actorType === 'admin')  return 'bg-indigo-100 text-indigo-700';
+    if (actorType === 'client') return 'bg-amber-100 text-amber-700';
+    return 'bg-gray-100 text-gray-500';
 };
 </script>
 
@@ -34,6 +51,17 @@ const actionColor = (action) => {
         </template>
 
         <div class="max-w-7xl mx-auto space-y-4">
+
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200">
+                <button v-for="t in [{ key: '', label: 'All' }, { key: 'admin', label: 'Admin Actions' }, { key: 'client', label: 'Client Actions' }]"
+                    :key="t.key"
+                    @click="setTab(t.key)"
+                    :class="['px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+                        tab === t.key ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700']">
+                    {{ t.label }}
+                </button>
+            </div>
 
             <!-- Filters -->
             <div class="bg-white rounded-lg border border-gray-200 p-4">
@@ -60,6 +88,7 @@ const actionColor = (action) => {
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">When</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actor</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Target</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP</th>
@@ -73,6 +102,11 @@ const actionColor = (action) => {
                                 <span v-else class="text-gray-400 italic">System</span>
                             </td>
                             <td class="px-4 py-3">
+                                <span :class="['inline-flex items-center rounded px-2 py-0.5 text-xs font-medium capitalize', actorBadge(log.actor_type)]">
+                                    {{ log.actor_type }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
                                 <span :class="['inline-flex items-center rounded px-2 py-0.5 text-xs font-medium', actionColor(log.action)]">
                                     {{ log.action }}
                                 </span>
@@ -84,7 +118,7 @@ const actionColor = (action) => {
                             <td class="px-4 py-3 text-gray-500 text-xs font-mono">{{ log.ip_address ?? '—' }}</td>
                         </tr>
                         <tr v-if="!logs.data.length">
-                            <td colspan="5" class="px-4 py-10 text-center text-gray-500">No log entries found.</td>
+                            <td colspan="6" class="px-4 py-10 text-center text-gray-500">No log entries found.</td>
                         </tr>
                     </tbody>
                 </table>

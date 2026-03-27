@@ -28,6 +28,10 @@ class AuditLogController extends Controller
             $query->where('target_type', $request->target_type);
         }
 
+        if ($request->filled('actor_type')) {
+            $query->where('actor_type', $request->actor_type);
+        }
+
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
         }
@@ -46,7 +50,7 @@ class AuditLogController extends Controller
         return Inertia::render('Admin/AuditLog/Index', [
             'logs'    => $logs,
             'staff'   => $staff,
-            'filters' => $request->only(['action', 'user_id', 'target_type', 'from', 'to']),
+            'filters' => $request->only(['action', 'user_id', 'target_type', 'from', 'to', 'actor_type']),
         ]);
     }
 }

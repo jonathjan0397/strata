@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -71,6 +72,10 @@ class StaffController extends Controller
         }
 
         $staff->syncPermissions($data['permissions'] ?? []);
+
+        AuditLogger::log('staff.permissions_updated', $staff, [
+            'permissions' => $data['permissions'] ?? [],
+        ]);
 
         return redirect()->route('admin.staff.index')
             ->with('success', 'Permissions updated for ' . $staff->name);

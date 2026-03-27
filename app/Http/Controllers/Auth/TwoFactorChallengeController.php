@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,6 +58,8 @@ class TwoFactorChallengeController extends Controller
         Auth::loginUsingId($userId, $request->session()->get('two_factor_remember', false));
 
         $request->session()->forget('two_factor_remember');
+
+        AuditLogger::log('auth.login_2fa', null, [], $userId);
 
         return redirect()->intended(route('dashboard'));
     }

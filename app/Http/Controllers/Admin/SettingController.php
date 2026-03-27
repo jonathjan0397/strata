@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -42,6 +43,8 @@ class SettingController extends Controller
         ]);
 
         Setting::setMany($data);
+
+        AuditLogger::log('settings.updated', null, array_keys($data));
 
         return back()->with('flash', ['success' => 'Settings saved.']);
     }
