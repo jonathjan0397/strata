@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\Profile\SessionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,4 +39,9 @@ Route::middleware('auth')->group(function () {
 
     // Security settings page
     Route::get('profile/security', fn () => Inertia::render('Profile/Security'))->name('profile.security');
+
+    // Session management
+    Route::get('profile/sessions',                      [SessionController::class, 'index'])->name('profile.sessions');
+    Route::delete('profile/sessions/{session}',         [SessionController::class, 'destroy'])->name('profile.sessions.destroy');
+    Route::delete('profile/sessions',                   [SessionController::class, 'destroyOthers'])->name('profile.sessions.destroy-others');
 });
