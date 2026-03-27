@@ -13,7 +13,7 @@ class SupportTicket extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'assigned_to', 'subject', 'status',
+        'user_id', 'assigned_to', 'department_id', 'subject', 'status',
         'priority', 'department', 'last_reply_at',
     ];
 
@@ -42,5 +42,10 @@ class SupportTicket extends Model
     public function latestReply(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(SupportReply::class, 'ticket_id')->latestOfMany();
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }

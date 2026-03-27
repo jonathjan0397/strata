@@ -150,11 +150,13 @@ class InstallerController extends Controller
             Artisan::call('migrate', ['--force' => true, '--no-interaction' => true]);
 
             // 4. Run seeders
-            Artisan::call('db:seed', [
-                '--class'         => 'RolesAndPermissionsSeeder',
-                '--force'         => true,
-                '--no-interaction'=> true,
-            ]);
+            foreach (['RolesAndPermissionsSeeder', 'EmailTemplatesSeeder', 'DepartmentsSeeder', 'SettingsSeeder'] as $seeder) {
+                Artisan::call('db:seed', [
+                    '--class'          => $seeder,
+                    '--force'          => true,
+                    '--no-interaction' => true,
+                ]);
+            }
 
             // 5. Create admin user
             $this->createAdminUser($request);

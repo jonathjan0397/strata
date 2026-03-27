@@ -123,6 +123,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('support/{ticket}/reply',  [Admin\SupportController::class, 'reply'])->name('support.reply');
         Route::post('support/{ticket}/assign', [Admin\SupportController::class, 'assign'])->name('support.assign');
         Route::post('support/{ticket}/close',  [Admin\SupportController::class, 'close'])->name('support.close');
+        Route::post('support/{ticket}/reopen', [Admin\SupportController::class, 'reopen'])->name('support.reopen');
+
+        // Settings
+        Route::get('settings',  [Admin\SettingController::class, 'index'])->name('settings.index');
+        Route::patch('settings', [Admin\SettingController::class, 'update'])->name('settings.update');
+
+        // Departments
+        Route::get('settings/departments',                [Admin\DepartmentController::class, 'index'])->name('departments.index');
+        Route::post('settings/departments',               [Admin\DepartmentController::class, 'store'])->name('departments.store');
+        Route::patch('settings/departments/{department}', [Admin\DepartmentController::class, 'update'])->name('departments.update');
+        Route::delete('settings/departments/{department}',[Admin\DepartmentController::class, 'destroy'])->name('departments.destroy');
+
+        // Canned Responses
+        Route::get('settings/canned-responses',                       [Admin\CannedResponseController::class, 'index'])->name('canned-responses.index');
+        Route::post('settings/canned-responses',                      [Admin\CannedResponseController::class, 'store'])->name('canned-responses.store');
+        Route::patch('settings/canned-responses/{cannedResponse}',    [Admin\CannedResponseController::class, 'update'])->name('canned-responses.update');
+        Route::delete('settings/canned-responses/{cannedResponse}',   [Admin\CannedResponseController::class, 'destroy'])->name('canned-responses.destroy');
 
         // Domains
         Route::get('domains',                           [Admin\DomainController::class, 'index'])->name('domains.index');

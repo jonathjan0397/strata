@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\SupportTicket;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class SupportController extends Controller
         return Inertia::render('Client/Support/Index', [
             'tickets' => $request->user()
                 ->tickets()
+                ->with('department')
                 ->latest('last_reply_at')
                 ->paginate(20),
         ]);
@@ -23,24 +25,31 @@ class SupportController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('Client/Support/Create');
+        return Inertia::render('Client/Support/Create', [
+            'departments' => Department::active()->get(['id', 'name']),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'subject'    => ['required', 'string', 'max:255'],
-            'department' => ['required', 'string'],
-            'priority'   => ['required', 'in:low,medium,high,urgent'],
-            'message'    => ['required', 'string'],
+            'subject'       => ['required', 'string', 'max:255'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'priority'      => ['required', 'in:low,medium,high,urgent'],
+            'message'       => ['required', 'string'],
         ]);
 
+        $dept = $request->department_id
+            ? Department::find($request->department_id)
+            : null;
+
         $ticket = $request->user()->tickets()->create([
-            'subject'      => $request->subject,
-            'department'   => $request->department,
-            'priority'     => $request->priority,
-            'status'       => 'open',
-            'last_reply_at'=> now(),
+            'subject'       => $request->subject,
+            'department_id' => $request->department_id,
+            'department'    => $dept?->name ?? 'General',
+            'priority'      => $request->priority,
+            'status'        => 'open',
+            'last_reply_at' => now(),
         ]);
 
         $ticket->replies()->create([
@@ -57,7 +66,10 @@ class SupportController extends Controller
     {
         abort_unless($ticket->user_id === $request->user()->id, 403);
 
-        $ticket->load('replies.user');
+        // Client only sees non-internal replies
+        $ticket->load(['department', 'replies' => function ($q) {
+            $q->where('internal', false)->with('user');
+        }]);
 
         return Inertia::render('Client/Support/Show', ['ticket' => $ticket]);
     }
@@ -72,6 +84,7 @@ class SupportController extends Controller
             'user_id'  => $request->user()->id,
             'message'  => $request->message,
             'is_staff' => false,
+            'internal' => false,
         ]);
 
         $ticket->update([

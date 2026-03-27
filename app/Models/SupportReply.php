@@ -10,11 +10,14 @@ class SupportReply extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['ticket_id', 'user_id', 'message', 'is_staff'];
+    protected $fillable = ['ticket_id', 'user_id', 'message', 'is_staff', 'internal'];
 
     protected function casts(): array
     {
-        return ['is_staff' => 'boolean'];
+        return [
+            'is_staff' => 'boolean',
+            'internal' => 'boolean',
+        ];
     }
 
     public function ticket(): BelongsTo
