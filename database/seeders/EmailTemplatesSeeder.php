@@ -53,6 +53,13 @@ class EmailTemplatesSeeder extends Seeder
                 'body_plain' => "Hi {{name}},\n\nYour service {{service_name}} has been suspended. Please pay your outstanding invoice to reactivate.\n\n{{invoices_url}}\n\nThanks,\nThe {{app_name}} Team",
             ],
             [
+                'slug'       => 'service.active',
+                'name'       => 'Service Welcome Email',
+                'subject'    => 'Your Service is Ready — {{service_name}}',
+                'body_html'  => '<p>Hi {{name}},</p><p>Great news — your service has been activated and is ready to use!</p><table style="width:100%;border-collapse:collapse;margin:16px 0"><tr><td style="padding:8px 0;color:#6b7280">Service</td><td style="padding:8px 0;font-weight:600">{{service_name}}</td></tr><tr><td style="padding:8px 0;color:#6b7280">Domain</td><td style="padding:8px 0">{{domain}}</td></tr></table><p><a href="{{portal_url}}" class="btn">View in Client Portal</a></p><p>If you have any questions, please open a support ticket and we\'ll be happy to help.</p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nYour service {{service_name}} ({{domain}}) is now active.\n\nView it here: {{portal_url}}\n\nThanks,\nThe {{app_name}} Team",
+            ],
+            [
                 'slug'       => 'support.reply',
                 'name'       => 'Support Ticket Reply',
                 'subject'    => 'Reply to Ticket #{{ticket_id}}: {{ticket_subject}}',

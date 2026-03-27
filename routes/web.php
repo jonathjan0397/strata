@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Client;
 use App\Http\Controllers\Profile\SessionController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -85,6 +86,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('user/two-factor-authentication',         [TwoFactorAuthenticationController::class, 'destroy'])->name('two-factor.disable');
 
     // ── Profile ──────────────────────────────────────────────────────────────
+    Route::get('profile',                         [ProfileController::class,  'edit'])->name('profile.edit');
+    Route::patch('profile',                       [ProfileController::class,  'update'])->name('profile.update');
     Route::get('profile/security', fn () => Inertia::render('Profile/Security'))->name('profile.security');
     Route::get('profile/sessions',                [SessionController::class, 'index'])->name('profile.sessions');
     Route::delete('profile/sessions/{session}',   [SessionController::class, 'destroy'])->name('profile.sessions.destroy');
@@ -130,6 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Services
         Route::get('services',             [Admin\ServiceController::class, 'index'])->name('services.index');
         Route::get('services/{service}',   [Admin\ServiceController::class, 'show'])->name('services.show');
+        Route::post('services/{service}/approve',             [Admin\ServiceController::class, 'approve'])->name('services.approve');
         Route::post('services/{service}/suspend',             [Admin\ServiceController::class, 'suspend'])->name('services.suspend');
         Route::post('services/{service}/unsuspend',           [Admin\ServiceController::class, 'unsuspend'])->name('services.unsuspend');
         Route::post('services/{service}/terminate',           [Admin\ServiceController::class, 'terminate'])->name('services.terminate');
@@ -252,7 +256,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('invoices',                       [Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
         Route::get('invoices/{invoice}/download',    [Client\InvoiceController::class, 'download'])->name('invoices.download');
-        Route::post('invoices/{invoice}/checkout',        [Client\PaymentController::class,       'checkout'])->name('invoices.checkout');
+        Route::post('invoices/{invoice}/checkout',        [Client\PaymentController::class,              'checkout'])->name('invoices.checkout');
+    Route::post('invoices/{invoice}/authorizenet',    [Client\AuthorizeNetPaymentController::class,  'checkout'])->name('invoices.authorizenet.checkout');
         Route::post('invoices/{invoice}/apply-credit',    [Client\InvoiceController::class,        'applyCredit'])->name('invoices.apply-credit');
         Route::post('invoices/{invoice}/paypal',          [Client\PayPalPaymentController::class,  'checkout'])->name('invoices.paypal.checkout');
         Route::get('invoices/{invoice}/paypal/return',    [Client\PayPalPaymentController::class,  'return'])->name('invoices.paypal.return');

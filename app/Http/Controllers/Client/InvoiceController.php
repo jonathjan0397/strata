@@ -17,11 +17,21 @@ class InvoiceController extends Controller
 {
     public function index(Request $request): Response
     {
+        $status = $request->query('status');
+
+        $query = $request->user()->invoices()->latest();
+
+        if ($status === 'unpaid') {
+            $query->where('status', 'unpaid')->where('due_date', '>=', now()->toDateString());
+        } elseif ($status === 'overdue') {
+            $query->where('status', 'unpaid')->where('due_date', '<', now()->toDateString());
+        } elseif ($status === 'paid') {
+            $query->where('status', 'paid');
+        }
+
         return Inertia::render('Client/Invoices/Index', [
-            'invoices' => $request->user()
-                ->invoices()
-                ->latest()
-                ->paginate(20),
+            'invoices'     => $query->paginate(20)->withQueryString(),
+            'activeFilter' => $status ?? 'all',
         ]);
     }
 
@@ -31,9 +41,17 @@ class InvoiceController extends Controller
 
         $invoice->load(['items.service', 'payments']);
 
+        $authNetLoginId  = config('services.authorizenet.login_id');
+        $authNetClientKey = config('services.authorizenet.client_key');
+
         return Inertia::render('Client/Invoices/Show', [
             'invoice'       => $invoice,
             'creditBalance' => (float) $request->user()->credit_balance,
+            'authNet'       => ($authNetLoginId && $authNetClientKey) ? [
+                'loginId'   => $authNetLoginId,
+                'clientKey' => $authNetClientKey,
+                'sandbox'   => (bool) config('services.authorizenet.sandbox', true),
+            ] : null,
         ]);
     }
 

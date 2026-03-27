@@ -50,9 +50,10 @@ class OrderController extends Controller
         abort_if($product->hidden, 404);
 
         return Inertia::render('Client/Order/Checkout', [
-            'product'      => $product,
-            'billingCycle' => $request->billing_cycle,
-            'domain'       => $request->domain ?? '',
+            'product'       => $product,
+            'billingCycle'  => $request->billing_cycle,
+            'domain'        => $request->domain ?? '',
+            'creditBalance' => (float) $request->user()->credit_balance,
         ]);
     }
 
@@ -64,6 +65,7 @@ class OrderController extends Controller
             'billing_cycle' => ['required', 'string'],
             'domain'        => ['nullable', 'string', 'max:253'],
             'promo_code'    => ['nullable', 'string', 'max:64'],
+            'apply_credit'  => ['nullable', 'boolean'],
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -85,8 +87,10 @@ class OrderController extends Controller
             }
         }
 
+        $applyCredit = (bool) $request->input('apply_credit', false);
+
         try {
-            DB::transaction(function () use ($request, $product, $promo, $discount) {
+            DB::transaction(function () use ($request, $product, $promo, $discount, $applyCredit) {
                 $user     = $request->user()->load('group');
                 $price    = (float) $product->price;
                 $setupFee = (float) $product->setup_fee;
@@ -217,7 +221,30 @@ class OrderController extends Controller
                     ]);
                 }
 
-                // 7. Mark order active
+                // 7. Apply account credit if requested
+                if ($applyCredit && (float) $user->credit_balance > 0) {
+                    $available    = (float) $user->credit_balance;
+                    $apply        = min($available, (float) $invoice->amount_due);
+                    $newAmountDue = round((float) $invoice->amount_due - $apply, 2);
+
+                    \App\Models\ClientCredit::create([
+                        'user_id'     => $user->id,
+                        'amount'      => -$apply,
+                        'description' => "Applied at checkout — Invoice #{$invoice->id}",
+                        'invoice_id'  => $invoice->id,
+                    ]);
+
+                    $user->decrement('credit_balance', $apply);
+
+                    $invoice->update([
+                        'credit_applied' => $apply,
+                        'amount_due'     => $newAmountDue,
+                        'status'         => $newAmountDue <= 0 ? 'paid' : 'unpaid',
+                        'paid_at'        => $newAmountDue <= 0 ? now() : null,
+                    ]);
+                }
+
+                // 8. Mark order active
                 $order->update(['status' => 'active']);
 
                 session(['last_order_invoice_id' => $invoice->id]);

@@ -1,41 +1,94 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
-import { Link } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 
 defineOptions({ layout: AppLayout })
 
-defineProps({ invoices: Object })
+const props = defineProps({
+  invoices:     Object,
+  activeFilter: { type: String, default: 'all' },
+})
+
+const filters = [
+  { key: 'all',     label: 'All' },
+  { key: 'unpaid',  label: 'Unpaid' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'paid',    label: 'Paid' },
+]
+
+function setFilter(key) {
+  router.get(route('client.invoices.index'), key === 'all' ? {} : { status: key }, {
+    preserveState: true, replace: true,
+  })
+}
 </script>
 
 <template>
   <div>
     <h1 class="text-xl font-bold text-gray-900 mb-6">My Invoices</h1>
 
+    <!-- Filter tabs -->
+    <div class="flex gap-1 mb-4 border-b border-gray-200">
+      <button
+        v-for="f in filters" :key="f.key"
+        @click="setFilter(f.key)"
+        class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
+        :class="activeFilter === f.key
+          ? 'border-indigo-600 text-indigo-600'
+          : 'border-transparent text-gray-500 hover:text-gray-700'"
+      >
+        {{ f.label }}
+      </button>
+    </div>
+
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <table class="min-w-full divide-y divide-gray-100 text-sm">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-4 py-3 text-left font-medium text-gray-500">#</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-500">Due</th>
             <th class="px-4 py-3 text-right font-medium text-gray-500">Total</th>
-            <th class="px-4 py-3 text-right font-medium text-gray-500">Due</th>
+            <th class="px-4 py-3 text-right font-medium text-gray-500">Due Now</th>
             <th class="px-4 py-3 text-right font-medium text-gray-500">Status</th>
+            <th class="px-4 py-3 text-right font-medium text-gray-500">PDF</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
           <tr v-for="inv in invoices.data" :key="inv.id" class="hover:bg-gray-50">
             <td class="px-4 py-3">
-              <Link :href="route('client.invoices.show', inv.id)" class="text-indigo-600 hover:underline">#{{ inv.id }}</Link>
+              <Link :href="route('client.invoices.show', inv.id)" class="text-indigo-600 hover:underline font-medium">#{{ inv.id }}</Link>
             </td>
+            <td class="px-4 py-3 text-gray-500">{{ inv.date }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ inv.due_date }}</td>
             <td class="px-4 py-3 text-right font-medium">${{ inv.total }}</td>
-            <td class="px-4 py-3 text-right text-gray-500">{{ inv.due_date }}</td>
+            <td class="px-4 py-3 text-right" :class="Number(inv.amount_due) > 0 ? 'text-indigo-600 font-semibold' : 'text-gray-400'">${{ inv.amount_due }}</td>
             <td class="px-4 py-3 text-right"><StatusBadge :status="inv.status" /></td>
+            <td class="px-4 py-3 text-right">
+              <a :href="route('client.invoices.download', inv.id)" target="_blank" class="text-gray-400 hover:text-gray-600" title="Download PDF">
+                <svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              </a>
+            </td>
           </tr>
           <tr v-if="!invoices.data.length">
-            <td colspan="4" class="px-4 py-8 text-center text-gray-400">No invoices yet.</td>
+            <td colspan="7" class="px-4 py-8 text-center text-gray-400">No invoices found.</td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="invoices.last_page > 1" class="mt-4 flex justify-center gap-2 text-sm">
+      <Link
+        v-for="link in invoices.links" :key="link.label"
+        :href="link.url ?? '#'"
+        v-html="link.label"
+        class="px-3 py-1.5 rounded border"
+        :class="link.active ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+      />
     </div>
   </div>
 </template>

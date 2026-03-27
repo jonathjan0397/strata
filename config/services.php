@@ -52,6 +52,7 @@ return [
     'authorizenet' => [
         'login_id'        => env('AUTHORIZENET_API_LOGIN_ID'),
         'transaction_key' => env('AUTHORIZENET_TRANSACTION_KEY'),
+        'client_key'      => env('AUTHORIZENET_CLIENT_KEY'),
         'sandbox'         => env('AUTHORIZENET_SANDBOX', true),
     ],
 

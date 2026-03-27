@@ -1,21 +1,29 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
+import AuthorizeNetCard from '@/Components/AuthorizeNetCard.vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 
 defineOptions({ layout: AppLayout })
 
-defineProps({ invoice: Object, creditBalance: Number })
+defineProps({
+  invoice:       Object,
+  creditBalance: Number,
+  authNet:       { type: Object, default: null }, // { loginId, clientKey, sandbox }
+})
 
 const page = usePage()
 const flash = computed(() => page.props.flash)
 
-const payingStripe   = ref(false)
-const payingPayPal   = ref(false)
-const payError       = ref(null)
-const applyingCredit = ref(false)
+const payingStripe    = ref(false)
+const payingPayPal    = ref(false)
+const payingAuthNet   = ref(false)
+const showAuthNetForm = ref(false)
+const authNetCardRef  = ref(null)
+const payError        = ref(null)
+const applyingCredit  = ref(false)
 
 function applyCredit(invoiceId) {
   applyingCredit.value = true
@@ -36,6 +44,23 @@ async function payStripe(invoiceId) {
   } catch (e) {
     payError.value = e.response?.data?.error ?? 'Stripe payment failed. Please try again.'
     payingStripe.value = false
+  }
+}
+
+async function submitAuthNet(invoiceId, token) {
+  payingAuthNet.value = true
+  payError.value = null
+  try {
+    await axios.post(route('client.invoices.authorizenet.checkout', invoiceId), {
+      opaque_descriptor: token.descriptor,
+      opaque_value:      token.value,
+    })
+    router.reload({ only: ['invoice'] })
+    showAuthNetForm.value = false
+  } catch (e) {
+    payError.value = e.response?.data?.error ?? 'Payment failed. Please try again.'
+  } finally {
+    payingAuthNet.value = false
   }
 }
 
@@ -156,6 +181,16 @@ async function payPayPal(invoiceId) {
             {{ payingStripe ? 'Redirecting…' : 'Pay with Card — $' + invoice.amount_due }}
           </button>
 
+          <!-- Authorize.Net -->
+          <button v-if="authNet"
+            @click="showAuthNetForm = !showAuthNetForm"
+            :disabled="payingStripe || payingPayPal || payingAuthNet"
+            class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+          >
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V10h16v8zM4 8V6h16v2H4z"/></svg>
+            Authorize.Net
+          </button>
+
           <!-- PayPal -->
           <button
             @click="payPayPal(invoice.id)"
@@ -172,6 +207,27 @@ async function payPayPal(invoiceId) {
           </button>
 
         </div>
+      </div>
+
+      <!-- Authorize.Net card form -->
+      <div v-if="authNet && showAuthNetForm" class="mt-4 border border-gray-200 rounded-lg p-4">
+        <p class="text-sm font-medium text-gray-700 mb-3">Enter card details</p>
+        <AuthorizeNetCard
+          ref="authNetCardRef"
+          :login-id="authNet.loginId"
+          :client-key="authNet.clientKey"
+          :sandbox="authNet.sandbox"
+          :amount="invoice.amount_due"
+          @token="(t) => submitAuthNet(invoice.id, t)"
+          @error="(e) => payError = e"
+        />
+        <button
+          @click="authNetCardRef?.tokenize()"
+          :disabled="payingAuthNet"
+          class="mt-3 w-full bg-gray-800 hover:bg-gray-700 disabled:opacity-60 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+        >
+          {{ payingAuthNet ? 'Processing…' : 'Pay $' + invoice.amount_due + ' with Card' }}
+        </button>
       </div>
 
       <!-- Payment history -->

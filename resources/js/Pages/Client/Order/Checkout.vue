@@ -7,16 +7,23 @@ import axios from 'axios'
 defineOptions({ layout: AppLayout })
 
 const props = defineProps({
-  product:      Object,
-  billingCycle: String,
-  domain:       String,
+  product:       Object,
+  billingCycle:  String,
+  domain:        String,
+  creditBalance: { type: Number, default: 0 },
 })
+
+const applyCredit = ref(false)
+const creditApplied = computed(() =>
+  applyCredit.value ? Math.min(props.creditBalance, subtotal - promoDiscount.value) : 0
+)
 
 const form = useForm({
   product_id:    props.product.id,
   billing_cycle: props.billingCycle,
   domain:        props.domain ?? '',
   promo_code:    '',
+  apply_credit:  false,
 })
 
 const cycleLabel = {
@@ -34,7 +41,7 @@ const promoStatus   = ref(null)  // null | 'checking' | { valid, label, discount
 const promoDiscount = ref(0)
 let promoTimeout = null
 
-const total = computed(() => Math.max(0, subtotal - promoDiscount.value).toFixed(2))
+const total = computed(() => Math.max(0, subtotal - promoDiscount.value - creditApplied.value).toFixed(2))
 
 async function applyPromo() {
   const code = form.promo_code.trim()
@@ -109,6 +116,10 @@ watch(() => form.domain, (val) => {
           <span>Discount ({{ promoStatus?.label }})</span>
           <span>-${{ promoDiscount.toFixed(2) }}</span>
         </div>
+        <div v-if="creditApplied > 0" class="flex justify-between text-green-600">
+          <span>Account Credit</span>
+          <span>-${{ creditApplied.toFixed(2) }}</span>
+        </div>
         <div class="border-t border-gray-100 pt-2 mt-2 flex justify-between font-bold text-gray-900">
           <span>Due Today</span>
           <span>${{ total }}</span>
@@ -117,7 +128,7 @@ watch(() => form.domain, (val) => {
     </div>
 
     <!-- Checkout form -->
-    <form @submit.prevent="form.post(route('client.order.place'))" class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+    <form @submit.prevent="form.apply_credit = applyCredit; form.post(route('client.order.place'))" class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
       <h2 class="font-semibold text-gray-900">Service Details</h2>
 
       <div v-if="needsDomain">
@@ -169,6 +180,15 @@ watch(() => form.domain, (val) => {
         </div>
         <p v-if="promoStatus?.valid" class="text-green-600 text-xs mt-1">✓ {{ promoStatus.label }} applied</p>
         <p v-else-if="promoStatus?.valid === false" class="text-red-500 text-xs mt-1">{{ promoStatus.message }}</p>
+      </div>
+
+      <!-- Credit balance -->
+      <div v-if="creditBalance > 0" class="flex items-center justify-between rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3 text-sm">
+        <label for="apply_credit" class="text-indigo-800 cursor-pointer">
+          Apply <strong>${{ Math.min(creditBalance, subtotal - promoDiscount).toFixed(2) }}</strong> account credit
+          <span class="text-indigo-500 font-normal">(Balance: ${{ creditBalance.toFixed(2) }})</span>
+        </label>
+        <input id="apply_credit" v-model="applyCredit" type="checkbox" class="ml-3 rounded border-indigo-300 text-indigo-600" />
       </div>
 
       <!-- Terms notice -->

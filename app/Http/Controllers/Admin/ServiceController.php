@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TemplateMailable;
 use App\Models\Service;
 use App\Services\AuditLogger;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,6 +39,27 @@ class ServiceController extends Controller
         $service->load(['user', 'product', 'invoiceItems.invoice']);
 
         return Inertia::render('Admin/Services/Show', ['service' => $service]);
+    }
+
+    public function approve(Service $service): RedirectResponse
+    {
+        abort_unless($service->status === 'pending', 422);
+
+        $service->load(['user', 'product']);
+        $service->update(['status' => 'active']);
+
+        AuditLogger::log('service.activated', $service);
+        WorkflowEngine::fire('service.active', $service);
+
+        Mail::to($service->user->email)->queue(new TemplateMailable('service.active', [
+            'name'         => $service->user->name,
+            'app_name'     => config('app.name'),
+            'service_name' => $service->product->name ?? 'Service',
+            'domain'       => $service->domain ?? '—',
+            'portal_url'   => route('client.services.show', $service->id),
+        ]));
+
+        return back()->with('success', 'Service approved and activated.');
     }
 
     public function suspend(Service $service): RedirectResponse

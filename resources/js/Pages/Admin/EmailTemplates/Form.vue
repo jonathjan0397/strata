@@ -19,6 +19,7 @@ const variableMap = {
   'invoice.created':   ['name', 'app_name', 'invoice_id', 'amount', 'due_date', 'invoice_url'],
   'invoice.paid':      ['name', 'app_name', 'invoice_id', 'amount', 'invoice_url'],
   'invoice.overdue':   ['name', 'app_name', 'invoice_id', 'amount', 'due_date', 'invoice_url'],
+  'service.active':    ['name', 'app_name', 'service_name', 'domain', 'portal_url'],
   'service.activated': ['name', 'app_name', 'service_name', 'domain', 'username', 'portal_url'],
   'service.suspended': ['name', 'app_name', 'service_name', 'domain', 'invoices_url'],
   'support.reply':     ['name', 'app_name', 'ticket_id', 'ticket_subject', 'reply_body', 'ticket_url'],
