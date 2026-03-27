@@ -53,7 +53,11 @@ class TemplateMailable extends Mailable implements ShouldQueue
 
     private function wrapHtml(string $body, string $subject): string
     {
-        $appName = config('app.name');
+        $appName  = setting('company_name', config('app.name'));
+        $logoPath = setting('logo_path');
+        $logoHtml = $logoPath
+            ? '<img src="' . url('storage/' . $logoPath) . '" alt="' . e($appName) . '" style="max-height:48px;max-width:200px;">'
+            : '<span style="font-size:20px;font-weight:700;color:#fff;">' . e($appName) . '</span>';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -64,7 +68,6 @@ class TemplateMailable extends Mailable implements ShouldQueue
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; margin: 0; padding: 0; }
   .wrap { max-width: 600px; margin: 32px auto; }
   .header { background: #4f46e5; padding: 24px 32px; border-radius: 8px 8px 0 0; }
-  .header h1 { color: #fff; font-size: 18px; margin: 0; }
   .body { background: #fff; padding: 32px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none; }
   .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 24px; }
   p { color: #374151; line-height: 1.6; margin: 0 0 16px; }
@@ -74,7 +77,7 @@ class TemplateMailable extends Mailable implements ShouldQueue
 </head>
 <body>
 <div class="wrap">
-  <div class="header"><h1>{$appName}</h1></div>
+  <div class="header">{$logoHtml}</div>
   <div class="body">
     {$body}
   </div>

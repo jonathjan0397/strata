@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\Setting;
 use Illuminate\Console\Command;
 
 class GenerateRenewalInvoices extends Command
@@ -13,7 +14,9 @@ class GenerateRenewalInvoices extends Command
 
     public function handle(): int
     {
-        $days = (int) $this->option('days');
+        $days = $this->option('days') !== '14'
+            ? (int) $this->option('days')
+            : (int) Setting::get('invoice_due_days', 14);
         $cutoff = now()->addDays($days);
 
         $services = Service::with(['user', 'product'])

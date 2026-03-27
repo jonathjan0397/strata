@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { Link, useForm } from '@inertiajs/vue3'
+import { Link, router, useForm } from '@inertiajs/vue3'
 import { ref } from 'vue'
 
 defineOptions({ layout: AppLayout })
@@ -10,6 +10,24 @@ const props = defineProps({ settings: Object })
 const tab = ref('general')
 
 const s = props.settings ?? {}
+
+// Logo upload
+const logoPreview = ref(s.logo_path ? `/storage/${s.logo_path}` : null)
+const logoFile    = ref(null)
+
+function onLogoChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    logoFile.value = file
+    logoPreview.value = URL.createObjectURL(file)
+}
+
+function uploadLogo() {
+    if (!logoFile.value) return
+    const fd = new FormData()
+    fd.append('logo', logoFile.value)
+    router.post(route('admin.settings.logo'), fd, { forceFormData: true })
+}
 
 const form = useForm({
     // General
@@ -74,6 +92,26 @@ const timezones = [
 
             <!-- General -->
             <div v-show="tab === 'general'" class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <!-- Logo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Logo</label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-24 h-16 rounded-lg border border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
+                            <img v-if="logoPreview" :src="logoPreview" alt="Logo" class="max-h-full max-w-full object-contain" />
+                            <span v-else class="text-xs text-gray-400">No logo</span>
+                        </div>
+                        <div class="flex-1">
+                            <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                @change="onLogoChange"
+                                class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                            <p class="text-xs text-gray-400 mt-1">PNG, JPG, WebP or SVG. Max 2 MB.</p>
+                        </div>
+                        <button v-if="logoFile" type="button" @click="uploadLogo"
+                            class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700">
+                            Upload
+                        </button>
+                    </div>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Company / Brand Name</label>
                     <input v-model="form.company_name" type="text"

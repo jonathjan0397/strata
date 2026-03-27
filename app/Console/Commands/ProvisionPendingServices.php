@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\TemplateMailable;
 use App\Models\Service;
-use App\Services\CpanelProvisioner;
+use App\Services\ProvisionerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -13,14 +13,16 @@ use Throwable;
 class ProvisionPendingServices extends Command
 {
     protected $signature   = 'provisioning:run';
-    protected $description = 'Provision pending cPanel services whose invoices have been paid';
+    protected $description = 'Provision pending hosting services whose invoices have been paid';
 
     public function handle(): int
     {
-        // Target: pending services linked to a cPanel product that have a paid invoice
+        $supportedTypes = ProvisionerService::supportedTypes();
+
+        // Target: pending services linked to a supported module type that have a paid invoice
         $services = Service::with(['user', 'product'])
             ->where('status', 'pending')
-            ->whereHas('product', fn ($q) => $q->where('module', 'cpanel'))
+            ->whereHas('product', fn ($q) => $q->whereIn('module', $supportedTypes))
             ->whereHas('invoiceItems.invoice', fn ($q) => $q->where('status', 'paid'))
             ->whereNotNull('domain')
             ->get();
@@ -30,29 +32,37 @@ class ProvisionPendingServices extends Command
             return self::SUCCESS;
         }
 
-        $module = CpanelProvisioner::findAvailableModule();
-
-        if (! $module) {
-            $this->error('No active cPanel module with available capacity found.');
-            return self::FAILURE;
-        }
-
-        $provisioner = new CpanelProvisioner($module);
-        $count       = 0;
+        $count = 0;
 
         foreach ($services as $service) {
+            $moduleType = $service->product?->module;
+            $module     = ProvisionerService::findAvailableModule($moduleType);
+
+            if (! $module) {
+                $this->error("No active {$moduleType} module with available capacity for service #{$service->id}.");
+                continue;
+            }
+
+            $provisioner = ProvisionerService::forModule($module);
+
             try {
                 // Derive optional plan from product module_config
                 $plan = $service->product?->module_config['plan'] ?? null;
 
                 $result = $provisioner->createAccount($service->domain, $plan);
 
+                $defaultPort = match ($moduleType) {
+                    'plesk'       => 8443,
+                    'directadmin' => 2222,
+                    default       => 2083,
+                };
+
                 $service->update([
                     'status'          => 'active',
                     'username'        => $result['username'],
                     'password_enc'    => encrypt($result['password']),
                     'server_hostname' => $module->hostname,
-                    'server_port'     => 2083, // standard cPanel port
+                    'server_port'     => $module->port ?? $defaultPort,
                     'module_data'     => ['module_id' => $module->id, 'provisioned_at' => now()->toIso8601String()],
                 ]);
 

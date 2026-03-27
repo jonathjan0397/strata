@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\RegistrarDriver;
 use App\Services\Registrars\EnomDriver;
 use App\Services\Registrars\NamecheapDriver;
+use App\Services\Registrars\OpenSRSDriver;
 use InvalidArgumentException;
 
 class DomainRegistrarService
@@ -12,6 +13,7 @@ class DomainRegistrarService
     private static array $drivers = [
         'namecheap' => NamecheapDriver::class,
         'enom'      => EnomDriver::class,
+        'opensrs'   => OpenSRSDriver::class,
     ];
 
     public static function driver(?string $name = null): RegistrarDriver

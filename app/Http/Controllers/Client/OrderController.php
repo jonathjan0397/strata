@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
+use App\Models\Setting;
 use App\Services\DomainRegistrarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -110,7 +111,7 @@ class OrderController extends Controller
                     'total'      => $total,
                     'amount_due' => $total,
                     'date'       => now(),
-                    'due_date'   => now()->addDays(7),
+                    'due_date'   => now()->addDays((int) Setting::get('invoice_due_days', 7)),
                 ]);
 
                 // 5. Invoice line items
@@ -149,7 +150,7 @@ class OrderController extends Controller
 
                 session(['last_order_invoice_id' => $invoice->id]);
                 session(['last_order_invoice_amount' => $total]);
-                session(['last_order_invoice_due' => now()->addDays(7)->format('M d, Y')]);
+                session(['last_order_invoice_due' => now()->addDays((int) Setting::get('invoice_due_days', 7))->format('M d, Y')]);
             });
 
         } catch (Throwable $e) {

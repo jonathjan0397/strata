@@ -126,8 +126,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('support/{ticket}/reopen', [Admin\SupportController::class, 'reopen'])->name('support.reopen');
 
         // Settings
-        Route::get('settings',  [Admin\SettingController::class, 'index'])->name('settings.index');
-        Route::patch('settings', [Admin\SettingController::class, 'update'])->name('settings.update');
+        Route::get('settings',           [Admin\SettingController::class, 'index'])->name('settings.index');
+        Route::patch('settings',          [Admin\SettingController::class, 'update'])->name('settings.update');
+        Route::post('settings/logo',      [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
 
         // Departments
         Route::get('settings/departments',                [Admin\DepartmentController::class, 'index'])->name('departments.index');

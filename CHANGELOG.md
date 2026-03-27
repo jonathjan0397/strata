@@ -8,10 +8,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- OpenSRS / HEXONET registrar drivers
-- Plesk and DirectAdmin provisioning modules
-- Logo upload for settings
+- HEXONET registrar driver
 - Email piping for support departments
+- Two-way email threading on tickets
+- Affiliate / referral module
+
+---
+
+## [1.0.0] — 2026-03-26 — Multi-Provisioner, OpenSRS, Settings Wired
+
+### Added
+
+#### Multi-Provisioner Support
+- **`ProvisionerDriver` contract** — `createAccount`, `suspendAccount`, `unsuspendAccount`, `terminateAccount`, `slug`
+- **`PleskProvisioner`** — Plesk REST API v2; two-step webspace + client creation; suspend/unsuspend via `is_disabled`; terminate deletes webspace and client
+- **`DirectAdminProvisioner`** — DirectAdmin HTTP API; Basic Auth; URL-encoded response parsing; CRUD via `/CMD_API_ACCOUNT_USER` and `/CMD_API_SELECT_USERS`
+- **`CpanelProvisioner`** moved to `App\Services\Provisioners` namespace and made to implement `ProvisionerDriver`
+- **`ProvisionerService`** factory — `forModule(Module)`, `findAvailableModule(?string)`, `supportedTypes()`; dispatches by `module.type` across cpanel, plesk, directadmin
+
+#### OpenSRS Registrar Driver
+- **`OpenSRSDriver`** — full XCP API implementation; HMAC-MD5 auth (`md5(md5(body+md5(key))+md5(key))`); sandbox-capable
+- Registered in `DomainRegistrarService::$drivers` alongside Namecheap and Enom
+- `config/registrars.php` — `opensrs` block with sandbox, api_key, reseller_username
+- `.env.example` — `OPENSRS_SANDBOX`, `OPENSRS_API_KEY`, `OPENSRS_RESELLER_USERNAME` keys added
+
+#### Logo Upload
+- `SettingController::uploadLogo()` — validates image (PNG/JPG/WebP/SVG, max 2 MB), deletes old logo, stores to `storage/app/public/logos/`, saves `logo_path` setting
+- `POST admin/settings/logo` route (`admin.settings.logo`)
+- `Admin/Settings/Index.vue` — logo preview + file picker + Upload button in General tab
+- `TemplateMailable::wrapHtml()` — renders logo `<img>` tag if `logo_path` is set; falls back to text company name
+- PDF invoice blade — renders logo via `storage_path()` if available; falls back to branded text
+
+#### Settings Wired Into App
+- `app/helpers.php` registered in `composer.json` autoload.files — `setting()` global helper available app-wide
+- `TemplateMailable::wrapHtml()` — company name from `setting('company_name')` instead of `config('app.name')`
+- PDF invoice — `$companyName`, `$companyAddress`, `$currencySymbol`, `$logoPath` all pulled from settings
+- `OrderController::place()` — invoice due date uses `Setting::get('invoice_due_days', 7)`
+- `GenerateRenewalInvoices` — default days from `Setting::get('invoice_due_days', 14)` (CLI flag still overrides)
+- `SuspendOverdueServices` — grace period from `Setting::get('grace_period_days', 3)` (CLI flag still overrides)
+- `ProvisionPendingServices` — refactored to use `ProvisionerService`; supports all module types (cpanel, plesk, directadmin); selects correct port per type
 
 ---
 

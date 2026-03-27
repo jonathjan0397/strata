@@ -6,7 +6,7 @@ return [
     |--------------------------------------------------------------------------
     | Default Registrar Driver
     |--------------------------------------------------------------------------
-    | Options: namecheap, enom
+    | Options: namecheap, enom, opensrs
     */
     'default' => env('REGISTRAR_DRIVER', 'namecheap'),
 
@@ -21,6 +21,12 @@ return [
         'sandbox' => env('ENOM_SANDBOX', true),
         'uid'     => env('ENOM_UID'),
         'pw'      => env('ENOM_PW'),
+    ],
+
+    'opensrs' => [
+        'sandbox'            => env('OPENSRS_SANDBOX', true),
+        'api_key'            => env('OPENSRS_API_KEY'),
+        'reseller_username'  => env('OPENSRS_RESELLER_USERNAME'),
     ],
 
 ];

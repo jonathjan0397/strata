@@ -64,9 +64,19 @@
 <div class="page">
 
   <!-- Header -->
+  @php
+    $companyName    = setting('company_name', config('app.name'));
+    $companyAddress = setting('company_address', '');
+    $currencySymbol = setting('currency_symbol', '$');
+    $logoPath       = setting('logo_path');
+  @endphp
   <div class="header">
     <div>
-      <div class="brand">{{ config('app.name') }}</div>
+      @if($logoPath)
+        <img src="{{ storage_path('app/public/' . $logoPath) }}" alt="{{ $companyName }}" style="max-height:48px;max-width:180px;margin-bottom:4px;display:block;">
+      @else
+        <div class="brand">{{ $companyName }}</div>
+      @endif
       <div class="brand-sub">{{ config('app.url') }}</div>
     </div>
     <div class="invoice-meta">
@@ -93,7 +103,10 @@
     </div>
     <div class="party" style="text-align:right">
       <div class="party-label">From</div>
-      <div class="party-name">{{ config('app.name') }}</div>
+      <div class="party-name">{{ $companyName }}</div>
+      @if($companyAddress)
+        <div class="party-detail" style="white-space:pre-line;">{{ $companyAddress }}</div>
+      @endif
     </div>
   </div>
 
@@ -130,8 +143,8 @@
       <tr>
         <td class="desc">{{ $item->description }}</td>
         <td class="right">{{ $item->quantity }}</td>
-        <td class="right">${{ number_format($item->unit_price, 2) }}</td>
-        <td class="right">${{ number_format($item->total, 2) }}</td>
+        <td class="right">{{ $currencySymbol }}{{ number_format($item->unit_price, 2) }}</td>
+        <td class="right">{{ $currencySymbol }}{{ number_format($item->total, 2) }}</td>
       </tr>
       @endforeach
     </tbody>
@@ -142,25 +155,25 @@
     @if($invoice->tax > 0)
     <div class="totals-row">
       <span>Subtotal</span>
-      <span>${{ number_format($invoice->subtotal, 2) }}</span>
+      <span>{{ $currencySymbol }}{{ number_format($invoice->subtotal, 2) }}</span>
     </div>
     <div class="totals-row">
       <span>Tax ({{ $invoice->tax_rate }}%)</span>
-      <span>${{ number_format($invoice->tax, 2) }}</span>
+      <span>{{ $currencySymbol }}{{ number_format($invoice->tax, 2) }}</span>
     </div>
     @endif
     <div class="totals-row grand">
       <span>Total</span>
-      <span>${{ number_format($invoice->total, 2) }}</span>
+      <span>{{ $currencySymbol }}{{ number_format($invoice->total, 2) }}</span>
     </div>
     @if($invoice->credit_applied > 0)
     <div class="totals-row">
       <span>Credit Applied</span>
-      <span class="credit">-${{ number_format($invoice->credit_applied, 2) }}</span>
+      <span class="credit">-{{ $currencySymbol }}{{ number_format($invoice->credit_applied, 2) }}</span>
     </div>
     <div class="totals-row due">
       <span>Amount Due</span>
-      <span>${{ number_format($invoice->amount_due, 2) }}</span>
+      <span>{{ $currencySymbol }}{{ number_format($invoice->amount_due, 2) }}</span>
     </div>
     @endif
   </div>
@@ -172,7 +185,7 @@
     @foreach($invoice->payments->where('status','completed') as $payment)
     <div class="payment-row">
       <span>{{ ucfirst($payment->gateway) }} — {{ $payment->transaction_id }}</span>
-      <span>${{ number_format($payment->amount, 2) }} on {{ \Carbon\Carbon::parse($payment->paid_at)->format('M d, Y') }}</span>
+      <span>{{ $currencySymbol }}{{ number_format($payment->amount, 2) }} on {{ \Carbon\Carbon::parse($payment->paid_at)->format('M d, Y') }}</span>
     </div>
     @endforeach
   </div>

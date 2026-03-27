@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\TemplateMailable;
 use App\Models\Service;
+use App\Models\Setting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -14,7 +15,9 @@ class SuspendOverdueServices extends Command
 
     public function handle(): int
     {
-        $grace  = (int) $this->option('grace');
+        $grace  = $this->option('grace') !== '3'
+            ? (int) $this->option('grace')
+            : (int) Setting::get('grace_period_days', 3);
         $cutoff = now()->subDays($grace)->startOfDay();
         $count  = 0;
 

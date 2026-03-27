@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,5 +44,24 @@ class SettingController extends Controller
         Setting::setMany($data);
 
         return back()->with('flash', ['success' => 'Settings saved.']);
+    }
+
+    public function uploadLogo(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'logo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
+        ]);
+
+        // Delete old logo if present
+        $old = Setting::get('logo_path');
+        if ($old) {
+            Storage::disk('public')->delete($old);
+        }
+
+        $path = $request->file('logo')->store('logos', 'public');
+
+        Setting::set('logo_path', $path);
+
+        return back()->with('flash', ['success' => 'Logo uploaded.']);
     }
 }
