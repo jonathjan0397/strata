@@ -7,11 +7,14 @@
     "license": "FSL-1.1-Apache-2.0",
     "require": {
         "php": "^8.3",
+        "bacon/bacon-qr-code": "^3.0",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.0",
         "laravel/scout": "^10.0",
         "laravel/tinker": "^3.0",
+        "pragmarx/google2fa-laravel": "^3.0",
+        "spatie/laravel-permission": "^7.2",
         "tightenco/ziggy": "^2.3"
     },
     "require-dev": {
