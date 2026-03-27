@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
+use App\Models\Domain;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
+use App\Services\DomainRegistrarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -130,7 +132,19 @@ class OrderController extends Controller
                     'total'       => $price,
                 ]);
 
-                // 6. Mark order active
+                // 6. For domain products, create a Domain record (registration triggered on payment)
+                if ($product->type === 'domain' && $request->domain) {
+                    Domain::create([
+                        'user_id'    => $user->id,
+                        'service_id' => $service->id,
+                        'name'       => $request->domain,
+                        'registrar'  => config('registrars.default', 'namecheap'),
+                        'status'     => 'pending',
+                        'auto_renew' => true,
+                    ]);
+                }
+
+                // 7. Mark order active
                 $order->update(['status' => 'active']);
 
                 session(['last_order_invoice_id' => $invoice->id]);

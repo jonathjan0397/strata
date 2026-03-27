@@ -124,6 +124,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('support/{ticket}/assign', [Admin\SupportController::class, 'assign'])->name('support.assign');
         Route::post('support/{ticket}/close',  [Admin\SupportController::class, 'close'])->name('support.close');
 
+        // Domains
+        Route::get('domains',                           [Admin\DomainController::class, 'index'])->name('domains.index');
+        Route::get('domains/{domain}',                  [Admin\DomainController::class, 'show'])->name('domains.show');
+        Route::post('domains/{domain}/nameservers',     [Admin\DomainController::class, 'syncNameservers'])->name('domains.nameservers');
+        Route::post('domains/{domain}/lock',            [Admin\DomainController::class, 'setLock'])->name('domains.lock');
+        Route::post('domains/{domain}/privacy',         [Admin\DomainController::class, 'setPrivacy'])->name('domains.privacy');
+        Route::post('domains/{domain}/refresh',         [Admin\DomainController::class, 'refresh'])->name('domains.refresh');
+
         // Modules / Servers
         Route::get('modules',              [Admin\ModuleController::class, 'index'])->name('modules.index');
         Route::get('modules/create',       [Admin\ModuleController::class, 'create'])->name('modules.create');
@@ -167,5 +175,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('support/{ticket}',           [Client\SupportController::class, 'show'])->name('support.show');
         Route::post('support/{ticket}/reply',    [Client\SupportController::class, 'reply'])->name('support.reply');
         Route::get('announcements',              Client\AnnouncementController::class)->name('announcements');
+        Route::get('domains',                    [Client\DomainController::class, 'index'])->name('domains.index');
+        Route::get('domains/{domain}',           [Client\DomainController::class, 'show'])->name('domains.show');
+        Route::post('domains/{domain}/nameservers', [Client\DomainController::class, 'setNameservers'])->name('domains.nameservers');
+        Route::post('domains/{domain}/auto-renew',  [Client\DomainController::class, 'toggleAutoRenew'])->name('domains.auto-renew');
+        Route::get('domains/check',              [Client\DomainController::class, 'checkAvailability'])->name('domains.check');
     });
 });

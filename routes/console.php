@@ -37,3 +37,9 @@ Schedule::command('provisioning:run')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+// Auto-renew domains expiring within 30 days — runs daily at 09:00
+Schedule::command('domains:renew-expiring --days=30')
+    ->dailyAt('09:00')
+    ->withoutOverlapping()
+    ->runInBackground();
