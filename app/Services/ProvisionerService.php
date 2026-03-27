@@ -6,6 +6,7 @@ use App\Contracts\ProvisionerDriver;
 use App\Models\Module;
 use App\Services\Provisioners\CpanelProvisioner;
 use App\Services\Provisioners\DirectAdminProvisioner;
+use App\Services\Provisioners\HestiaProvisioner;
 use App\Services\Provisioners\PleskProvisioner;
 use InvalidArgumentException;
 
@@ -15,6 +16,7 @@ class ProvisionerService
         'cpanel'      => CpanelProvisioner::class,
         'plesk'       => PleskProvisioner::class,
         'directadmin' => DirectAdminProvisioner::class,
+        'hestia'      => HestiaProvisioner::class,
     ];
 
     /** Return a driver instance for the given module. */

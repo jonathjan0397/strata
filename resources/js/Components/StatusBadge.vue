@@ -12,6 +12,7 @@ const map = {
   overdue:         'bg-red-100 text-red-800',
   pending:         'bg-gray-100 text-gray-700',
   suspended:       'bg-orange-100 text-orange-800',
+  cancellation_requested: 'bg-amber-100 text-amber-800',
   cancelled:       'bg-gray-100 text-gray-500',
   terminated:      'bg-red-100 text-red-700',
   on_hold:         'bg-yellow-100 text-yellow-700',

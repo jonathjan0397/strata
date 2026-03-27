@@ -60,4 +60,29 @@ class ServiceController extends Controller
 
         return back()->with('success', 'Service terminated.');
     }
+
+    public function approveCancellation(Service $service): RedirectResponse
+    {
+        abort_unless($service->status === 'cancellation_requested', 422);
+
+        $service->update([
+            'status'           => 'cancelled',
+            'termination_date' => now(),
+        ]);
+
+        return back()->with('success', 'Cancellation approved — service cancelled.');
+    }
+
+    public function rejectCancellation(Service $service): RedirectResponse
+    {
+        abort_unless($service->status === 'cancellation_requested', 422);
+
+        $service->update([
+            'status'                    => 'active',
+            'cancellation_reason'       => null,
+            'cancellation_requested_at' => null,
+        ]);
+
+        return back()->with('success', 'Cancellation request rejected — service restored to active.');
+    }
 }

@@ -24,7 +24,7 @@ watch([search, status], ([s, st]) => {
       <input v-model="search" type="search" placeholder="Search…" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-60 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
       <select v-model="status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         <option value="">All Statuses</option>
-        <option v-for="s in ['pending','active','suspended','cancelled','terminated']" :key="s" :value="s" class="capitalize">{{ s }}</option>
+        <option v-for="s in ['pending','active','suspended','cancellation_requested','cancelled','terminated']" :key="s" :value="s">{{ s.replace(/_/g,' ') }}</option>
       </select>
     </div>
 

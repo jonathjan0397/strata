@@ -14,6 +14,14 @@ function terminate() {
     router.post(route('admin.services.terminate', props.service.id))
   }
 }
+function approveCancellation() {
+  if (confirm('Approve cancellation? The service will be marked cancelled.')) {
+    router.post(route('admin.services.approve-cancellation', props.service.id))
+  }
+}
+function rejectCancellation() {
+  router.post(route('admin.services.reject-cancellation', props.service.id))
+}
 
 function fmt(val) {
   if (!val) return '—'
@@ -59,22 +67,41 @@ function fmt(val) {
       <!-- Actions -->
       <div class="bg-white rounded-xl border border-gray-200 p-5 text-sm">
         <h2 class="font-semibold text-gray-900 mb-3">Actions</h2>
+
+        <!-- Cancellation request alert -->
+        <div v-if="service.status === 'cancellation_requested'"
+            class="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+          <p class="font-semibold">Cancellation Requested</p>
+          <p class="mt-1">{{ service.cancellation_reason }}</p>
+          <p class="mt-1 text-amber-500">{{ new Date(service.cancellation_requested_at).toLocaleDateString() }}</p>
+        </div>
+
         <div class="flex flex-col gap-2">
-          <button
-            v-if="service.status === 'active'"
-            @click="suspend"
-            class="w-full px-3 py-2 rounded-lg bg-yellow-500 text-white text-sm font-medium hover:bg-yellow-600"
-          >Suspend Service</button>
-          <button
-            v-if="service.status === 'suspended'"
-            @click="unsuspend"
-            class="w-full px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
-          >Reactivate Service</button>
-          <button
-            v-if="!['terminated','cancelled'].includes(service.status)"
-            @click="terminate"
-            class="w-full px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
-          >Terminate Service</button>
+          <template v-if="service.status === 'cancellation_requested'">
+            <button @click="approveCancellation"
+              class="w-full px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+            >Approve Cancellation</button>
+            <button @click="rejectCancellation"
+              class="w-full px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
+            >Reject — Keep Active</button>
+          </template>
+          <template v-else>
+            <button
+              v-if="service.status === 'active'"
+              @click="suspend"
+              class="w-full px-3 py-2 rounded-lg bg-yellow-500 text-white text-sm font-medium hover:bg-yellow-600"
+            >Suspend Service</button>
+            <button
+              v-if="service.status === 'suspended'"
+              @click="unsuspend"
+              class="w-full px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
+            >Reactivate Service</button>
+            <button
+              v-if="!['terminated','cancelled'].includes(service.status)"
+              @click="terminate"
+              class="w-full px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+            >Terminate Service</button>
+          </template>
         </div>
       </div>
 

@@ -115,4 +115,12 @@ class SupportController extends Controller
 
         return back()->with('flash', ['success' => 'Ticket reopened.']);
     }
+
+    public function setPriority(Request $request, SupportTicket $ticket): RedirectResponse
+    {
+        $request->validate(['priority' => ['required', 'in:low,medium,high,urgent']]);
+        $ticket->update(['priority' => $request->priority]);
+
+        return back()->with('flash', ['success' => 'Priority updated.']);
+    }
 }

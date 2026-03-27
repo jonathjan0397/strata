@@ -104,9 +104,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Services
         Route::get('services',             [Admin\ServiceController::class, 'index'])->name('services.index');
         Route::get('services/{service}',   [Admin\ServiceController::class, 'show'])->name('services.show');
-        Route::post('services/{service}/suspend',   [Admin\ServiceController::class, 'suspend'])->name('services.suspend');
-        Route::post('services/{service}/unsuspend', [Admin\ServiceController::class, 'unsuspend'])->name('services.unsuspend');
-        Route::post('services/{service}/terminate', [Admin\ServiceController::class, 'terminate'])->name('services.terminate');
+        Route::post('services/{service}/suspend',             [Admin\ServiceController::class, 'suspend'])->name('services.suspend');
+        Route::post('services/{service}/unsuspend',           [Admin\ServiceController::class, 'unsuspend'])->name('services.unsuspend');
+        Route::post('services/{service}/terminate',           [Admin\ServiceController::class, 'terminate'])->name('services.terminate');
+        Route::post('services/{service}/approve-cancellation',[Admin\ServiceController::class, 'approveCancellation'])->name('services.approve-cancellation');
+        Route::post('services/{service}/reject-cancellation', [Admin\ServiceController::class, 'rejectCancellation'])->name('services.reject-cancellation');
 
         // Invoices
         Route::get('invoices',             [Admin\InvoiceController::class, 'index'])->name('invoices.index');
@@ -122,8 +124,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('support/{ticket}',     [Admin\SupportController::class, 'show'])->name('support.show');
         Route::post('support/{ticket}/reply',  [Admin\SupportController::class, 'reply'])->name('support.reply');
         Route::post('support/{ticket}/assign', [Admin\SupportController::class, 'assign'])->name('support.assign');
-        Route::post('support/{ticket}/close',  [Admin\SupportController::class, 'close'])->name('support.close');
-        Route::post('support/{ticket}/reopen', [Admin\SupportController::class, 'reopen'])->name('support.reopen');
+        Route::post('support/{ticket}/close',    [Admin\SupportController::class, 'close'])->name('support.close');
+        Route::post('support/{ticket}/reopen',   [Admin\SupportController::class, 'reopen'])->name('support.reopen');
+        Route::patch('support/{ticket}/priority',[Admin\SupportController::class, 'setPriority'])->name('support.priority');
 
         // Settings
         Route::get('settings',           [Admin\SettingController::class, 'index'])->name('settings.index');
@@ -141,6 +144,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/canned-responses',                      [Admin\CannedResponseController::class, 'store'])->name('canned-responses.store');
         Route::patch('settings/canned-responses/{cannedResponse}',    [Admin\CannedResponseController::class, 'update'])->name('canned-responses.update');
         Route::delete('settings/canned-responses/{cannedResponse}',   [Admin\CannedResponseController::class, 'destroy'])->name('canned-responses.destroy');
+
+        // Knowledge Base (admin)
+        Route::get('kb',                                      [Admin\KbController::class, 'index'])->name('kb.index');
+        Route::get('kb/categories',                           [Admin\KbController::class, 'categories'])->name('kb.categories');
+        Route::post('kb/categories',                          [Admin\KbController::class, 'storeCategory'])->name('kb.categories.store');
+        Route::patch('kb/categories/{kbCategory}',            [Admin\KbController::class, 'updateCategory'])->name('kb.categories.update');
+        Route::delete('kb/categories/{kbCategory}',           [Admin\KbController::class, 'destroyCategory'])->name('kb.categories.destroy');
+        Route::get('kb/create',                               [Admin\KbController::class, 'create'])->name('kb.create');
+        Route::post('kb',                                     [Admin\KbController::class, 'store'])->name('kb.store');
+        Route::get('kb/{kbArticle}/edit',                     [Admin\KbController::class, 'edit'])->name('kb.edit');
+        Route::patch('kb/{kbArticle}',                        [Admin\KbController::class, 'update'])->name('kb.update');
+        Route::delete('kb/{kbArticle}',                       [Admin\KbController::class, 'destroy'])->name('kb.destroy');
 
         // Domains
         Route::get('domains',                           [Admin\DomainController::class, 'index'])->name('domains.index');
@@ -178,8 +193,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('order',                      [Client\OrderController::class, 'catalog'])->name('order.catalog');
         Route::get('order/checkout',             [Client\OrderController::class, 'checkout'])->name('order.checkout');
         Route::post('order',                     [Client\OrderController::class, 'place'])->name('order.place');
-        Route::get('services',                   [Client\ServiceController::class, 'index'])->name('services.index');
-        Route::get('services/{service}',         [Client\ServiceController::class, 'show'])->name('services.show');
+        Route::get('services',                            [Client\ServiceController::class, 'index'])->name('services.index');
+        Route::get('services/{service}',                  [Client\ServiceController::class, 'show'])->name('services.show');
+        Route::post('services/{service}/cancel',          [Client\ServiceController::class, 'requestCancellation'])->name('services.cancel');
         Route::get('invoices',                       [Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
         Route::get('invoices/{invoice}/download',    [Client\InvoiceController::class, 'download'])->name('invoices.download');
@@ -193,6 +209,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('support/{ticket}',           [Client\SupportController::class, 'show'])->name('support.show');
         Route::post('support/{ticket}/reply',    [Client\SupportController::class, 'reply'])->name('support.reply');
         Route::get('announcements',              Client\AnnouncementController::class)->name('announcements');
+        Route::get('kb',                         [Client\KbController::class, 'index'])->name('kb.index');
+        Route::get('kb/{kbArticle:slug}',        [Client\KbController::class, 'show'])->name('kb.show');
         Route::get('domains',                    [Client\DomainController::class, 'index'])->name('domains.index');
         Route::get('domains/{domain}',           [Client\DomainController::class, 'show'])->name('domains.show');
         Route::post('domains/{domain}/nameservers', [Client\DomainController::class, 'setNameservers'])->name('domains.nameservers');

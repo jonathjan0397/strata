@@ -16,17 +16,18 @@ class Service extends Model
         'user_id', 'product_id', 'domain', 'status', 'amount', 'billing_cycle',
         'registration_date', 'next_due_date', 'termination_date',
         'username', 'password_enc', 'server_hostname', 'server_port',
-        'module_data', 'notes',
+        'module_data', 'notes', 'cancellation_reason', 'cancellation_requested_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'amount'            => 'decimal:2',
-            'registration_date' => 'date',
-            'next_due_date'     => 'date',
-            'termination_date'  => 'date',
-            'module_data'       => 'array',
+            'amount'                      => 'decimal:2',
+            'registration_date'           => 'date',
+            'next_due_date'               => 'date',
+            'termination_date'            => 'date',
+            'cancellation_requested_at'   => 'datetime',
+            'module_data'                 => 'array',
         ];
     }
 

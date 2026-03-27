@@ -35,7 +35,7 @@
 - [x] Full database schema migration for all core entities (clients, products, invoices, tickets, orders, domains, services, modules, announcements, email templates)
 - [x] **Browser installer wizard** at `/install` — requirements check, DB test, env write, migrate + seed, lock file
 - [x] Email template engine (7 system templates, `{{variable}}` substitution, admin-editable)
-- [ ] System settings panel (company info, logo, currency, timezone) ⏳
+- [x] System settings panel (company info, logo, currency, timezone) — v0.9.0/v1.0.0
 - [ ] Audit log ⏳
 
 ---
@@ -73,6 +73,11 @@
 - [x] Upgrade / downgrade (admin service edit) 🔄
 - [ ] Service cancellation requests ⏳
 - [ ] Bulk service actions ⏳
+
+### v2.1 — Knowledge Base ⏳
+- [ ] KB articles with rich-text editor
+- [ ] Category organization + article search
+- [ ] Suggested articles on ticket creation
 
 ### v0.7 — Invoices, PDF & Billing Automation ✅
 - [x] Automated invoice generation (`billing:generate-invoices`)
@@ -121,14 +126,14 @@
 - [ ] Bandwidth / disk usage sync ⏳
 - [ ] WHM reseller account creation ⏳
 
-### v1.2 — Plesk ⏳
-- [ ] Plesk subscription creation via Plesk API
-- [ ] Suspend / unsuspend / terminate
-- [ ] Auto-login SSO
+### v1.2 — Plesk ✅
+- [x] Plesk subscription (webspace) creation via Plesk REST API v2
+- [x] Suspend / unsuspend / terminate
+- [ ] Auto-login SSO ⏳
 
-### v1.3 — DirectAdmin ⏳
-- [ ] DirectAdmin user creation via API
-- [ ] Suspend / unsuspend / terminate
+### v1.3 — DirectAdmin ✅
+- [x] DirectAdmin user creation via DirectAdmin HTTP API
+- [x] Suspend / unsuspend / terminate
 
 ### v1.4 — HestiaCP + VestaCP ⏳
 
@@ -158,9 +163,9 @@
 - [x] Sandbox mode
 - [ ] TLD sync from pricing API ⏳
 
-### v1.7 — Registrar: OpenSRS / Tucows ⏳
-- [ ] Full lifecycle via OpenSRS XCP API
-- [ ] Nameserver + DNS management
+### v1.7 — Registrar: OpenSRS / Tucows ✅
+- [x] Full lifecycle via OpenSRS XCP API (HMAC-MD5 auth, sandbox)
+- [x] Nameserver management, WHOIS privacy, lock/unlock
 
 ### v1.8 — Registrar: eNom ✅
 - [x] Registration, renewal, transfer via Enom reseller XML API
@@ -180,14 +185,14 @@
 - [x] Ticket creation (client portal + admin view)
 - [x] Staff reply from admin panel
 - [x] `support.reply` email notification on admin reply
-- [x] Ticket status: open / closed
+- [x] Ticket status: open / closed / reopen
 - [x] Admin assign ticket to staff
-- [ ] Departments (billing, technical, sales — configurable) ⏳
+- [x] Departments (billing, technical, sales — configurable) — v0.9.0
+- [x] Internal notes (staff-only, amber styling, hidden from client) — v0.9.0
+- [x] Canned responses (department-scoped) — v0.9.0
 - [ ] Priority levels ⏳
 - [ ] Email piping (reply-by-email updates ticket) ⏳
 - [ ] HTML reply editor + file attachments ⏳
-- [ ] Internal notes (staff-only) ⏳
-- [ ] Canned responses ⏳
 - [ ] Auto-close inactive tickets ⏳
 - [ ] Client satisfaction rating ⏳
 - [ ] Ticket search ⏳
@@ -287,10 +292,10 @@
 |-----------|--------------|--------|
 | 0 — Foundation | v0.1–v0.3 | ✅ Complete |
 | 1 — Core Billing | v0.4–v0.8 | ✅ Complete |
-| 2 — Provisioning | v1.0–v1.4 | ✅ cPanel done; Plesk/DA/Hestia planned |
-| 3 — Domains | v1.5–v1.9 | ✅ Namecheap + Enom done; OpenSRS/HEXONET planned |
-| 4 — Support | v2.0–v2.1 | 🔄 Basic tickets done; departments/KB planned |
+| 2 — Provisioning | v1.0–v1.4 | ✅ cPanel, Plesk, DirectAdmin done; HestiaCP planned |
+| 3 — Domains | v1.5–v1.9 | ✅ Namecheap + Enom + OpenSRS done; HEXONET planned |
+| 4 — Support | v2.0–v2.1 | 🔄 Tickets + departments + canned responses done; priority/KB planned |
 | 5 — Premium ⭐ | v2.2–v2.7 | ⏳ Planned |
 | 6 — Polish | v3.0–v3.4 | ⏳ Planned |
 
-*Last updated: 2026-03-26*
+*Last updated: 2026-03-27*

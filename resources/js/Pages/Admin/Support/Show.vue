@@ -12,8 +12,9 @@ const props = defineProps({
     cannedResponses: Array,
 })
 
-const replyForm  = useForm({ message: '', internal: false })
-const assignForm = useForm({ assigned_to: props.ticket.assigned_to ?? '' })
+const replyForm    = useForm({ message: '', internal: false })
+const assignForm   = useForm({ assigned_to: props.ticket.assigned_to ?? '' })
+const priorityForm = useForm({ priority: props.ticket.priority ?? 'medium' })
 
 const showCanned = ref(false)
 
@@ -53,7 +54,14 @@ const priorityClass = {
                 &nbsp;·&nbsp;
                 <span class="text-gray-600">{{ ticket.department?.name ?? ticket.department ?? 'General' }}</span>
                 &nbsp;·&nbsp;
-                Priority: <span :class="priorityClass[ticket.priority] ?? ''">{{ ticket.priority }}</span>
+                Priority:
+                <select v-model="priorityForm.priority" :class="['text-sm font-medium border-0 bg-transparent focus:outline-none cursor-pointer', priorityClass[priorityForm.priority]]"
+                    @change="priorityForm.patch(route('admin.support.priority', ticket.id))">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
             </div>
             <div class="flex items-center gap-2">
                 <select v-model="assignForm.assigned_to"

@@ -15,6 +15,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.1.0] — 2026-03-27 — HestiaCP, Service Cancellations, Knowledge Base, Ticket Priority
+
+### Added
+
+#### HestiaCP Provisioner
+- **`HestiaProvisioner`** — HestiaCP REST API; `v-add-user` + `v-add-web` for account creation; suspend/unsuspend/terminate via API; numeric `0` response = OK
+- Registered in `ProvisionerService` under `hestia` type; default port 8083 in `ProvisionPendingServices`
+
+#### Service Cancellation Requests
+- `cancellation_reason` + `cancellation_requested_at` columns added to `services` table (migration `2026_03_27_032000`)
+- `Service` model updated with new fillable + casts
+- Client `ServiceController::requestCancellation()` — validates reason, sets `status = cancellation_requested`
+- Admin `ServiceController::approveCancellation()` / `rejectCancellation()` — approve marks `cancelled`; reject restores `active` and clears cancellation fields
+- `POST client/services/{service}/cancel` + `POST admin/services/{service}/approve-cancellation` + `POST admin/services/{service}/reject-cancellation` routes
+- `Client/Services/Show.vue` — request form with reason textarea; pending notice; Nevermind button
+- `Admin/Services/Show.vue` — amber alert with reason + approve/reject buttons when `cancellation_requested`
+- `Admin/Services/Index.vue` — `cancellation_requested` added to status filter options
+- `StatusBadge` — amber style for `cancellation_requested`
+
+#### Ticket Priority Change (Admin)
+- `PATCH admin/support/{ticket}/priority` route + `SupportController::setPriority()` action
+- Admin `Support/Show.vue` — priority in meta bar now an inline `<select>` that auto-saves on change
+
+#### Knowledge Base (v2.1)
+- **`KbCategory` model** — `slug`, `active`, `sort_order`; `scopeActive()`, `publishedArticles()` relationship
+- **`KbArticle` model** — full-text index on `title` + `body`; `scopePublished()`; `incrementViews()`; `SoftDeletes`
+- **`Admin\KbController`** — full CRUD for categories + articles; slug auto-generated from title; `edit` + `store` + `update` + `destroy` + `categories` + `storeCategory` + `updateCategory` + `destroyCategory`
+- **`Client\KbController`** — `index` (category browse + full-text search); `show` (view counter, related articles)
+- 10 admin routes + 2 client routes
+- **`Admin/KB/Categories.vue`** — inline edit-in-row category management
+- **`Admin/KB/Index.vue`** — paginated article list with search/category/published filters
+- **`Admin/KB/Edit.vue`** — textarea-based article editor with publish toggle
+- **`Client/KB/Index.vue`** — search bar + category browse with article previews
+- **`Client/KB/Show.vue`** — article view with breadcrumb, view count, related articles, support ticket CTA
+- Admin nav: Knowledge Base link; Client nav: Help Center link
+
+---
+
 ## [1.0.0] — 2026-03-26 — Multi-Provisioner, OpenSRS, Settings Wired
 
 ### Added

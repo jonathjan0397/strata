@@ -54,6 +54,7 @@ class ProvisionPendingServices extends Command
                 $defaultPort = match ($moduleType) {
                     'plesk'       => 8443,
                     'directadmin' => 2222,
+                    'hestia'      => 8083,
                     default       => 2083,
                 };
 
