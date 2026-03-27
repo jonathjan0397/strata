@@ -30,7 +30,11 @@ class HandleInertiaRequests extends Middleware
     {
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user()?->load('roles'),
+                'user' => $request->user()?->load('roles')?->makeVisible([
+                    'two_factor_enabled',
+                    'two_factor_confirmed_at',
+                    'two_factor_secret', // needed client-side to know setup is pending
+                ]),
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
