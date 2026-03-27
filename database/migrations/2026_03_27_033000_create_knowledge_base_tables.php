@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -32,8 +33,10 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index(['kb_category_id', 'published']);
-            $table->fullText(['title', 'body']);
         });
+
+        // Raw statement for cross-driver fulltext compatibility (MySQL + MariaDB)
+        DB::statement('ALTER TABLE kb_articles ADD FULLTEXT INDEX kb_articles_fulltext (title, body)');
     }
 
     public function down(): void
