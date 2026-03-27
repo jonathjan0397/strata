@@ -303,7 +303,7 @@ QUEUE_CONNECTION={$queueConn}
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
 
-MAIL_MAILER=log
+MAIL_MAILER=sendmail
 MAIL_FROM_ADDRESS="noreply@{$this->hostFromUrl($appUrl)}"
 MAIL_FROM_NAME="{$appName}"
 
@@ -352,7 +352,7 @@ ENV;
 
     private function createAdminUser(Request $request): void
     {
-        $user = \App\Models\User::firstOrCreate(
+        $user = \App\Models\User::updateOrCreate(
             ['email' => $request->admin_email],
             [
                 'name'              => $request->admin_name,
