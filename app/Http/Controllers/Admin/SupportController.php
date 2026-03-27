@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TemplateMailable;
 use App\Models\SupportReply;
 use App\Models\SupportTicket;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -59,6 +61,16 @@ class SupportController extends Controller
             'status'        => 'answered',
             'last_reply_at' => now(),
         ]);
+
+        $ticket->load('user');
+        Mail::to($ticket->user->email)->queue(new TemplateMailable('support.reply', [
+            'name'         => $ticket->user->name,
+            'app_name'     => config('app.name'),
+            'ticket_id'    => $ticket->id,
+            'ticket_subject' => $ticket->subject,
+            'reply_body'   => $request->message,
+            'ticket_url'   => route('client.support.show', $ticket->id),
+        ]));
 
         return back()->with('success', 'Reply sent.');
     }

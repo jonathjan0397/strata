@@ -8,9 +8,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- Service auto-provisioning (cPanel/WHM API)
 - Domain registration API (Enom / OpenSRS / Namecheap)
-- Mailable classes wired to EmailTemplates
+
+---
+
+## [0.7.0] — 2026-03-26 — Mailables, cPanel Provisioning & Email Template Editor
+
+### Added
+- **`EmailTemplate` model** (`app/Models/EmailTemplate.php`) — `findBySlug()` + `render(field, vars)` method for `{{variable}}` placeholder replacement
+- **`TemplateMailable`** (`app/Mail/TemplateMailable.php`) — single queued mailable that loads template by slug, renders HTML (wrapped in branded layout) and plain text, implements `ShouldQueue`
+- **7 default email templates** (seeded via `EmailTemplatesSeeder`): `auth.welcome`, `invoice.created`, `invoice.paid`, `invoice.overdue`, `service.activated`, `service.suspended`, `support.reply`
+- **Emails wired to triggers:**
+  - Registration → `auth.welcome`
+  - Order placed → `invoice.created`
+  - Admin marks invoice paid → `invoice.paid`
+  - Stripe webhook completes → `invoice.paid`
+  - `billing:flag-overdue` → `invoice.overdue` per invoice
+  - `billing:suspend-overdue` → `service.suspended` per service
+  - Admin support reply → `support.reply`
+  - Service provisioned → `service.activated`
+- **Admin Email Templates UI** (`/admin/email-templates`) — index list with slug, name, subject, status; edit form with variable reference panel, HTML body textarea, plain text fallback, active toggle
+- **`CpanelProvisioner`** (`app/Services/CpanelProvisioner.php`) — WHM JSON API v1 client: `createAccount()` (generates username + password, calls `createacct`), `suspendAccount()`, `unsuspendAccount()`, `terminateAccount()`; uses Bearer token auth; `findAvailableModule()` selects active cPanel module with capacity
+- **`provisioning:run` command** — finds pending cPanel services whose invoices are paid, provisions via `CpanelProvisioner`, updates service (username, `password_enc`, `server_hostname`, `module_data`), increments module account count, sends `service.activated` email
+- **Scheduler** — `provisioning:run` added at `everyFiveMinutes()` with `withoutOverlapping()`
 
 ---
 

@@ -132,6 +132,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('modules/{module}',   [Admin\ModuleController::class, 'update'])->name('modules.update');
         Route::delete('modules/{module}',  [Admin\ModuleController::class, 'destroy'])->name('modules.destroy');
 
+        // Email Templates
+        Route::get('email-templates',                        [Admin\EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::get('email-templates/{emailTemplate}/edit',   [Admin\EmailTemplateController::class, 'edit'])->name('email-templates.edit');
+        Route::patch('email-templates/{emailTemplate}',      [Admin\EmailTemplateController::class, 'update'])->name('email-templates.update');
+
         // Announcements
         Route::get('announcements',                    [Admin\AnnouncementController::class, 'index'])->name('announcements.index');
         Route::get('announcements/create',             [Admin\AnnouncementController::class, 'create'])->name('announcements.create');

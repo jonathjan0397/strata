@@ -31,3 +31,9 @@ Schedule::command('billing:suspend-overdue --grace=3')
     ->dailyAt('01:00')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Provision paid pending cPanel services — runs every 5 minutes
+Schedule::command('provisioning:run')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();

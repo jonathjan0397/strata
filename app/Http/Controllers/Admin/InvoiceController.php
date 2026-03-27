@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Mail\TemplateMailable;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -97,10 +99,20 @@ class InvoiceController extends Controller
 
     public function markPaid(Invoice $invoice): RedirectResponse
     {
+        $invoice->load('user');
+
         $invoice->update([
             'status'  => 'paid',
             'paid_at' => now(),
         ]);
+
+        Mail::to($invoice->user->email)->queue(new TemplateMailable('invoice.paid', [
+            'name'        => $invoice->user->name,
+            'app_name'    => config('app.name'),
+            'invoice_id'  => $invoice->id,
+            'amount'      => number_format((float) $invoice->total, 2),
+            'invoice_url' => route('client.invoices.show', $invoice->id),
+        ]));
 
         return back()->with('success', 'Invoice marked as paid.');
     }

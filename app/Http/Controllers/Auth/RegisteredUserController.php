@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TemplateMailable;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,6 +39,12 @@ class RegisteredUserController extends Controller
         $user->assignRole('client');
 
         event(new Registered($user));
+
+        Mail::to($user->email)->queue(new TemplateMailable('auth.welcome', [
+            'name'      => $user->name,
+            'app_name'  => config('app.name'),
+            'login_url' => route('login'),
+        ]));
 
         Auth::login($user);
 

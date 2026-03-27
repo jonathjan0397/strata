@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\TemplateMailable;
 use App\Models\Service;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Mail;
 
 class SuspendOverdueServices extends Command
 {
@@ -12,12 +14,12 @@ class SuspendOverdueServices extends Command
 
     public function handle(): int
     {
-        $grace   = (int) $this->option('grace');
-        $cutoff  = now()->subDays($grace)->startOfDay();
-        $count   = 0;
+        $grace  = (int) $this->option('grace');
+        $cutoff = now()->subDays($grace)->startOfDay();
+        $count  = 0;
 
-        // Find active services that have at least one overdue invoice older than the grace period
-        $services = Service::where('status', 'active')
+        $services = Service::with(['user', 'product'])
+            ->where('status', 'active')
             ->whereHas('invoiceItems.invoice', fn ($q) =>
                 $q->where('status', 'overdue')
                   ->where('due_date', '<=', $cutoff)
@@ -26,6 +28,15 @@ class SuspendOverdueServices extends Command
 
         foreach ($services as $service) {
             $service->update(['status' => 'suspended']);
+
+            Mail::to($service->user->email)->queue(new TemplateMailable('service.suspended', [
+                'name'         => $service->user->name,
+                'app_name'     => config('app.name'),
+                'service_name' => $service->product?->name ?? "Service #{$service->id}",
+                'domain'       => $service->domain ?? '',
+                'invoices_url' => route('client.invoices.index'),
+            ]));
+
             $count++;
             $this->line("Suspended service #{$service->id} ({$service->domain})");
         }

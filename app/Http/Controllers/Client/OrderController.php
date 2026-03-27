@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TemplateMailable;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
@@ -10,6 +11,7 @@ use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -132,13 +134,26 @@ class OrderController extends Controller
                 $order->update(['status' => 'active']);
 
                 session(['last_order_invoice_id' => $invoice->id]);
+                session(['last_order_invoice_amount' => $total]);
+                session(['last_order_invoice_due' => now()->addDays(7)->format('M d, Y')]);
             });
 
         } catch (Throwable $e) {
             return back()->with('error', 'Order could not be placed: '.$e->getMessage());
         }
 
-        $invoiceId = session()->pull('last_order_invoice_id');
+        $invoiceId  = session()->pull('last_order_invoice_id');
+        $amount     = session()->pull('last_order_invoice_amount');
+        $due        = session()->pull('last_order_invoice_due');
+
+        Mail::to($request->user()->email)->queue(new TemplateMailable('invoice.created', [
+            'name'        => $request->user()->name,
+            'app_name'    => config('app.name'),
+            'invoice_id'  => $invoiceId,
+            'amount'      => number_format((float) $amount, 2),
+            'due_date'    => $due,
+            'invoice_url' => route('client.invoices.show', $invoiceId),
+        ]));
 
         return redirect()->route('client.invoices.show', $invoiceId)
             ->with('success', 'Order placed! Pay your invoice below to activate your service.');

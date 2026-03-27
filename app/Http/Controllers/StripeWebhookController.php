@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\TemplateMailable;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Event;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Stripe;
@@ -81,6 +83,15 @@ class StripeWebhookController extends Controller
             'status'  => 'paid',
             'paid_at' => now(),
         ]);
+
+        $invoice->load('user');
+        Mail::to($invoice->user->email)->queue(new TemplateMailable('invoice.paid', [
+            'name'        => $invoice->user->name,
+            'app_name'    => config('app.name'),
+            'invoice_id'  => $invoice->id,
+            'amount'      => number_format((float) $invoice->total, 2),
+            'invoice_url' => route('client.invoices.show', $invoice->id),
+        ]));
     }
 
     private function handleCheckoutExpired(Event $event): void
