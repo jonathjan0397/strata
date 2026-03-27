@@ -20,8 +20,8 @@ class ClientEmail extends Mailable
 
     public function content(): Content
     {
-        $appName  = setting('company_name', config('app.name'));
-        $logoPath = setting('logo_path');
+        $appName  = \App\Models\Setting::get('company_name', config('app.name'));
+        $logoPath = \App\Models\Setting::get('logo_path');
         $logoHtml = $logoPath
             ? '<img src="' . url('storage/' . $logoPath) . '" alt="' . e($appName) . '" style="max-height:48px;max-width:200px;">'
             : '<span style="font-size:20px;font-weight:700;color:#fff;">' . e($appName) . '</span>';
