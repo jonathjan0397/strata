@@ -184,8 +184,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('support/{ticket}/priority',[Admin\SupportController::class, 'setPriority'])->name('support.priority');
 
         // Settings
-        Route::get('settings',           [Admin\SettingController::class, 'index'])->name('settings.index');
+        Route::get('settings',            [Admin\SettingController::class, 'index'])->name('settings.index');
         Route::patch('settings',          [Admin\SettingController::class, 'update'])->name('settings.update');
+        Route::patch('settings/mail',     [Admin\SettingController::class, 'updateMail'])->name('settings.mail');
+        Route::post('settings/mail/test', [Admin\SettingController::class, 'testMail'])->name('settings.mail.test');
         Route::post('settings/logo',      [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
 
         // Departments

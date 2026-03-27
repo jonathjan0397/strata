@@ -52,10 +52,45 @@ const form = useForm({
     tax_name:          s.tax_name          ?? 'Tax',
 })
 
+// Mail settings form
+const mailForm = useForm({
+    mail_mailer:        s.mail_mailer        ?? 'sendmail',
+    mail_from_address:  s.mail_from_address  ?? '',
+    mail_from_name:     s.mail_from_name     ?? '',
+    mail_host:          s.mail_host          ?? '',
+    mail_port:          s.mail_port          ?? '25',
+    mail_username:      s.mail_username      ?? '',
+    mail_password:      s.mail_password      ?? '',
+    mail_encryption:    s.mail_encryption    ?? '',
+    mail_sendmail_path: s.mail_sendmail_path ?? '/usr/sbin/sendmail -t -i',
+})
+
+const testTo        = ref('')
+const testResult    = ref(null)
+const testLoading   = ref(false)
+
+async function sendTestMail() {
+    testResult.value  = null
+    testLoading.value = true
+    try {
+        const res = await fetch(route('admin.settings.mail.test'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            body: JSON.stringify({ to: testTo.value }),
+        })
+        testResult.value = await res.json()
+    } catch {
+        testResult.value = { success: false, message: 'Request failed.' }
+    } finally {
+        testLoading.value = false
+    }
+}
+
 const tabs = [
     { key: 'general',  label: 'General' },
     { key: 'company',  label: 'Company' },
     { key: 'billing',  label: 'Billing' },
+    { key: 'email',    label: 'Email' },
 ]
 
 const timezones = [
@@ -88,7 +123,108 @@ const timezones = [
             </button>
         </div>
 
-        <form @submit.prevent="form.patch(route('admin.settings.update'))" class="space-y-4">
+        <!-- Email settings (own form, own route) -->
+        <form v-if="tab === 'email'" @submit.prevent="mailForm.patch(route('admin.settings.mail'))" class="space-y-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+
+                <!-- Mailer type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mail Driver</label>
+                    <select v-model="mailForm.mail_mailer"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="sendmail">Sendmail (server default)</option>
+                        <option value="smtp">SMTP</option>
+                        <option value="log">Log only (debug)</option>
+                    </select>
+                </div>
+
+                <!-- From -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">From Address</label>
+                        <input v-model="mailForm.mail_from_address" type="email"
+                            placeholder="noreply@yourdomain.com"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <p v-if="mailForm.errors.mail_from_address" class="text-xs text-red-500 mt-1">{{ mailForm.errors.mail_from_address }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                        <input v-model="mailForm.mail_from_name" type="text"
+                            placeholder="Support"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                </div>
+
+                <!-- Sendmail path -->
+                <div v-if="mailForm.mail_mailer === 'sendmail'">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sendmail Path</label>
+                    <input v-model="mailForm.mail_sendmail_path" type="text"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <p class="text-xs text-gray-400 mt-1">Default: <code>/usr/sbin/sendmail -t -i</code></p>
+                </div>
+
+                <!-- SMTP fields -->
+                <template v-if="mailForm.mail_mailer === 'smtp'">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
+                            <input v-model="mailForm.mail_host" type="text" placeholder="mail.yourdomain.com"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                            <input v-model="mailForm.mail_port" type="number" placeholder="587"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Encryption</label>
+                            <select v-model="mailForm.mail_encryption"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">None</option>
+                                <option value="tls">TLS (STARTTLS)</option>
+                                <option value="ssl">SSL</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                            <input v-model="mailForm.mail_username" type="text" autocomplete="off"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input v-model="mailForm.mail_password" type="password" autocomplete="new-password"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Test send -->
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                <p class="text-sm font-medium text-gray-700">Send Test Email</p>
+                <div class="flex gap-2">
+                    <input v-model="testTo" type="email" placeholder="you@example.com"
+                        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <button type="button" @click="sendTestMail" :disabled="!testTo || testLoading"
+                        class="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 disabled:opacity-50">
+                        {{ testLoading ? 'Sending…' : 'Send Test' }}
+                    </button>
+                </div>
+                <p v-if="testResult" :class="testResult.success ? 'text-green-600' : 'text-red-600'" class="text-sm">
+                    {{ testResult.message }}
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="submit" :disabled="mailForm.processing"
+                    class="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                    Save Mail Settings
+                </button>
+                <span v-if="mailForm.recentlySuccessful" class="text-sm text-green-600">Saved.</span>
+            </div>
+        </form>
+
+        <form v-else @submit.prevent="form.patch(route('admin.settings.update'))" class="space-y-4">
 
             <!-- General -->
             <div v-show="tab === 'general'" class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">

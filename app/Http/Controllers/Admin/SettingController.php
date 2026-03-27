@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,6 +49,45 @@ class SettingController extends Controller
         AuditLogger::log('settings.updated', null, array_keys($data));
 
         return back()->with('flash', ['success' => 'Settings saved.']);
+    }
+
+    public function updateMail(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'mail_mailer'        => ['required', 'in:sendmail,smtp,log'],
+            'mail_from_address'  => ['required', 'email', 'max:255'],
+            'mail_from_name'     => ['required', 'string', 'max:255'],
+            'mail_host'          => ['nullable', 'string', 'max:255'],
+            'mail_port'          => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'mail_username'      => ['nullable', 'string', 'max:255'],
+            'mail_password'      => ['nullable', 'string', 'max:255'],
+            'mail_encryption'    => ['nullable', 'in:tls,ssl,'],
+            'mail_sendmail_path' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        Setting::setMany($data);
+
+        AuditLogger::log('settings.mail_updated', null, ['mail_mailer', 'mail_from_address']);
+
+        return back()->with('flash', ['success' => 'Mail settings saved.']);
+    }
+
+    public function testMail(Request $request): JsonResponse
+    {
+        $request->validate([
+            'to' => ['required', 'email'],
+        ]);
+
+        try {
+            Mail::raw('This is a test email from Strata. Your mail configuration is working.', function ($msg) use ($request) {
+                $msg->to($request->input('to'))
+                    ->subject('Strata — Mail Test');
+            });
+
+            return response()->json(['success' => true, 'message' => 'Test email sent.']);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
     }
 
     public function uploadLogo(Request $request): RedirectResponse
