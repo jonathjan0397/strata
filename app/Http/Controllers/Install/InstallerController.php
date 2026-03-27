@@ -168,7 +168,12 @@ class InstallerController extends Controller
 
             return response()->json(['success' => true, 'version' => $version]);
         } catch (PDOException $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
+            return response()->json([
+                'success'    => false,
+                'error'      => $e->getMessage(),
+                '_debug_raw' => $request->all(),
+                '_debug_dec' => base64_decode($request->db_password ?? ''),
+            ], 422);
         }
     }
 

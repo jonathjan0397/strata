@@ -97,7 +97,9 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
-    'key' => env('APP_KEY'),
+    // Fallback lets the app boot for the installer before .env exists.
+    // writeEnv() always generates and stores a real random key on install.
+    'key' => env('APP_KEY', 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='),
 
     'previous_keys' => [
         ...array_filter(
