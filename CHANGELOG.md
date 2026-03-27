@@ -8,7 +8,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- *(open)*
+- Support ticket departments, priorities, internal notes, canned responses
+- OpenSRS / HEXONET registrar drivers
+- System settings panel (company info, logo, currency, timezone)
+- Plesk and DirectAdmin provisioning modules
+
+---
+
+## [0.8.1] — 2026-03-26 — Documentation Update
+
+### Changed
+- **`README.md`** — full rewrite to reflect actual v0.8.0 feature set; accurate tech stack (Laravel 12, Inertia.js v2, Tailwind v4); complete installation guide with requirements, quick-start steps, scheduler and queue worker setup; configuration reference for Stripe, PayPal, and registrar env vars; project structure tree; roadmap summary table
+- **`ROADMAP.md`** — all completed items checked off with ✅; partial items marked 🔄; planned items marked ⏳; milestones 0–3 reflect production-shipped state; milestones 4–6 updated to clearly separate done vs. planned work; backlog section updated to include Docker and Horizon
 
 ---
 
