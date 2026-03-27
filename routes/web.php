@@ -15,6 +15,8 @@ use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Client;
+use App\Http\Controllers\Portal\PortalController;
+use App\Http\Controllers\Portal\WidgetController;
 use App\Http\Controllers\Profile\SessionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +49,24 @@ Route::prefix('install')->name('install.')->withoutMiddleware([
     Route::post('/test-database',[InstallerController::class, 'testDatabase'])->name('test-database');
     Route::post('/run',          [InstallerController::class, 'install'])->name('run');
 });
+
+// ── Public portal (no auth required) ─────────────────────────────────────────
+Route::middleware('throttle:120,1')->group(function () {
+    Route::get('/',              [PortalController::class, 'home'])->name('home');
+    Route::get('/services',      [PortalController::class, 'products'])->name('portal.products');
+    Route::get('/kb',            [PortalController::class, 'kb'])->name('portal.kb');
+    Route::get('/kb/{slug}',     [PortalController::class, 'kbArticle'])->name('portal.kb.show');
+    Route::get('/announcements', [PortalController::class, 'announcements'])->name('portal.announcements');
+});
+
+// ── Embeddable widget API (JSON, CORS-open, read-only) ────────────────────────
+Route::middleware('throttle:60,1')->prefix('api/widget')->name('widget.')->group(function () {
+    Route::get('products',      [WidgetController::class, 'products'])->name('products');
+    Route::get('announcements', [WidgetController::class, 'announcements'])->name('announcements');
+    Route::get('kb',            [WidgetController::class, 'kb'])->name('kb');
+});
+
+Route::get('strata-widget.js', [WidgetController::class, 'widgetJs'])->name('widget.js');
 
 // ── Guest ────────────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -81,12 +101,7 @@ Route::middleware('auth')->group(function () {
 // ── Auth + Verified ───────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // Redirect root based on role
-    Route::get('/', function () {
-        return auth()->user()->isAdmin()
-            ? redirect()->route('admin.dashboard')
-            : redirect()->route('client.dashboard');
-    })->name('dashboard');
+    // Root handled by public portal controller (redirects if logged in)
 
     // ── 2FA management ──────────────────────────────────────────────────────
     Route::post('user/two-factor-authentication',           [TwoFactorAuthenticationController::class, 'store'])->name('two-factor.enable');
