@@ -20,6 +20,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.0] — 2026-03-26 — Browser-Based Installer
+
+### Added
+- **Web Installer** (`/install`) — complete 7-step browser wizard requiring no CLI or shell access; designed for hosting resellers who deploy via FTP/File Manager
+  - **Step 1 — Welcome** — introduction and requirements overview
+  - **Step 2 — Requirements Check** — live server check: PHP ≥8.3, PDO, PDO MySQL, mbstring, OpenSSL, Tokenizer, JSON, Ctype, BCMath; directory writability (storage/, bootstrap/cache/, .env); all checks displayed with pass/fail indicators
+  - **Step 3 — Database** — host, port, name, username, password fields; "Test Connection" button performs raw PDO connect with 5-second timeout and returns MySQL version on success before allowing progression
+  - **Step 4 — Site Configuration** — app name and app URL
+  - **Step 5 — Admin Account** — admin name, email, password (min 8 chars), password confirmation with client-side validation
+  - **Step 6 — Installing** — animated spinner while install runs; calls `/install/run` which executes the full pipeline server-side
+  - **Step 7 — Complete** — success screen with direct link to login
+- **`InstallerController`** (`app/Http/Controllers/Install/InstallerController.php`) — four endpoints:
+  - `GET /install` — renders `Install/Welcome`
+  - `GET /install/requirements` — returns JSON of all 12 server checks with pass/fail/detail
+  - `POST /install/test-database` — validates input, opens raw PDO connection, returns MySQL version
+  - `POST /install/run` — full install pipeline: writes `.env`, live-patches running DB config (`DB::purge` + `DB::reconnect`), runs `migrate --force`, seeds `RolesAndPermissionsSeeder`, creates super-admin user, caches config+routes, writes `storage/installed.lock`
+- **`.env` generation** — `APP_KEY` generated with `base64_encode(random_bytes(32))`; file written with `chmod 0600`; `APP_ENV=production`, `APP_DEBUG=false`, `APP_INSTALLED=true` set automatically
+- **`CheckInstalled` middleware** (`app/Http/Middleware/CheckInstalled.php`) — redirects to `/install` if `storage/installed.lock` is absent; returns 403 if lock exists and `/install` is accessed again; appended to the web middleware stack in `bootstrap/app.php`
+- **Installer route group** — added at top of `routes/web.php` before all auth routes; no auth or verified middleware applied
+
+### Security
+- `.env` written with `chmod 0600` (owner-read-only)
+- Installer locked permanently via `storage/installed.lock` after first successful run
+- Direct PDO test with 5-second timeout prevents the installer from writing `.env` with invalid credentials
+
+---
+
 ## [0.2.0] — 2026-03-26 — Auth & Multi-Role Access
 
 ### Added

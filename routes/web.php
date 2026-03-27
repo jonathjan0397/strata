@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Install\InstallerController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -15,6 +16,14 @@ use App\Http\Controllers\Client;
 use App\Http\Controllers\Profile\SessionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// ── Installer (blocked by CheckInstalled once storage/installed.lock exists) ─
+Route::prefix('install')->name('install.')->group(function () {
+    Route::get('/',              [InstallerController::class, 'index'])->name('index');
+    Route::get('/requirements',  [InstallerController::class, 'requirements'])->name('requirements');
+    Route::post('/test-database',[InstallerController::class, 'testDatabase'])->name('test-database');
+    Route::post('/run',          [InstallerController::class, 'install'])->name('run');
+});
 
 // ── Guest ────────────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
