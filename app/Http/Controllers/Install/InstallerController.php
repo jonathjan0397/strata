@@ -152,6 +152,11 @@ class InstallerController extends Controller
             return response()->json(['success' => false, 'error' => $v->errors()->first()], 422);
         }
 
+        // Passwords are base64-encoded client-side to avoid WAF false positives.
+        if ($request->db_password) {
+            $request->merge(['db_password' => base64_decode($request->db_password)]);
+        }
+
         try {
             $dsn = "mysql:host={$request->db_host};port={$request->db_port};dbname={$request->db_name};charset=utf8mb4";
             $pdo = new PDO($dsn, $request->db_username, $request->db_password ?? '', [
@@ -187,6 +192,12 @@ class InstallerController extends Controller
         if ($v->fails()) {
             return response()->json(['success' => false, 'errors' => $v->errors()], 422);
         }
+
+        // Passwords are base64-encoded client-side to avoid WAF false positives.
+        $request->merge([
+            'admin_password' => base64_decode($request->admin_password),
+            'db_password'    => $request->db_password ? base64_decode($request->db_password) : '',
+        ]);
 
         try {
             // 1. Write .env

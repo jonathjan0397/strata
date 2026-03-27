@@ -83,7 +83,7 @@ async function testDb() {
       db_port:     db.port,
       db_name:     db.name,
       db_username: db.username,
-      db_password: db.password,
+      db_password: b64(db.password),
     })
     dbStatus.value = data.success
       ? { ok: true, version: data.version }
@@ -106,12 +106,12 @@ async function runInstall() {
       db_port:          db.port,
       db_name:          db.name,
       db_username:      db.username,
-      db_password:      db.password,
+      db_password:      b64(db.password),
       app_name:         site.name,
       app_url:          site.url,
       admin_name:       admin.name,
       admin_email:      admin.email,
-      admin_password:   admin.password,
+      admin_password:   b64(admin.password),
       queue_connection: env.queue,
     })
     installResult.value = data
@@ -125,6 +125,11 @@ async function runInstall() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function isWarn(check) {
   return check.warn && !check.pass
+}
+
+// Encode passwords before POST so WAF rules don't pattern-match on raw values.
+function b64(str) {
+  return btoa(unescape(encodeURIComponent(str)))
 }
 </script>
 
