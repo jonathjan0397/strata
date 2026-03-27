@@ -344,6 +344,7 @@ ENV;
     private function rebootConfig(Request $request): void
     {
         config([
+            'database.default'                    => 'mysql',
             'database.connections.mysql.host'     => $request->db_host,
             'database.connections.mysql.port'     => $request->db_port,
             'database.connections.mysql.database' => $request->db_name,
