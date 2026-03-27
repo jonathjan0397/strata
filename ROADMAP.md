@@ -74,7 +74,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Client notes (internal)
 - [x] Client suspension
 - [ ] Multiple contacts per client account ⏳
-- [ ] Client groups with group-level pricing ⏳
+- [x] Client groups with group-level pricing ✅
 - [x] Client credit balance ✅
 - [ ] Client merge ⏳
 
@@ -88,7 +88,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [ ] Configurable options / add-ons ⏳
 - [x] Promotional pricing / promo codes ✅
 - [ ] Free trial periods ⏳
-- [ ] Tax rules (VAT/GST) ⏳
+- [x] Tax rules (VAT/GST) ✅
 
 ### v0.6 — Orders & Services ✅
 - [x] Client-facing order catalog and checkout form
@@ -96,7 +96,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Service records: status (active/suspended/terminated/pending), next due date
 - [x] Domain field captured at order time
 - [x] Upgrade / downgrade (admin service edit) 🔄
-- [ ] Service cancellation requests ⏳
+- [x] Service cancellation requests ✅
 - [ ] Bulk service actions ⏳
 
 ### v2.1 — Knowledge Base ⏳
@@ -115,17 +115,17 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Payment reminders: configurable schedule ✅
 - [ ] Credit notes / partial refunds ⏳
 - [ ] Multi-currency invoicing ⏳
-- [ ] Late fee automation ⏳
+- [x] Late fee automation ✅
 
 ### v0.8 — Payment Gateways ✅
 - [x] **Stripe Checkout** — hosted session, webhook reconciliation (`checkout.session.completed` / expired)
 - [x] **PayPal Orders v2** — create order → approve → capture on return URL; cancel URL
 - [x] Double-payment guard on paid invoices
 - [x] Pending payment record on initiation (both gateways)
-- [ ] Authorize.net ⏳
+- [x] Authorize.net ✅
 - [ ] Bank transfer / manual payment ⏳
 - [x] Stored payment methods / auto-charge ✅
-- [ ] Dunning management ⏳
+- [x] Dunning management ✅
 
 ---
 
@@ -160,7 +160,9 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] DirectAdmin user creation via DirectAdmin HTTP API
 - [x] Suspend / unsuspend / terminate
 
-### v1.4 — HestiaCP + VestaCP ⏳
+### v1.4 — HestiaCP ✅
+- [x] HestiaCP API provisioner — create, suspend, unsuspend, terminate
+- [x] Registered in `ProvisionerService` under `hestia`
 
 ---
 
@@ -176,7 +178,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Admin domain index (search, status filter, pagination) + show (NS editor, lock/privacy, refresh)
 - [x] Client domain index + show (NS editor up to 6, auto-renew toggle)
 - [ ] TLD pricing table ⏳
-- [ ] Domain expiry alerts to client ⏳
+- [x] Domain expiry alerts to client ✅ (30/14/7-day reminder emails via `SendDomainRenewalReminders`)
 - [ ] Bulk domain import ⏳
 - [ ] EPP/auth code retrieval ⏳
 
@@ -215,17 +217,19 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Departments (billing, technical, sales — configurable) — v0.9.0
 - [x] Internal notes (staff-only, amber styling, hidden from client) — v0.9.0
 - [x] Canned responses (department-scoped) — v0.9.0
-- [ ] Priority levels ⏳
+- [x] Priority levels ✅ (admin inline dropdown, auto-saves via PATCH)
 - [ ] Email piping (reply-by-email updates ticket) ⏳
 - [ ] HTML reply editor + file attachments ⏳
 - [x] Auto-close inactive tickets ✅
 - [ ] Client satisfaction rating ⏳
 - [ ] Ticket search ⏳
 
-### v2.1 — Knowledge Base ⏳
-- [ ] KB articles with rich-text editor
-- [ ] Category organization + article search
-- [ ] Suggested articles on ticket creation
+### v2.1 — Knowledge Base ✅
+- [x] KB articles with rich-text editor + publish toggle
+- [x] Category organization + full-text article search + view counter
+- [x] Admin: category CRUD, article list with filters, editor
+- [x] Client: browse by category, keyword search, article view with related articles + support CTA
+- [ ] Suggested articles on ticket creation ⏳
 
 ---
 
@@ -255,10 +259,10 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [ ] Referral links + commission tiers
 - [ ] Payout management
 
-### v2.6 — Revenue Analytics & Reporting ⭐ ⏳
-- [ ] MRR / ARR dashboard
-- [ ] Churn rate, cohort analysis, projected revenue
-- [ ] Exportable reports (CSV, PDF)
+### v2.6 — Revenue Analytics & Reporting ⭐ 🔄
+- [x] MRR / ARR dashboard — 12-month revenue chart, growth %, unpaid/overdue totals, top 10 clients, service status breakdown, support stats
+- [ ] Churn rate, cohort analysis, projected revenue ⏳
+- [ ] Exportable reports (CSV, PDF) ⏳
 
 ### v2.7 — WHMCS Migration Wizard ⭐ ⏳
 - [ ] Import clients, services, products, invoices, tickets from WHMCS DB dump
@@ -316,11 +320,11 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 | Milestone | Version Range | Status |
 |-----------|--------------|--------|
 | 0 — Foundation | v0.1–v0.3 | ✅ Complete |
-| 1 — Core Billing | v0.4–v0.8 | ✅ Complete |
-| 2 — Provisioning | v1.0–v1.4 | ✅ cPanel, Plesk, DirectAdmin done; HestiaCP planned |
-| 3 — Domains | v1.5–v1.9 | ✅ Namecheap + Enom + OpenSRS + HEXONET complete |
-| 4 — Support | v2.0–v2.1 | 🔄 Tickets + departments + canned responses done; priority/KB planned |
-| 5 — Premium ⭐ | v2.2–v2.7 | 🔄 Workflows done; usage billing, reseller, affiliate, reports planned |
+| 1 — Core Billing | v0.4–v0.8 | ✅ Complete (incl. tax rates, client groups, dunning, late fees, Authorize.net) |
+| 2 — Provisioning | v1.0–v1.4 | ✅ cPanel, Plesk, DirectAdmin, HestiaCP complete |
+| 3 — Domains | v1.5–v1.9 | ✅ Namecheap + Enom + OpenSRS + HEXONET + renewal reminders complete |
+| 4 — Support | v2.0–v2.1 | ✅ Tickets, departments, canned responses, priority, KB, auto-close complete |
+| 5 — Premium ⭐ | v2.2–v2.7 | 🔄 Workflows + reports dashboard done; usage billing, reseller, affiliate planned |
 | 6 — Polish | v3.0–v3.4 | ⏳ Planned |
 
 *Last updated: 2026-03-27*

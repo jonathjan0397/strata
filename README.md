@@ -9,16 +9,18 @@ Built as a developer-friendly, self-hostable alternative to WHMCS and Blesta.
 
 ---
 
-## What's Built (v0.8.0)
+## What's Built (v1.6.x)
 
 ### Authentication & Access Control
 - Email + password login and self-registration
 - **TOTP two-factor authentication** (QR code setup, challenge page)
+- **2FA enforcement** — admin/staff blocked from panel until TOTP confirmed
 - **OAuth2 social login** via Laravel Socialite (Google, GitHub, and any configured provider)
 - Email verification on registration
 - Password reset via email
 - **Active session management** — view and revoke sessions per device
 - Role system: `super-admin`, `admin`, `staff`, `client` (via spatie/laravel-permission)
+- **Staff permission groups** — granular scopes: billing, support, technical, clients, reports
 
 ### Browser Installer
 - Multi-step wizard at `/install` — no CLI required
@@ -31,33 +33,45 @@ Built as a developer-friendly, self-hostable alternative to WHMCS and Blesta.
 | Section | Capabilities |
 |---------|-------------|
 | **Dashboard** | Summary stats (clients, active services, open tickets, revenue) |
-| **Clients** | List, create, edit, suspend; client detail with services + invoice history |
+| **Clients** | List, create, edit, suspend; client detail with services, invoice history, internal notes, group assignment |
 | **Products** | Full CRUD; type, billing cycle, price, setup fee, stock, sort order |
-| **Services** | List and detail view; suspend, unsuspend, terminate; provisioning info |
+| **Services** | List and detail view; suspend, unsuspend, terminate; approve/reject cancellation requests; provisioning info |
 | **Invoices** | List, create, view, download PDF; mark paid, cancel; line items |
-| **Support** | Ticket queue; view thread; reply, assign to staff, close |
-| **Servers** | cPanel/WHM server CRUD (hostname, API token, capacity, module config) |
+| **Support** | Ticket queue; view thread; reply, assign to staff, close; inline priority editing |
+| **Servers** | cPanel/WHM/Plesk/DirectAdmin/HestiaCP server CRUD |
 | **Domains** | List (search + status filter); detail with NS editor, lock/privacy toggles, refresh from registrar |
+| **Client Groups** | Group-level pricing (percent/fixed discount); assign clients to groups |
+| **Tax Rates** | Country/state-based tax rules; priority resolution; applied automatically at checkout |
 | **Announcements** | Create, edit, delete; publish/draft toggle |
-| **Email Templates** | Edit all 7 system templates inline; variable reference panel; active toggle |
+| **Email Templates** | Edit all system templates inline; variable reference panel; active toggle |
+| **Email Log** | Full outbound email history; search by recipient/subject; detail view |
+| **Audit Log** | Append-only action log with actor, IP, target, detail; filterable |
+| **Reports** | MRR/ARR, 12-month revenue chart, growth %, top clients, service status, support stats |
+| **Workflows** | Trigger-based automation builder (conditions + actions + delay); run history |
+| **Knowledge Base** | Category + article management; publish toggle; full-text search |
 
 ### Client Portal
 | Section | Capabilities |
 |---------|-------------|
 | **Dashboard** | Active services, unpaid invoices, recent tickets at a glance |
-| **Order** | Product catalog with type badges and pricing; checkout with domain availability check |
-| **Services** | List and detail view |
-| **Invoices** | List and detail; pay via Stripe or PayPal; download PDF |
+| **Order** | Product catalog with type badges and pricing; checkout with domain availability check; group discounts + tax applied automatically |
+| **Services** | List and detail view; submit cancellation request with reason |
+| **Invoices** | List and detail; pay via Stripe, PayPal, or Authorize.net; apply credit balance; download PDF |
+| **Payment Methods** | Save/remove cards (Stripe); set default; auto-charged on renewal |
 | **Support** | Open ticket, view thread, reply |
 | **Domains** | List all domains; manage nameservers (up to 6); toggle auto-renew |
+| **Knowledge Base** | Browse by category; keyword search; article view with related articles |
 | **Announcements** | Paginated published announcements |
 | **Security** | Enable/disable 2FA; generate QR code and confirm |
 | **Sessions** | View active sessions; revoke individual sessions or all others |
 
 ### Payments
-- **Stripe Checkout** — hosted checkout session; webhook (`checkout.session.completed` / `checkout.session.expired`) reconciles payment records and marks invoices paid
+- **Stripe Checkout** — hosted checkout session; webhook reconciliation; stored cards with SetupIntent; off-session auto-charge on renewal
 - **PayPal Orders v2** — create order → redirect to PayPal → capture on return; cancel on cancel URL
-- Both gateways create a pending `Payment` record on initiation; double-payment guard on paid invoices
+- **Authorize.net** — AIM API; Accept.js opaque data or stored Customer Payment Profile
+- `PaymentGateway` contract + `GatewayService` factory — extensible driver pattern
+- **Dunning management** — configurable retry schedule for failed auto-charges; tracks attempts; fires `invoice.paid` workflow on recovery
+- Both Stripe and PayPal create a pending `Payment` record on initiation; double-payment guard on paid invoices
 
 ### Invoicing & PDF Export
 - Automated invoice generation (`billing:generate-invoices --days=N`)
@@ -71,23 +85,30 @@ Built as a developer-friendly, self-hostable alternative to WHMCS and Blesta.
 | `billing:generate-invoices` | Daily 08:00 | Creates renewal invoices for services due within 14 days |
 | `billing:flag-overdue` | Daily 00:05 | Marks past-due unpaid invoices overdue; sends `invoice.overdue` email |
 | `billing:suspend-overdue` | Daily 01:00 | Suspends services overdue past 3-day grace; sends `service.suspended` email |
-| `provisioning:run` | Every 5 min | Provisions paid pending cPanel services |
+| `billing:send-reminders` | Daily 10:00 | Sends payment reminder emails per configurable day schedule |
+| `billing:apply-late-fees` | Daily 02:00 | Applies fixed/percent late fee to overdue invoices past threshold |
+| `billing:retry-payments` | Daily 11:00 | Retries failed Stripe auto-charges (dunning); tracks attempt count |
+| `provisioning:run` | Every 5 min | Provisions paid pending hosting accounts |
 | `domains:renew-expiring` | Daily 09:00 | Auto-renews active domains expiring within 30 days |
+| `domains:send-reminders` | Daily 09:30 | Emails clients at 30, 14, and 7 days before domain expiry |
+| `support:close-inactive` | Daily 03:00 | Auto-closes tickets with no activity past configurable threshold |
 
-### cPanel / WHM Provisioning
-- WHM JSON API v1 via Bearer token authentication
-- `createAccount()` — generates unique username (domain-derived, 6 chars + 2 random), random password, calls `createacct`
-- `suspendAccount()`, `unsuspendAccount()`, `terminateAccount()`
-- Server selection: picks active module with remaining capacity
-- Updates service with username, encrypted password, hostname, `module_data`
+### Provisioning
+- `ProvisionerDriver` contract + `ProvisionerService` factory
+- **cPanel / WHM** — WHM JSON API v1; username generation, create/suspend/unsuspend/terminate
+- **Plesk** — REST API v2; subscription lifecycle
+- **DirectAdmin** — HTTP API; full lifecycle
+- **HestiaCP** — HestiaCP API; full lifecycle
+- Server selection by capacity; service updated with credentials and `module_data`
 
 ### Domain Registration
-- **`RegistrarDriver` contract** — clean interface for `checkAvailability`, `registerDomain`, `renewDomain`, `transferDomain`, `getNameservers`, `setNameservers`, `getInfo`, `setLock`, `setPrivacy`
-- **Namecheap driver** — Namecheap XML API v1 with sandbox mode
-- **Enom driver** — Enom reseller XML API with sandbox mode
+- **`RegistrarDriver` contract** — `checkAvailability`, `registerDomain`, `renewDomain`, `transferDomain`, `getNameservers`, `setNameservers`, `getInfo`, `setLock`, `setPrivacy`
+- **Namecheap** — XML API v1, sandbox mode
+- **Enom** — reseller XML API, sandbox mode
+- **OpenSRS** — XCP API, HMAC-MD5 auth, sandbox mode
+- **HEXONET** — ISPAPI HTTP gateway, OTE sandbox + live
 - `DomainRegistrarService` factory — `driver(?string)`, `available()`, `checkAvailability(string)`
-- Live availability check in checkout (debounced 600ms, green/red inline badge)
-- Auto-renew scheduler + admin refresh-from-registrar action
+- Live availability check in checkout (debounced 600ms); auto-renew scheduler; 30/14/7-day expiry reminder emails
 
 ### Email Templates
 Seven built-in templates, all editable by admins with `{{variable}}` placeholder substitution:
@@ -188,8 +209,13 @@ PAYPAL_CLIENT_SECRET=...
 PAYPAL_MODE=live          # sandbox | live
 PAYPAL_CURRENCY=USD
 
+# Authorize.net
+AUTHORIZENET_API_LOGIN_ID=
+AUTHORIZENET_TRANSACTION_KEY=
+AUTHORIZENET_SANDBOX=true
+
 # Domain Registrars
-REGISTRAR_DRIVER=namecheap   # namecheap | enom
+REGISTRAR_DRIVER=namecheap   # namecheap | enom | opensrs | hexonet
 
 NAMECHEAP_SANDBOX=false
 NAMECHEAP_API_USER=
@@ -199,6 +225,14 @@ NAMECHEAP_CLIENT_IP=         # Your server's outbound IP (whitelisted in Nameche
 ENOM_SANDBOX=false
 ENOM_UID=
 ENOM_PW=
+
+OPENSRS_SANDBOX=true
+OPENSRS_API_KEY=
+OPENSRS_RESELLER_USERNAME=
+
+HEXONET_SANDBOX=true
+HEXONET_LOGIN=
+HEXONET_PASSWORD=
 ```
 
 ---
@@ -243,12 +277,12 @@ routes/
 | Milestone | Version | Status |
 |-----------|---------|--------|
 | Foundation — installer, auth, schema | v0.1–v0.3 | ✅ Complete |
-| Core Billing — clients, products, invoices, orders | v0.4–v0.6 | ✅ Complete |
-| Payments — Stripe, PayPal, PDF, automation | v0.7–v0.8 | ✅ Complete |
-| Domain Registrars — Namecheap, Enom | v0.8 | ✅ Complete |
-| Email & Provisioning — cPanel/WHM | v0.7 | ✅ Complete |
-| Support + Knowledge Base | v2.0–v2.1 | ⏳ Planned |
-| Premium Features ⭐ | v2.2–v2.7 | ⏳ Planned |
+| Core Billing — clients, products, invoices, payments, tax, dunning | v0.4–v0.8 | ✅ Complete |
+| Provisioning — cPanel, Plesk, DirectAdmin, HestiaCP | v1.0–v1.4 | ✅ Complete |
+| Domain Registrars — Namecheap, Enom, OpenSRS, HEXONET | v1.5–v1.9 | ✅ Complete |
+| Support + Knowledge Base | v2.0–v2.1 | ✅ Complete |
+| Premium — Workflows + Reports Dashboard | v2.2–v2.6 | 🔄 Partial |
+| Usage Billing, Reseller, Affiliate | v2.3–v2.5 | ⏳ Planned |
 | PWA, Full API, Compliance | v3.x | ⏳ Planned |
 
 See [ROADMAP.md](ROADMAP.md) for the full breakdown.

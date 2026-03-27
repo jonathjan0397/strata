@@ -8,10 +8,112 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- Client portal dashboard widgets / quick stats
-- Admin reports page (revenue by month, MRR, top clients)
-- Two-factor enforcement policy (require 2FA for staff/admin)
-- Outbound email log viewer in admin
+- Client billing history page (full invoice list with filters + PDF download)
+- Authorize.net Accept.js Vue component (client-side card entry)
+- Apply credit at checkout
+- Service welcome email template
+- HEXONET registrar driver already wired — confirm sandbox testing
+- country/state fields on client profile for automatic tax resolution
+
+---
+
+## [1.6.1] — 2026-03-27 — Installer WAF Fix
+
+### Fixed
+- Passwords (admin + db) now base64-encoded client-side in the installer wizard before POST, decoded server-side before use — prevents ModSecurity WAF rules from false-positive blocking on special characters in password fields (`&&`, `||`, `>>`, `>`, etc.)
+- Applies to both `POST /install/test-database` (db password) and `POST /install/run` (db + admin passwords)
+
+---
+
+## [1.6.0] — 2026-03-27 — Client Notes, Domain Reminders, Dunning, Late Fees, Tax Rates, Client Groups, Authorize.Net, CI
+
+### Added
+
+#### Admin Client Notes
+- `client_notes` table — `id`, `user_id`, `author_id` (→ users), `body`, `created_at`
+- `ClientNote` model — `user()` and `author()` BelongsTo relationships
+- `Admin\ClientController::storeNote()` / `destroyNote()` — create/delete notes; abort if note doesn't belong to client
+- Client Show page: internal notes panel with textarea, amber-background note list, delete button
+- Routes: `POST admin/clients/{client}/notes`, `DELETE admin/clients/{client}/notes/{note}`
+
+#### Domain Renewal Reminders
+- `SendDomainRenewalReminders` artisan command — checks 30, 14, and 7-day windows; queues `TemplateMailable('domain.expiring')`; fires `domain.expiring` workflow trigger
+- Scheduled daily at 09:30 in `routes/console.php`
+
+#### Service Welcome Email
+- `WorkflowEngine::fire('service.active', $service)` wired into `Admin\ServiceController::approve()` — triggers automation workflows on service activation
+
+#### Dunning Management
+- Migration: `dunning_attempts` (tinyInteger, default 0) and `dunning_last_attempt_at` (timestamp, nullable) added to `invoices` table
+- `Invoice` model: both columns added to `$fillable`; `dunning_last_attempt_at` cast to datetime
+- `RetryFailedPayments` artisan command — reads `dunning_max_attempts` and `dunning_retry_days` from `Setting`; retries Stripe off-session charge on overdue invoices; tracks attempt count; fires `invoice.paid` workflow on success
+- Scheduled daily at 11:00
+
+#### Late Fee Automation
+- `ApplyLateFees` artisan command — reads `late_fee_type` (fixed|percent), `late_fee_amount`, `late_fee_days` from `Setting`; finds overdue invoices past threshold with no existing Late Fee line item; adds line item and increments `total` + `amount_due`
+- Scheduled daily at 02:00
+
+#### Tax Rates
+- Migration: `tax_rates` table (id, name, rate, country nullable, state nullable, is_default, active); `country`, `state`, `tax_exempt` columns added to users table
+- `TaxRate` model — `resolveForUser(User $user): ?self` static method; priority: country+state match → country-only match → default rate; returns null if client is `tax_exempt`
+- `Admin\TaxRateController` — full CRUD; `store()`/`update()` enforce single default (clears others when `is_default=true`)
+- `Admin/TaxRates/Index.vue` — inline create/edit form with country/state fields; priority explanation note
+- `Client\OrderController::place()` — resolves tax via `TaxRate::resolveForUser()`; adds tax line item to invoice; applies to taxable products only
+- Routes: `GET/POST/PATCH/DELETE admin/tax-rates`
+- Admin nav: Tax Rates link
+
+#### Client Groups
+- Migration: `client_groups` table (id, name, discount_type, discount_value); `client_group_id` FK nullable on users table
+- `ClientGroup` model — `calculateDiscount(float $subtotal): float` returns discount amount based on type (none/percent/fixed)
+- `User` model: `group()` BelongsTo relationship; `client_group_id` added to fillable
+- `Admin\ClientGroupController` — index, store, update, destroy (unassigns clients before deleting), assignClient
+- `Admin/ClientGroups/Index.vue` — inline create/edit; discount label helper; assign client from Client Show
+- `Client\OrderController::place()` — applies group discount when no promo code is active; applied before tax
+- Routes: `GET/POST/PATCH/DELETE admin/client-groups`, `POST admin/clients/{client}/assign-group`
+- Admin nav: Client Groups link
+
+#### Authorize.Net Payment Gateway
+- `app/Contracts/PaymentGateway.php` — interface: `charge()`, `refund()`, `supportsTokens()`, `slug()`
+- `AuthorizeNetGateway` — AIM API; supports Accept.js opaque data (`opaque_value`) or stored Customer Profile (`customer_profile_id` + `customer_payment_id`); BOM stripping on API response (`\xEF\xBB\xBF`)
+- `GatewayService` factory — `driver(string $slug)`, `register(string $slug, string $class)` (plugin API), `available()`
+- `config/services.php` — `authorizenet` block added
+- `.env.example` — `AUTHORIZENET_API_LOGIN_ID`, `AUTHORIZENET_TRANSACTION_KEY`, `AUTHORIZENET_SANDBOX` added
+
+#### GitHub Actions CI
+- `.github/workflows/tests.yml` — Pest test suite on every push and PR; PHP 8.3, Node 22, SQLite in-memory DB; includes `npm run build`
+
+### Changed
+- `routes/console.php` — added three new schedule entries: domain reminders (09:30), late fees (02:00), retry payments (11:00)
+
+---
+
+## [1.5.0] — 2026-03-27 — Reports Dashboard, 2FA Enforcement, Email Log, Client Dashboard Improvements
+
+### Added
+
+#### Admin Reports Dashboard
+- `Admin\ReportController::index()` — MRR (CASE-normalized billing cycles), ARR, 12-month revenue chart (zero-filled), this-month vs last-month revenue + growth %, unpaid/overdue totals, top 10 clients by lifetime revenue, 6-month new client chart, service status breakdown, support ticket stats
+- `Admin/Reports/Index.vue` — KPI cards, bar charts (inline SVG-style with relative widths), top clients table
+- Route: `GET admin/reports` → `admin.reports.index`
+
+#### 2FA Enforcement
+- `RequireTwoFactor` middleware — blocks admin/staff from accessing the admin panel until TOTP is confirmed; allows `profile.security` and `two-factor.*` routes through; redirects with `needs_2fa` flash message
+- Applied to all admin routes: `middleware(['admin', 'require.2fa'])`
+
+#### Email Log
+- `LogSentEmail` listener on `MessageSent` event — captures every outbound `Mail::` call to `email_logs` table (to, subject, template slug, mailer, sent_at, headers)
+- `Admin\EmailLogController` — paginated index with search (by recipient or subject); detail view
+- `Admin/EmailLog/Index.vue` — search bar, status badges, paginated list
+- `Admin/EmailLog/Show.vue` — full header/body detail view
+- Routes: `GET admin/email-log`, `GET admin/email-log/{emailLog}`
+
+#### Client Dashboard
+- Recent Tickets panel added to client dashboard page
+
+### Fixed
+- `WorkflowEngine::actionCreateTicket` — class reference corrected from `Ticket` to `SupportTicket`
+- Stripe.js now conditionally loaded in `app.blade.php` only when `STRIPE_KEY` is set
+- `stripeKey` shared via `HandleInertiaRequests` middleware shared props
 
 ---
 
