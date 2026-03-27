@@ -153,13 +153,13 @@ class InstallerController extends Controller
         }
 
         // Passwords are base64-encoded client-side to avoid WAF false positives.
-        if ($request->db_password) {
-            $request->merge(['db_password' => base64_decode($request->db_password)]);
-        }
+        $rawB64  = $request->db_password ?? '';
+        $decoded = $rawB64 ? base64_decode($rawB64) : '';
+        $request->merge(['db_password' => $decoded]);
 
         try {
             $dsn = "mysql:host={$request->db_host};port={$request->db_port};dbname={$request->db_name};charset=utf8mb4";
-            $pdo = new PDO($dsn, $request->db_username, $request->db_password ?? '', [
+            $pdo = new PDO($dsn, $request->db_username, $decoded, [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_TIMEOUT            => 5,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -168,12 +168,16 @@ class InstallerController extends Controller
 
             return response()->json(['success' => true, 'version' => $version]);
         } catch (PDOException $e) {
-            return response()->json([
-                'success'    => false,
-                'error'      => $e->getMessage(),
-                '_debug_raw' => $request->all(),
-                '_debug_dec' => base64_decode($request->db_password ?? ''),
-            ], 422);
+            \Illuminate\Support\Facades\Log::debug('INSTALL_DB_TEST', [
+                'host'    => $request->db_host,
+                'port'    => $request->db_port,
+                'db'      => $request->db_name,
+                'user'    => $request->db_username,
+                'b64_len' => strlen($rawB64),
+                'dec_len' => strlen($decoded),
+                'error'   => $e->getMessage(),
+            ]);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
         }
     }
 
