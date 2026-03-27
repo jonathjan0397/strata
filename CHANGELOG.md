@@ -8,10 +8,51 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- Support ticket departments, priorities, internal notes, canned responses
 - OpenSRS / HEXONET registrar drivers
-- System settings panel (company info, logo, currency, timezone)
 - Plesk and DirectAdmin provisioning modules
+- Logo upload for settings
+- Email piping for support departments
+
+---
+
+## [0.9.0] — 2026-03-26 — System Settings & Complete Support Ticket System
+
+### Added
+
+#### System Settings
+- **`Setting` model** — key/value store with `get()`, `set()`, `setMany()`, and `allKeyed()` static helpers; 1-hour cache with automatic bust on write
+- **`SettingController`** — `index` returns all settings keyed; `update` validates and batch-upserts 17 configurable keys
+- **`SettingsSeeder`** — seeds default values for General (company_name, timezone, date_format), Company (email, phone, address, city, state, zip, country), and Billing (currency, symbol, invoice_prefix, invoice_due_days, grace_period_days, tax_rate, tax_name)
+- **`Admin/Settings/Index.vue`** — tabbed settings page (General / Company / Billing); inline save with `recentlySuccessful` confirmation; linked to Departments and Canned Responses sub-pages
+- **Settings nav item** in admin sidebar with gear icon
+
+#### Support Ticket Departments
+- **`Department` model + migration** — departments table (name, description, email, sort_order, active); `scopeActive()` for ordered query; `department_id` FK added to `support_tickets`
+- **`DepartmentController`** — full CRUD; validates unique name; returns to `Admin/Settings/Departments`
+- **`Admin/Settings/Departments.vue`** — inline edit-in-row table with create form, activate toggle, delete with confirmation
+- **4 default departments seeded**: General, Billing, Technical Support, Sales
+- `SupportTicket` fillable updated to include `department_id`; `department()` relationship added
+- Client `SupportController::create()` now passes departments from DB; `store()` sets both `department_id` and `department` string
+- Admin `SupportController::index()` accepts `department` filter; passes `departments` to view
+- Admin Support/Index: department filter dropdown column added
+
+#### Canned Responses
+- **`CannedResponse` model + migration** — canned_responses table (title, body, department_id nullable)
+- **`CannedResponseController`** — full CRUD; validates title + body + optional department_id
+- **`Admin/Settings/CannedResponses.vue`** — card list with inline edit; department scope label; linked from Settings
+- Admin Support/Show: **canned response picker** dropdown — click "Insert canned response", pick a title, body is injected into reply textarea
+
+#### Internal Staff Notes
+- `internal` boolean added to `support_replies` (migration + model cast)
+- Admin `SupportController::reply()` — when `internal=true`: creates reply without emailing client, without updating ticket status to "answered"; note gets amber dashed styling in thread
+- Admin Support/Show: **internal note toggle** checkbox in reply form; textarea turns amber when checked; submit button reads "Add Note" vs "Send Reply"
+- Client SupportController/show: filters `internal=true` replies from client-visible thread
+
+#### Support Reopen
+- `reopen` action on `SupportController` — sets status back to `open`
+- Reopen button shown on closed tickets in admin show page and at bottom of closed ticket
+
+Code Checked and Verified By: Claude
 
 ---
 
