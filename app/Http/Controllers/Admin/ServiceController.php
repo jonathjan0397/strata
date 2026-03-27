@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Services\AuditLogger;
+use App\Services\WorkflowEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -41,6 +43,9 @@ class ServiceController extends Controller
     {
         $service->update(['status' => 'suspended']);
 
+        AuditLogger::log('service.suspended', $service);
+        WorkflowEngine::fire('service.suspended', $service);
+
         return back()->with('success', 'Service suspended.');
     }
 
@@ -69,6 +74,9 @@ class ServiceController extends Controller
             'status'           => 'cancelled',
             'termination_date' => now(),
         ]);
+
+        AuditLogger::log('service.cancelled', $service);
+        WorkflowEngine::fire('service.cancelled', $service);
 
         return back()->with('success', 'Cancellation approved — service cancelled.');
     }

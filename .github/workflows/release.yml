@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_mysql, openssl, tokenizer, json, ctype, bcmath
+          tools: composer:v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # ── VPS / Standard ZIP (source only, no vendor/) ──────────────────────
+      - name: Build standard ZIP
+        run: |
+          zip -r "strata-${{ steps.version.outputs.VERSION }}.zip" . \
+            --exclude "*.git*" \
+            --exclude "node_modules/*" \
+            --exclude "vendor/*" \
+            --exclude "public/build/*" \
+            --exclude ".env" \
+            --exclude "storage/installed.lock" \
+            --exclude "tests/*" \
+            --exclude ".github/*"
+
+      # ── Shared Hosting ZIP (vendor/ + compiled assets bundled) ────────────
+      - name: Install Composer dependencies (no-dev)
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build Vite assets
+        run: npm run build
+
+      - name: Build shared-hosting ZIP
+        run: |
+          zip -r "strata-${{ steps.version.outputs.VERSION }}-shared.zip" . \
+            --exclude "*.git*" \
+            --exclude "node_modules/*" \
+            --exclude ".env" \
+            --exclude "storage/installed.lock" \
+            --exclude "tests/*" \
+            --exclude ".github/*"
+
+      # ── Attach both ZIPs to the GitHub Release ───────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            strata-${{ steps.version.outputs.VERSION }}.zip
+            strata-${{ steps.version.outputs.VERSION }}-shared.zip
+          generate_release_notes: true

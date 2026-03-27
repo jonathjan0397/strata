@@ -1,20 +1,28 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
-import { Link, usePage } from '@inertiajs/vue3'
+import { Link, router, usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 
 defineOptions({ layout: AppLayout })
 
-defineProps({ invoice: Object })
+defineProps({ invoice: Object, creditBalance: Number })
 
 const page = usePage()
 const flash = computed(() => page.props.flash)
 
-const payingStripe  = ref(false)
-const payingPayPal  = ref(false)
-const payError      = ref(null)
+const payingStripe   = ref(false)
+const payingPayPal   = ref(false)
+const payError       = ref(null)
+const applyingCredit = ref(false)
+
+function applyCredit(invoiceId) {
+  applyingCredit.value = true
+  router.post(route('client.invoices.apply-credit', invoiceId), {}, {
+    onFinish: () => applyingCredit.value = false,
+  })
+}
 
 // Stripe redirects back with ?paid=1
 const justPaid = computed(() => new URLSearchParams(window.location.search).get('paid') === '1')
@@ -117,6 +125,18 @@ async function payPayPal(invoiceId) {
 
       <!-- Payment options -->
       <div v-if="invoice.status === 'unpaid'" class="border-t border-gray-100 pt-5">
+
+        <!-- Apply credit balance -->
+        <div v-if="creditBalance > 0 && !invoice.credit_applied" class="mb-4 flex items-center justify-between rounded-lg bg-indigo-50 border border-indigo-200 px-4 py-3 text-sm">
+          <span class="text-indigo-800">
+            You have <strong>${{ creditBalance.toFixed(2) }}</strong> in account credit available.
+          </span>
+          <button @click="applyCredit(invoice.id)" :disabled="applyingCredit"
+            class="ml-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+            {{ applyingCredit ? 'Applying…' : 'Apply Credit' }}
+          </button>
+        </div>
+
         <p class="text-sm text-gray-500 mb-3 text-right">Pay securely with:</p>
         <div class="flex justify-end gap-3 flex-wrap">
 

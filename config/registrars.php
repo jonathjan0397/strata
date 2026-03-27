@@ -6,7 +6,7 @@ return [
     |--------------------------------------------------------------------------
     | Default Registrar Driver
     |--------------------------------------------------------------------------
-    | Options: namecheap, enom, opensrs
+    | Options: namecheap, enom, opensrs, hexonet
     */
     'default' => env('REGISTRAR_DRIVER', 'namecheap'),
 
@@ -27,6 +27,12 @@ return [
         'sandbox'            => env('OPENSRS_SANDBOX', true),
         'api_key'            => env('OPENSRS_API_KEY'),
         'reseller_username'  => env('OPENSRS_RESELLER_USERNAME'),
+    ],
+
+    'hexonet' => [
+        'sandbox'  => env('HEXONET_SANDBOX', true),
+        'login'    => env('HEXONET_LOGIN'),
+        'password' => env('HEXONET_PASSWORD'),
     ],
 
 ];

@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { Link, useForm } from '@inertiajs/vue3'
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 
 defineOptions({ layout: AppLayout })
@@ -16,6 +16,7 @@ const form = useForm({
   product_id:    props.product.id,
   billing_cycle: props.billingCycle,
   domain:        props.domain ?? '',
+  promo_code:    '',
 })
 
 const cycleLabel = {
@@ -26,7 +27,38 @@ const cycleLabel = {
 const needsDomain = ['shared', 'reseller', 'domain', 'vps', 'dedicated'].includes(props.product.type)
 const isDomainProduct = props.product.type === 'domain'
 
-const total = (Number(props.product.price) + Number(props.product.setup_fee)).toFixed(2)
+const subtotal = Number(props.product.price) + Number(props.product.setup_fee)
+
+// Promo code state
+const promoStatus   = ref(null)  // null | 'checking' | { valid, label, discount, message }
+const promoDiscount = ref(0)
+let promoTimeout = null
+
+const total = computed(() => Math.max(0, subtotal - promoDiscount.value).toFixed(2))
+
+async function applyPromo() {
+  const code = form.promo_code.trim()
+  if (!code) return
+  promoStatus.value = 'checking'
+  try {
+    const { data } = await axios.post(route('client.promo.validate'), {
+      code,
+      product_id: props.product.id,
+      subtotal,
+    })
+    promoStatus.value = { valid: true, label: data.label, discount: data.discount }
+    promoDiscount.value = data.discount
+  } catch (e) {
+    promoStatus.value = { valid: false, message: e.response?.data?.message ?? 'Invalid code.' }
+    promoDiscount.value = 0
+  }
+}
+
+function clearPromo() {
+  form.promo_code = ''
+  promoStatus.value = null
+  promoDiscount.value = 0
+}
 
 // Domain availability check (only for domain-type products)
 const availabilityStatus = ref(null) // null | 'checking' | 'available' | 'taken' | 'error'
@@ -73,6 +105,10 @@ watch(() => form.domain, (val) => {
           <span>Billing</span>
           <span class="capitalize">{{ cycleLabel[billingCycle] ?? billingCycle }}</span>
         </div>
+        <div v-if="promoDiscount > 0" class="flex justify-between text-green-600">
+          <span>Discount ({{ promoStatus?.label }})</span>
+          <span>-${{ promoDiscount.toFixed(2) }}</span>
+        </div>
         <div class="border-t border-gray-100 pt-2 mt-2 flex justify-between font-bold text-gray-900">
           <span>Due Today</span>
           <span>${{ total }}</span>
@@ -111,6 +147,28 @@ watch(() => form.domain, (val) => {
 
       <div v-if="form.errors.product_id || form.errors.billing_cycle" class="text-red-500 text-xs">
         {{ form.errors.product_id || form.errors.billing_cycle }}
+      </div>
+
+      <!-- Promo code -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Promo Code <span class="text-gray-400 font-normal">(optional)</span></label>
+        <div class="flex gap-2">
+          <input v-model="form.promo_code" type="text" placeholder="Enter code"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            :class="promoStatus?.valid === false ? 'border-red-400' : promoStatus?.valid ? 'border-green-400' : ''"
+            :disabled="promoStatus?.valid" />
+          <button v-if="!promoStatus?.valid" type="button" @click="applyPromo"
+            :disabled="!form.promo_code.trim() || promoStatus === 'checking'"
+            class="px-3 py-2 text-sm border border-indigo-500 text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 rounded-lg transition-colors">
+            {{ promoStatus === 'checking' ? '…' : 'Apply' }}
+          </button>
+          <button v-else type="button" @click="clearPromo"
+            class="px-3 py-2 text-sm border border-gray-300 text-gray-500 hover:bg-gray-50 rounded-lg transition-colors">
+            ✕
+          </button>
+        </div>
+        <p v-if="promoStatus?.valid" class="text-green-600 text-xs mt-1">✓ {{ promoStatus.label }} applied</p>
+        <p v-else-if="promoStatus?.valid === false" class="text-red-500 text-xs mt-1">{{ promoStatus.message }}</p>
       </div>
 
       <!-- Terms notice -->

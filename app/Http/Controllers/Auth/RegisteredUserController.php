@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
 use App\Models\User;
+use App\Services\AuditLogger;
+use App\Services\WorkflowEngine;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,6 +47,9 @@ class RegisteredUserController extends Controller
             'app_name'  => config('app.name'),
             'login_url' => route('login'),
         ]));
+
+        AuditLogger::log('client.registered', $user, [], $user->id);
+        WorkflowEngine::fire('client.registered', $user);
 
         Auth::login($user);
 

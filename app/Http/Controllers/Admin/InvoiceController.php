@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Mail\TemplateMailable;
+use App\Services\AuditLogger;
+use App\Services\WorkflowEngine;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,6 +85,9 @@ class InvoiceController extends Controller
             ]);
         }
 
+        AuditLogger::log('invoice.created', $invoice);
+        WorkflowEngine::fire('invoice.created', $invoice);
+
         return redirect()->route('admin.invoices.show', $invoice)
             ->with('success', "Invoice #{$invoice->id} created.");
     }
@@ -113,6 +118,9 @@ class InvoiceController extends Controller
             'amount'      => number_format((float) $invoice->total, 2),
             'invoice_url' => route('client.invoices.show', $invoice->id),
         ]));
+
+        AuditLogger::log('invoice.paid', $invoice, ['amount' => $invoice->total]);
+        WorkflowEngine::fire('invoice.paid', $invoice);
 
         return back()->with('success', 'Invoice marked as paid.');
     }

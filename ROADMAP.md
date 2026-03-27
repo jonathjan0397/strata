@@ -19,17 +19,17 @@ Strata ships two installation tracks from the same codebase:
 
 Both tracks share the same browser-based installer wizard at `/install`. The wizard auto-detects the environment and adjusts defaults (queue driver, cron instructions, storage link method).
 
-### v0.x — Shared Hosting Compatibility ⏳
-- [ ] Root-level shared hosting bootstrap: `index.php` + `.htaccess` shim at project root so web root = project root (no document root change required)
-- [ ] `Artisan::call('storage:link')` added to installer; graceful fallback to `StorageController` file-serving route if symlinks are blocked by host
-- [ ] Queue mode selector in installer: **Sync** (shared hosting — jobs run inline, no worker needed) vs **Database** (VPS — jobs queued, worker runs via cron/supervisor)
-- [ ] Installer post-install screen: shows cron command (`* * * * * php /path/to/artisan schedule:run`) and, if queue=database, queue worker command
-- [ ] Installer requirements check: add `file_uploads`, `upload_max_filesize` ≥ 10 MB, `post_max_size`, `max_execution_time` ≥ 60, `memory_limit` ≥ 128 MB, `mod_rewrite` (Apache), `symlink()` availability
-- [ ] Installer detects install-type automatically: presence of `vendor/` = ZIP install (shared); absence = dev/VPS clone
-- [ ] `OPENSRS_*` keys added to installer `.env` template
-- [ ] Lock file version updated to current release on each install
-- [ ] GitHub Actions release workflow: on `v*` tag push → `composer install --no-dev` + `npm run build` → produce `strata-x.x.x-shared.zip` (with `vendor/` + `public/build/`) and `strata-x.x.x.zip` (source only) → attach to GitHub Release
-- [ ] GitHub Actions CI workflow: run Pest on every push/PR
+### v0.x — Shared Hosting Compatibility ✅
+- [x] Root-level shared hosting bootstrap: `index.php` + `.htaccess` shim at project root so web root = project root (no document root change required)
+- [x] `Artisan::call('storage:link')` added to installer; graceful fallback to `StorageController` file-serving route if symlinks are blocked by host
+- [x] Queue mode selector in installer: **Sync** (shared hosting — jobs run inline, no worker needed) vs **Database** (VPS — jobs queued, worker runs via cron/supervisor)
+- [x] Installer post-install screen: shows cron command (`* * * * * php /path/to/artisan schedule:run`) and, if queue=database, queue worker command
+- [x] Installer requirements check: add `file_uploads`, `upload_max_filesize` ≥ 10 MB, `post_max_size`, `max_execution_time` ≥ 60, `memory_limit` ≥ 128 MB, `mod_rewrite` (Apache), `symlink()` availability
+- [x] Installer detects install-type automatically: presence of `vendor/` = ZIP install (shared); absence = dev/VPS clone
+- [x] `OPENSRS_*` keys added to installer `.env` template
+- [x] Lock file version updated to current release on each install
+- [x] GitHub Actions release workflow: on `v*` tag push → `composer install --no-dev` + `npm run build` → produce `strata-x.x.x-shared.zip` (with `vendor/` + `public/build/`) and `strata-x.x.x.zip` (source only) → attach to GitHub Release
+- [x] GitHub Actions CI workflow: run Pest on every push/PR
 
 ---
 
@@ -42,7 +42,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Basic admin shell layout (sidebar navigation, responsive)
 - [ ] Docker Compose: `app` (PHP-FPM), `nginx`, `mysql`, `redis`, `horizon`, `meilisearch` ⏳
 - [ ] Pest test suite bootstrapped ⏳
-- [ ] GitHub Actions CI ⏳ (see Distribution section above)
+- [x] GitHub Actions CI ✅ (see Distribution section above)
 - [ ] OpenAPI 3.0 spec scaffolded ⏳
 
 ### v0.2 — Auth & Multi-Role Access ✅
@@ -54,14 +54,14 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Session management (active sessions, individual + bulk revoke)
 - [x] Password reset flow
 - [x] Email verification on client registration
-- [ ] Staff permission groups (billing-only, support-only) ⏳
+- [x] Staff permission groups (billing-only, support-only) ✅
 
 ### v0.3 — Database Schema, Browser Installer & Settings ✅
 - [x] Full database schema migration for all core entities (clients, products, invoices, tickets, orders, domains, services, modules, announcements, email templates)
 - [x] **Browser installer wizard** at `/install` — requirements check, DB test, env write, migrate + seed, lock file
 - [x] Email template engine (7 system templates, `{{variable}}` substitution, admin-editable)
 - [x] System settings panel (company info, logo, currency, timezone) — v0.9.0/v1.0.0
-- [ ] Audit log ⏳
+- [x] Audit log ✅
 
 ---
 
@@ -75,7 +75,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Client suspension
 - [ ] Multiple contacts per client account ⏳
 - [ ] Client groups with group-level pricing ⏳
-- [ ] Client credit balance ⏳
+- [x] Client credit balance ✅
 - [ ] Client merge ⏳
 
 ### v0.5 — Products & Pricing ✅
@@ -86,7 +86,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Stock / capacity limit
 - [x] Sort order for catalog display
 - [ ] Configurable options / add-ons ⏳
-- [ ] Promotional pricing / promo codes ⏳
+- [x] Promotional pricing / promo codes ✅
 - [ ] Free trial periods ⏳
 - [ ] Tax rules (VAT/GST) ⏳
 
@@ -112,7 +112,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] `billing:flag-overdue` — marks past-due invoices overdue, sends email
 - [x] `billing:suspend-overdue` — suspends services past grace period, sends email
 - [x] Transactions log per invoice (Payments table)
-- [ ] Payment reminders: configurable schedule ⏳
+- [x] Payment reminders: configurable schedule ✅
 - [ ] Credit notes / partial refunds ⏳
 - [ ] Multi-currency invoicing ⏳
 - [ ] Late fee automation ⏳
@@ -124,7 +124,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Pending payment record on initiation (both gateways)
 - [ ] Authorize.net ⏳
 - [ ] Bank transfer / manual payment ⏳
-- [ ] Stored payment methods / auto-charge ⏳
+- [x] Stored payment methods / auto-charge ✅
 - [ ] Dunning management ⏳
 
 ---
@@ -198,8 +198,8 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Lock / unlock
 - [x] Sandbox mode
 
-### v1.9 — Registrar: HEXONET / CentralNic ⏳
-- [ ] HEXONET EPP API integration
+### v1.9 — Registrar: HEXONET / CentralNic ✅
+- [x] HEXONET ISPAPI HTTP API integration (OTE sandbox + live)
 
 ---
 
@@ -218,7 +218,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [ ] Priority levels ⏳
 - [ ] Email piping (reply-by-email updates ticket) ⏳
 - [ ] HTML reply editor + file attachments ⏳
-- [ ] Auto-close inactive tickets ⏳
+- [x] Auto-close inactive tickets ✅
 - [ ] Client satisfaction rating ⏳
 - [ ] Ticket search ⏳
 
@@ -232,13 +232,13 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 ## Milestone 5 — Premium Features ⭐
 *All features in this milestone require a commercial license after the 30-day trial*
 
-### v2.2 — Advanced Automation Workflows ⭐ ⏳
-- [ ] Visual workflow builder (trigger → conditions → actions)
-- [ ] Triggers: invoice created, payment received, service created, ticket opened, client registered, custom webhook, date/time
-- [ ] Conditions: client group, product, invoice amount, custom field
-- [ ] Actions: send email, create ticket, suspend service, add credit, call webhook, move client group, apply discount
-- [ ] Multi-step workflows with delay between steps
-- [ ] Workflow run log with per-step status
+### v2.2 — Advanced Automation Workflows ⭐ ✅
+- [x] Visual workflow builder (trigger → conditions → actions)
+- [x] Triggers: invoice.created, invoice.paid, invoice.overdue, service.created, service.suspended, service.cancelled, ticket.opened, ticket.closed, client.registered
+- [x] Conditions: field operator value (eq/neq/gt/lt/gte/lte/contains), ALL must pass
+- [x] Actions: send.email, create.ticket, suspend.service, add.credit, call.webhook
+- [x] Multi-step workflows with configurable delay per action (dispatched as queued jobs)
+- [x] Workflow run log with per-action log entries and status (completed/failed/skipped)
 
 ### v2.3 — Usage-Based / Metered Billing ⭐ ⏳
 - [ ] Usage metric types: bandwidth, CPU hours, storage, API calls, seats
@@ -318,9 +318,9 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 | 0 — Foundation | v0.1–v0.3 | ✅ Complete |
 | 1 — Core Billing | v0.4–v0.8 | ✅ Complete |
 | 2 — Provisioning | v1.0–v1.4 | ✅ cPanel, Plesk, DirectAdmin done; HestiaCP planned |
-| 3 — Domains | v1.5–v1.9 | ✅ Namecheap + Enom + OpenSRS done; HEXONET planned |
+| 3 — Domains | v1.5–v1.9 | ✅ Namecheap + Enom + OpenSRS + HEXONET complete |
 | 4 — Support | v2.0–v2.1 | 🔄 Tickets + departments + canned responses done; priority/KB planned |
-| 5 — Premium ⭐ | v2.2–v2.7 | ⏳ Planned |
+| 5 — Premium ⭐ | v2.2–v2.7 | 🔄 Workflows done; usage billing, reseller, affiliate, reports planned |
 | 6 — Polish | v3.0–v3.4 | ⏳ Planned |
 
 *Last updated: 2026-03-27*

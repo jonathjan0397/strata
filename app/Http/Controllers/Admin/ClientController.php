@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClientCredit;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
@@ -87,5 +89,26 @@ class ClientController extends Controller
         $client->services()->where('status', 'active')->update(['status' => 'suspended']);
 
         return back()->with('success', 'Client services suspended.');
+    }
+
+    /** Add credit to a client's balance. */
+    public function addCredit(Request $request, User $client): RedirectResponse
+    {
+        $request->validate([
+            'amount'      => ['required', 'numeric', 'min:0.01'],
+            'description' => ['required', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($request, $client) {
+            ClientCredit::create([
+                'user_id'     => $client->id,
+                'amount'      => $request->amount,
+                'description' => $request->description,
+            ]);
+
+            $client->increment('credit_balance', (float) $request->amount);
+        });
+
+        return back()->with('success', 'Credit of $'.number_format((float) $request->amount, 2).' added.');
     }
 }

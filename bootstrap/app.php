@@ -16,7 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\CheckInstalled::class,
         ]);
         $middleware->alias([
-            'admin' => \App\Http\Middleware\EnsureIsAdmin::class,
+            'admin'      => \App\Http\Middleware\EnsureIsAdmin::class,
+            'admin.can'  => \App\Http\Middleware\EnsureAdminCan::class,
         ]);
         $middleware->validateCsrfTokens(except: [
             'stripe/webhook',

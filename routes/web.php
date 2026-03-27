@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Install\InstallerController;
+use App\Http\Controllers\StorageController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
@@ -17,6 +18,14 @@ use App\Http\Controllers\Client;
 use App\Http\Controllers\Profile\SessionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// ── Storage fallback (shared hosting: symlink disabled) ──────────────────────
+// Only registered when public/storage symlink does not exist.
+if (! is_link(public_path('storage'))) {
+    Route::get('storage/{path}', [StorageController::class, 'serve'])
+        ->where('path', '.*')
+        ->name('storage.serve');
+}
 
 // ── Stripe webhook (CSRF exempt — verified by signature) ─────────────────────
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
@@ -92,6 +101,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('clients/{client}',     [Admin\ClientController::class, 'show'])->name('clients.show');
         Route::patch('clients/{client}',   [Admin\ClientController::class, 'update'])->name('clients.update');
         Route::post('clients/{client}/suspend', [Admin\ClientController::class, 'suspend'])->name('clients.suspend');
+        Route::post('clients/{client}/credit',  [Admin\ClientController::class, 'addCredit'])->name('clients.credit');
+
+        // Promo Codes
+        Route::get('promo-codes',               [Admin\PromoCodeController::class, 'index'])->name('promo-codes.index');
+        Route::get('promo-codes/create',        [Admin\PromoCodeController::class, 'create'])->name('promo-codes.create');
+        Route::post('promo-codes',              [Admin\PromoCodeController::class, 'store'])->name('promo-codes.store');
+        Route::get('promo-codes/{promoCode}/edit', [Admin\PromoCodeController::class, 'edit'])->name('promo-codes.edit');
+        Route::patch('promo-codes/{promoCode}', [Admin\PromoCodeController::class, 'update'])->name('promo-codes.update');
+        Route::delete('promo-codes/{promoCode}',[Admin\PromoCodeController::class, 'destroy'])->name('promo-codes.destroy');
 
         // Products
         Route::get('products',             [Admin\ProductController::class, 'index'])->name('products.index');
@@ -185,6 +203,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('announcements/{announcement}/edit',[Admin\AnnouncementController::class, 'edit'])->name('announcements.edit');
         Route::patch('announcements/{announcement}',   [Admin\AnnouncementController::class, 'update'])->name('announcements.update');
         Route::delete('announcements/{announcement}',  [Admin\AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+
+        // Staff permission groups
+        Route::get('staff',                    [Admin\StaffController::class, 'index'])->name('staff.index');
+        Route::get('staff/{staff}/edit',       [Admin\StaffController::class, 'edit'])->name('staff.edit');
+        Route::patch('staff/{staff}',          [Admin\StaffController::class, 'update'])->name('staff.update');
+
+        // Audit Log
+        Route::get('audit-log',                [Admin\AuditLogController::class, 'index'])->name('audit-log.index');
+
+        // Workflows (Premium ⭐)
+        Route::get('workflows',                         [Admin\WorkflowController::class, 'index'])->name('workflows.index');
+        Route::get('workflows/create',                  [Admin\WorkflowController::class, 'create'])->name('workflows.create');
+        Route::post('workflows',                        [Admin\WorkflowController::class, 'store'])->name('workflows.store');
+        Route::get('workflows/{workflow}/edit',         [Admin\WorkflowController::class, 'edit'])->name('workflows.edit');
+        Route::patch('workflows/{workflow}',            [Admin\WorkflowController::class, 'update'])->name('workflows.update');
+        Route::delete('workflows/{workflow}',           [Admin\WorkflowController::class, 'destroy'])->name('workflows.destroy');
+        Route::post('workflows/{workflow}/toggle',      [Admin\WorkflowController::class, 'toggleActive'])->name('workflows.toggle');
     });
 
     // ── Client portal ─────────────────────────────────────────────────────────
@@ -200,6 +235,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
         Route::get('invoices/{invoice}/download',    [Client\InvoiceController::class, 'download'])->name('invoices.download');
         Route::post('invoices/{invoice}/checkout',        [Client\PaymentController::class,       'checkout'])->name('invoices.checkout');
+        Route::post('invoices/{invoice}/apply-credit',    [Client\InvoiceController::class,        'applyCredit'])->name('invoices.apply-credit');
         Route::post('invoices/{invoice}/paypal',          [Client\PayPalPaymentController::class,  'checkout'])->name('invoices.paypal.checkout');
         Route::get('invoices/{invoice}/paypal/return',    [Client\PayPalPaymentController::class,  'return'])->name('invoices.paypal.return');
         Route::get('invoices/{invoice}/paypal/cancel',    [Client\PayPalPaymentController::class,  'cancel'])->name('invoices.paypal.cancel');
@@ -216,5 +252,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('domains/{domain}/nameservers', [Client\DomainController::class, 'setNameservers'])->name('domains.nameservers');
         Route::post('domains/{domain}/auto-renew',  [Client\DomainController::class, 'toggleAutoRenew'])->name('domains.auto-renew');
         Route::get('domains/check',              [Client\DomainController::class, 'checkAvailability'])->name('domains.check');
+        Route::post('promo/validate',            [Client\PromoController::class, 'validate'])->name('promo.validate');
+
+        // Payment Methods
+        Route::get('payment-methods',                              [Client\PaymentMethodController::class, 'index'])->name('payment-methods.index');
+        Route::get('payment-methods/setup-intent',                 [Client\PaymentMethodController::class, 'setupIntent'])->name('payment-methods.setup-intent');
+        Route::post('payment-methods',                             [Client\PaymentMethodController::class, 'store'])->name('payment-methods.store');
+        Route::post('payment-methods/{paymentMethod}/default',     [Client\PaymentMethodController::class, 'setDefault'])->name('payment-methods.default');
+        Route::delete('payment-methods/{paymentMethod}',           [Client\PaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
     });
 });

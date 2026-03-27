@@ -8,6 +8,7 @@ use App\Models\Domain;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\PromoCode;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Services\DomainRegistrarService;
@@ -61,24 +62,44 @@ class OrderController extends Controller
             'product_id'    => ['required', 'exists:products,id'],
             'billing_cycle' => ['required', 'string'],
             'domain'        => ['nullable', 'string', 'max:253'],
+            'promo_code'    => ['nullable', 'string', 'max:64'],
         ]);
 
         $product = Product::findOrFail($request->product_id);
         abort_if($product->hidden, 404);
 
+        // Resolve promo code if provided
+        $promo    = null;
+        $discount = 0;
+
+        if ($request->filled('promo_code')) {
+            $promo = PromoCode::where('code', strtoupper($request->promo_code))->first();
+
+            if ($promo && $promo->isValid()) {
+                // Product restriction
+                if ($promo->product_id === null || (int) $promo->product_id === (int) $product->id) {
+                    $subtotal = (float) $product->price + (float) $product->setup_fee;
+                    $discount = $promo->calculateDiscount($subtotal);
+                }
+            }
+        }
+
         try {
-            DB::transaction(function () use ($request, $product) {
+            DB::transaction(function () use ($request, $product, $promo, $discount) {
                 $user     = $request->user();
                 $price    = (float) $product->price;
                 $setupFee = (float) $product->setup_fee;
-                $total    = $price + $setupFee;
+                $subtotal = $price + $setupFee;
+                $total    = max(0, $subtotal - $discount);
 
                 // 1. Create order
                 $order = Order::create([
-                    'user_id'  => $user->id,
-                    'status'   => 'pending',
-                    'subtotal' => $total,
-                    'total'    => $total,
+                    'user_id'    => $user->id,
+                    'status'     => 'pending',
+                    'subtotal'   => $subtotal,
+                    'discount'   => $discount,
+                    'total'      => $total,
+                    'promo_code' => $promo?->code,
                 ]);
 
                 // 2. Order item
@@ -107,7 +128,7 @@ class OrderController extends Controller
                 $invoice = Invoice::create([
                     'user_id'    => $user->id,
                     'status'     => 'unpaid',
-                    'subtotal'   => $total,
+                    'subtotal'   => $subtotal,
                     'total'      => $total,
                     'amount_due' => $total,
                     'date'       => now(),
@@ -132,6 +153,18 @@ class OrderController extends Controller
                     'unit_price'  => $price,
                     'total'       => $price,
                 ]);
+
+                // Promo discount line item
+                if ($discount > 0 && $promo) {
+                    $invoice->items()->create([
+                        'service_id'  => $service->id,
+                        'description' => 'Promo: '.$promo->code,
+                        'quantity'    => 1,
+                        'unit_price'  => -$discount,
+                        'total'       => -$discount,
+                    ]);
+                    $promo->increment('uses_count');
+                }
 
                 // 6. For domain products, create a Domain record (registration triggered on payment)
                 if ($product->type === 'domain' && $request->domain) {

@@ -8,10 +8,133 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- HEXONET registrar driver
-- Email piping for support departments
-- Two-way email threading on tickets
-- Affiliate / referral module
+- Client portal dashboard widgets / quick stats
+- Admin reports page (revenue by month, MRR, top clients)
+- Two-factor enforcement policy (require 2FA for staff/admin)
+- Outbound email log viewer in admin
+
+---
+
+## [1.4.0] — 2026-03-27 — Staff Permissions, Audit Log, Stored Cards, Automation Workflows
+
+### Added
+
+#### Staff Permission Groups
+- `EnsureAdminCan` middleware — passes super-admin/admin; checks named permission for staff role
+- `admin.can` middleware alias registered in `bootstrap/app.php`
+- Granular permissions seeded: `access.billing`, `access.support`, `access.technical`, `access.clients`, `access.reports`
+- `Admin\StaffController` — list staff + per-staff permission checkbox editor
+- `Admin/Staff/Index.vue` — table showing each staff member's current permission badges
+- `Admin/Staff/Edit.vue` — labelled checkboxes with descriptions per permission
+- Routes: `GET admin/staff`, `GET admin/staff/{staff}/edit`, `PATCH admin/staff/{staff}`
+
+#### Audit Log
+- `AuditLog` model — append-only (no `updated_at`); cast `details` as array
+- `AuditLogger` service — static `log($action, $target, $details, $userId)` helper; auto-resolves actor from `Auth::id()` and IP from request
+- `Admin\AuditLogController` — filterable paginated log (by action, actor, target_type, date range)
+- `Admin/AuditLog/Index.vue` — filter bar + colour-coded action badges + pagination
+- Audit calls added to: `invoice.created`, `invoice.paid`, `service.suspended`, `service.cancelled`, `client.registered`
+- Route: `GET admin/audit-log`
+
+#### Stored Payment Methods + Auto-Charge
+- Migration: `stripe_customer_id` nullable column added to users table
+- Migration: `payment_methods` table (stripe_payment_method_id unique, brand, last4, exp_month, exp_year, is_default)
+- `PaymentMethod` model — `expiry` accessor (`MM/YYYY`); `belongsTo` User
+- `User::paymentMethods()` relationship + `stripe_customer_id` added to fillable
+- `Client\PaymentMethodController` — `setupIntent()` (returns Stripe SetupIntent client_secret), `store()` (attach + save), `setDefault()`, `destroy()` (detach from Stripe)
+- `ensureStripeCustomer()` creates Stripe Customer on first card save
+- `Client/PaymentMethods/Index.vue` — list saved cards with default badge; Stripe.js card element for adding new cards; set default / remove actions
+- `GenerateRenewalInvoices` — `tryAutoCharge()` private method; charges default saved card via off-session PaymentIntent on renewal invoice creation; fires `invoice.paid` workflow on success
+- Routes: `GET/POST client/payment-methods`, `GET client/payment-methods/setup-intent`, `POST .../default`, `DELETE .../{id}`
+- Admin nav: Payment Methods link in client nav
+
+#### Advanced Automation Workflows (Premium ⭐)
+- Migrations: `workflows`, `workflow_conditions`, `workflow_actions`, `workflow_runs` tables
+- `Workflow`, `WorkflowCondition`, `WorkflowAction`, `WorkflowRun` models
+- `WorkflowEngine` service — `fire($trigger, $target)`: loads active workflows, evaluates ALL conditions (eq/neq/gt/lt/gte/lte/contains), executes actions in order, records run with log
+- Supported actions: `send.email`, `create.ticket`, `suspend.service`, `add.credit`, `call.webhook`
+- Delayed actions dispatched as `ExecuteWorkflowAction` queued jobs
+- `Admin\WorkflowController` — full CRUD + `toggleActive`; syncs conditions/actions on save
+- `Admin/Workflows/Index.vue` — list with live toggle switch, condition/action/run counts
+- `Admin/Workflows/Edit.vue` — 3-step builder: name+trigger → conditions → actions; dynamic config fields per action type; delay field per action
+- `WorkflowEngine::fire()` called on: `invoice.created`, `invoice.paid`, `service.suspended`, `service.cancelled`, `ticket.opened`, `client.registered`
+- Routes: full CRUD under `admin/workflows` + `POST .../toggle`
+
+### Routes Added
+- `GET/PATCH admin/staff*` → `admin.staff.*`
+- `GET admin/audit-log` → `admin.audit-log.index`
+- `GET/POST/PATCH/DELETE admin/workflows*` + `POST .../toggle` → `admin.workflows.*`
+- `GET/POST/DELETE client/payment-methods*` → `client.payment-methods.*`
+
+---
+
+## [1.3.0] — 2026-03-27 — HEXONET, Auto-Close Tickets, Credit Balance, Payment Reminders, Promo Codes
+
+### Added
+
+#### HEXONET / CentralNic Registrar (v1.9)
+- `HexonetDriver` — HEXONET ISPAPI HTTP gateway; OTE sandbox + live; full lifecycle: availability, register, renew, transfer, nameservers, lock, privacy
+- `parseResponse()` parses HEXONET plain-text response format (`[RESPONSE]…CODE=…PROPERTY[X][n]=…EOF`)
+- Registered in `DomainRegistrarService` under `hexonet`
+- `config/registrars.php` + `.env.example` updated with `HEXONET_SANDBOX`, `HEXONET_LOGIN`, `HEXONET_PASSWORD`
+
+#### Auto-Close Inactive Tickets
+- `support:close-inactive` artisan command — closes open/answered/customer_reply tickets with no activity for N days
+- Threshold read from `Setting::get('ticket_auto_close_days', 14)`; overridable via `--days=` flag
+- Sends `support.closed` email to client on auto-close
+- Scheduled daily at 03:00 in `routes/console.php`
+
+#### Client Credit Balance
+- `ClientCredit` model — `client_credits` ledger table (positive = credit added, negative = credit applied to invoice)
+- `User::credits()` relationship added
+- **Admin top-up** — `+ Add` button on client profile; inline form with amount + description; `POST admin/clients/{client}/credit` route
+- **Client apply credit** — "Apply Credit" banner on unpaid invoice page (shown when `credit_balance > 0`); `POST client/invoices/{invoice}/apply-credit`; applies up to full amount due; auto-marks invoice paid if fully covered; creates ledger entry
+- `Client/Invoices/Show.vue` now accepts `creditBalance` prop
+
+#### Payment Reminders
+- `billing:send-reminders` artisan command — reads `Setting::get('reminder_days', '7,3,1')` (comma-separated days before due) and sends `invoice.reminder` email for each matching unpaid invoice
+- Scheduled daily at 10:00
+
+#### Promo Codes / Discounts
+- Migration `2026_03_27_120000_create_promo_codes_table` — `promo_codes` table: code, type (percent/fixed), value, product_id (nullable), max_uses, uses_count, applies_once, is_active, expires_at
+- `PromoCode` model — `isValid()`, `calculateDiscount()`, `scopeActive()`
+- **Admin** — `Admin\PromoCodeController` CRUD; `Admin/PromoCodes/Index.vue` (table with edit/delete); `Admin/PromoCodes/Edit.vue` (create/edit form); admin nav "Promo Codes" link
+- **Client checkout** — promo code field with AJAX `POST client/promo/validate` validation; discount shown in order summary; promo applied to invoice as negative line item; `uses_count` incremented on order
+- `Order` model's existing `promo_code` + `discount` fields now populated
+
+### Routes Added
+- `POST admin/clients/{client}/credit` → `admin.clients.credit`
+- `GET/POST admin/promo-codes` + CRUD → `admin.promo-codes.*`
+- `POST client/invoices/{invoice}/apply-credit` → `client.invoices.apply-credit`
+- `POST client/promo/validate` → `client.promo.validate`
+
+---
+
+## [1.2.0] — 2026-03-27 — Shared Hosting Compatibility
+
+### Added
+
+#### Root Shared-Hosting Shim
+- `index.php` at project root — bootstrap shim that re-points `DOCUMENT_ROOT` to `public/` and delegates to the real front controller; allows web root = project root without any server reconfiguration
+- `.htaccess` at project root — rewrites static file requests to `public/`, all other requests to the shim
+
+#### StorageController (symlink fallback)
+- `App\Http\Controllers\StorageController` — streams files from `storage/app/public/` when `public/storage` symlink is not available
+- Route `GET storage/{path}` registered automatically in `web.php` only when the symlink is absent; zero overhead on VPS installs where symlink exists
+
+#### Installer Enhancements
+- **Install-type auto-detection** — presence of `vendor/` directory sets `installType = 'zip'` (shared hosting); absence = `dev` (VPS/clone); passed as Inertia prop to wizard
+- **Expanded requirements checks** — added: `file_uploads`, `upload_max_filesize ≥ 10 MB`, `post_max_size ≥ 10 MB`, `max_execution_time ≥ 60s`, `memory_limit ≥ 128 MB`, `mod_rewrite`, `symlink()` availability; warn-only checks (yellow) vs hard-fail checks (red)
+- **Queue mode selector** — new Environment step (step 4) in wizard; `Sync` option for shared hosting (default when ZIP detected), `Database Queue` for VPS; selected value written to `QUEUE_CONNECTION` in `.env`
+- **`Artisan::call('storage:link')`** called during install; graceful fallback to controller mode if symlinks are blocked; `storage_mode` recorded in lock file
+- **OPENSRS keys** added to `writeEnv()` heredoc (`OPENSRS_SANDBOX`, `OPENSRS_API_KEY`, `OPENSRS_RESELLER_USERNAME`)
+- **Lock file version** read from `composer.json` version field instead of hardcoded string
+- **Post-install screen** (step 8) — shows: cron command for `schedule:run`; queue worker command (database mode only); sync-mode info note; storage controller note if symlinks were blocked
+- Install response now returns `{ queue, storage_mode, app_url }` to front-end for dynamic post-install instructions
+
+#### GitHub Actions
+- `.github/workflows/release.yml` — on `v*` tag push: installs deps, builds Vite assets, produces `strata-x.x.x.zip` (source, no vendor/) and `strata-x.x.x-shared.zip` (with vendor/ + public/build/), attaches both to GitHub Release
+- `.github/workflows/ci.yml` — on every push/PR: spins up MySQL 8, runs `composer install`, runs migrations, executes Pest test suite in parallel
 
 ---
 

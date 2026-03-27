@@ -43,3 +43,15 @@ Schedule::command('domains:renew-expiring --days=30')
     ->dailyAt('09:00')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Send payment reminders for invoices due in 7, 3, and 1 day(s) — runs daily at 10:00
+Schedule::command('billing:send-reminders')
+    ->dailyAt('10:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Auto-close support tickets inactive for N days — runs daily at 03:00
+Schedule::command('support:close-inactive')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->runInBackground();

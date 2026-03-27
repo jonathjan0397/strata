@@ -1,0 +1,19 @@
+# Shared-hosting root .htaccess
+# Routes all requests through public/ so the web root can be the project root.
+# On VPS/dedicated servers where the web root is already public/, this file
+# is never evaluated and has no effect.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Serve real files and directories from public/ directly.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Attempt to serve the file from public/ first.
+    RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Everything else goes to the shim front controller.
+    RewriteRule ^ index.php [L]
+</IfModule>

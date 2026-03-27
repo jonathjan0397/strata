@@ -21,6 +21,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_enabled',
         'two_factor_confirmed_at',
         'credit_balance',
+        'stripe_customer_id',
     ];
 
     protected $hidden = [
@@ -68,6 +69,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function tickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class);
+    }
+
+    public function credits(): HasMany
+    {
+        return $this->hasMany(ClientCredit::class);
+    }
+
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(PaymentMethod::class);
     }
 
     /** Convenience: check if this user is any kind of admin. */

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RolesAndPermissionsSeeder extends Seeder
@@ -13,6 +14,19 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Granular staff permissions
+        $staffPermissions = [
+            'access.billing',
+            'access.support',
+            'access.technical',
+            'access.clients',
+            'access.reports',
+        ];
+
+        foreach ($staffPermissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+        }
 
         // Create roles
         Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);

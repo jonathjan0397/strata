@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\SupportTicket;
+use App\Services\WorkflowEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -57,6 +58,8 @@ class SupportController extends Controller
             'message'  => $request->message,
             'is_staff' => false,
         ]);
+
+        WorkflowEngine::fire('ticket.opened', $ticket);
 
         return redirect()->route('client.support.show', $ticket)
             ->with('success', 'Ticket submitted.');
