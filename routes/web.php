@@ -116,6 +116,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('clients/{client}/credit',               [Admin\ClientController::class, 'addCredit'])->name('clients.credit');
         Route::post('clients/{client}/notes',                [Admin\ClientController::class, 'storeNote'])->name('clients.notes.store');
         Route::delete('clients/{client}/notes/{note}',       [Admin\ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
+        Route::post('clients/{client}/email',                [Admin\ClientController::class, 'sendEmail'])->name('clients.email');
 
         Route::get('client-groups',                          [Admin\ClientGroupController::class, 'index'])->name('client-groups.index');
         Route::post('client-groups',                         [Admin\ClientGroupController::class, 'store'])->name('client-groups.store');

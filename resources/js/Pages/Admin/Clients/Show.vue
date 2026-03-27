@@ -26,6 +26,16 @@ function submitCredit(clientId) {
 // Internal notes
 const noteForm = useForm({ body: '' })
 
+// Send email
+const showEmailModal = ref(false)
+const emailForm = useForm({ subject: '', body: '' })
+
+function sendEmail(clientId) {
+  emailForm.post(route('admin.clients.email', clientId), {
+    onSuccess: () => { showEmailModal.value = false; emailForm.reset() },
+  })
+}
+
 function submitNote(clientId) {
   noteForm.post(route('admin.clients.notes.store', clientId), {
     onSuccess: () => noteForm.reset(),
@@ -63,6 +73,13 @@ function deleteNote(clientId, noteId) {
         </div>
         <div><span class="text-gray-500">Verified:</span> {{ client.email_verified_at ? 'Yes' : 'No' }}</div>
         <div><span class="text-gray-500">Joined:</span> {{ new Date(client.created_at).toLocaleDateString() }}</div>
+        <div class="pt-2 border-t border-gray-100">
+          <button @click="showEmailModal = true"
+            class="w-full text-center px-3 py-1.5 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">
+            ✉ Send Email
+          </button>
+        </div>
+
         <div class="pt-2 border-t border-gray-100">
           <label class="block text-xs font-medium text-gray-500 mb-1">Client Group</label>
           <select
@@ -173,6 +190,40 @@ function deleteNote(clientId, noteId) {
           </li>
           <li v-if="!client.notes?.length" class="text-sm text-gray-400 text-center py-4">No internal notes.</li>
         </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send Email Modal -->
+  <div v-if="showEmailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-gray-900">Send Email to {{ client.name }}</h2>
+        <button @click="showEmailModal = false; emailForm.reset()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
+        <input :value="client.email" disabled
+          class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+        <input v-model="emailForm.subject" type="text" placeholder="Subject…"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <p v-if="emailForm.errors.subject" class="text-red-500 text-xs mt-1">{{ emailForm.errors.subject }}</p>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Message</label>
+        <textarea v-model="emailForm.body" rows="6" placeholder="Type your message…"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+        <p v-if="emailForm.errors.body" class="text-red-500 text-xs mt-1">{{ emailForm.errors.body }}</p>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button @click="showEmailModal = false; emailForm.reset()" class="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+        <button @click="sendEmail(client.id)" :disabled="emailForm.processing || !emailForm.subject || !emailForm.body"
+          class="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          {{ emailForm.processing ? 'Sending…' : 'Send' }}
+        </button>
       </div>
     </div>
   </div>

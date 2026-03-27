@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ClientEmail;
 use App\Models\ClientCredit;
 use App\Models\ClientNote;
 use App\Models\User;
@@ -11,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -141,5 +143,20 @@ class ClientController extends Controller
         $note->delete();
 
         return back()->with('success', 'Note deleted.');
+    }
+
+    public function sendEmail(Request $request, User $client): RedirectResponse
+    {
+        $data = $request->validate([
+            'subject' => ['required', 'string', 'max:255'],
+            'body'    => ['required', 'string', 'max:10000'],
+        ]);
+
+        Mail::to($client->email, $client->name)
+            ->send(new ClientEmail($data['subject'], $data['body']));
+
+        AuditLogger::log('client.email_sent', $client, ['subject' => $data['subject']]);
+
+        return back()->with('success', 'Email sent to ' . $client->email);
     }
 }
