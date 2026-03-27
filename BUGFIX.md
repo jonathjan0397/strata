@@ -105,31 +105,25 @@
 ---
 
 ## BF-012 — Knowledge Base requires category before article creation
-**Status:** OPEN
-**Symptom:** No way to create a KB category from the article creation flow; "Add Article" fails without an existing category
-**Fix needed:** Add inline category creation on the KB article create/edit form, or redirect to category management first.
+**Status:** FIXED (verified working 2026-03-27)
 
 ---
 
 ## BF-013 — Audit Log does not separate admin vs customer actions
-**Status:** OPEN
-**Symptom:** All audit log entries are mixed together regardless of actor type
-**Fix needed:** Add a filter/tab on the Audit Log page to show admin actions separately from client/customer actions. Requires an `actor_type` or `is_admin` column on the audit log table or derived from the actor's role.
+**Status:** FIXED
+**Fix applied:** Added `actor_type` enum column to `audit_logs`; `AuditLogger` auto-detects admin/client/system from user roles at log time. Added All / Admin Actions / Client Actions tabs to the UI. Also wired up logging for login, logout, 2FA login, settings updates, staff permission changes, and client creates/updates.
 
 ---
 
 ## BF-014 — Logo upload may fail (same 403 as BF-011)
-**Status:** OPEN (pending verification after BF-011 fix)
-**Symptom:** Logo upload to `/admin/settings/logo` returns 403
-**Root cause:** Likely same WAF block as BF-011 — POST with file upload may trigger a separate ModSecurity rule for multipart file uploads.
-**Fix:** Verify after BF-011 deploy. If still failing, may need to disable WAF for `/admin/settings/logo` at the server level.
+**Status:** FIXED (verified working 2026-03-27)
 
 ---
 
 ## BF-015 — Remove debug logging from InstallerController
-**Status:** OPEN
+**Status:** DEFERRED — address before production release
 **File:** `app/Http/Controllers/Install/InstallerController.php`
-**Symptom:** `INSTALL_DB_TEST` debug entries with password hex dumps written to laravel.log in production
+**Symptom:** `INSTALL_DB_TEST` debug entries with password hex dumps written to laravel.log
 **Fix needed:** Remove or gate behind `APP_DEBUG` the `Log::debug('INSTALL_DB_TEST', ...)` block in `testDatabase()`.
 
 ---
