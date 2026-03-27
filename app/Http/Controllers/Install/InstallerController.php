@@ -157,8 +157,13 @@ class InstallerController extends Controller
         $decoded = $rawB64 ? base64_decode($rawB64) : '';
         $request->merge(['db_password' => $decoded]);
 
+        // Force TCP by normalising 'localhost' → '127.0.0.1'.
+        // PHP web processes resolve 'localhost' to a Unix socket whose path
+        // often differs from the CLI default, causing spurious auth failures.
+        $host = $request->db_host === 'localhost' ? '127.0.0.1' : $request->db_host;
+
         try {
-            $dsn = "mysql:host={$request->db_host};port={$request->db_port};dbname={$request->db_name};charset=utf8mb4";
+            $dsn = "mysql:host={$host};port={$request->db_port};dbname={$request->db_name};charset=utf8mb4";
             $pdo = new PDO($dsn, $request->db_username, $decoded, [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_TIMEOUT            => 5,
@@ -203,9 +208,12 @@ class InstallerController extends Controller
         }
 
         // Passwords are base64-encoded client-side to avoid WAF false positives.
+        // Normalise 'localhost' → '127.0.0.1' to force TCP (Unix socket path
+        // differs between web and CLI PHP processes on shared hosting).
         $request->merge([
             'admin_password' => base64_decode($request->admin_password),
             'db_password'    => $request->db_password ? base64_decode($request->db_password) : '',
+            'db_host'        => $request->db_host === 'localhost' ? '127.0.0.1' : $request->db_host,
         ]);
 
         try {
