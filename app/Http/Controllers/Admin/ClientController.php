@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClientCredit;
+use App\Models\ClientNote;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,10 +41,13 @@ class ClientController extends Controller
             'invoices' => fn ($q) => $q->latest()->limit(10),
             'tickets'  => fn ($q) => $q->latest()->limit(10),
             'domains',
+            'notes.author:id,name',
+            'group',
         ]);
 
         return Inertia::render('Admin/Clients/Show', [
             'client' => $client,
+            'groups' => \App\Models\ClientGroup::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -110,5 +114,27 @@ class ClientController extends Controller
         });
 
         return back()->with('success', 'Credit of $'.number_format((float) $request->amount, 2).' added.');
+    }
+
+    public function storeNote(Request $request, User $client): RedirectResponse
+    {
+        $request->validate(['body' => ['required', 'string', 'max:2000']]);
+
+        ClientNote::create([
+            'user_id'   => $client->id,
+            'author_id' => $request->user()->id,
+            'body'      => $request->body,
+            'created_at' => now(),
+        ]);
+
+        return back()->with('success', 'Note added.');
+    }
+
+    public function destroyNote(User $client, ClientNote $note): RedirectResponse
+    {
+        abort_if($note->user_id !== $client->id, 404);
+        $note->delete();
+
+        return back()->with('success', 'Note deleted.');
     }
 }

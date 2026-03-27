@@ -1,12 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
-import { Link, useForm, usePage } from '@inertiajs/vue3'
+import { Link, useForm, usePage, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
-defineProps({ client: Object })
+const props = defineProps({ client: Object, groups: Array })
 
 const flash = computed(() => usePage().props.flash)
 
@@ -21,6 +21,21 @@ function submitCredit(clientId) {
       creditForm.reset()
     },
   })
+}
+
+// Internal notes
+const noteForm = useForm({ body: '' })
+
+function submitNote(clientId) {
+  noteForm.post(route('admin.clients.notes.store', clientId), {
+    onSuccess: () => noteForm.reset(),
+  })
+}
+
+function deleteNote(clientId, noteId) {
+  if (confirm('Delete this note?')) {
+    router.delete(route('admin.clients.notes.destroy', [clientId, noteId]))
+  }
 }
 </script>
 
@@ -48,6 +63,17 @@ function submitCredit(clientId) {
         </div>
         <div><span class="text-gray-500">Verified:</span> {{ client.email_verified_at ? 'Yes' : 'No' }}</div>
         <div><span class="text-gray-500">Joined:</span> {{ new Date(client.created_at).toLocaleDateString() }}</div>
+        <div class="pt-2 border-t border-gray-100">
+          <label class="block text-xs font-medium text-gray-500 mb-1">Client Group</label>
+          <select
+            :value="client.client_group_id"
+            @change="router.post(route('admin.client-groups.assign', client.id), { client_group_id: $event.target.value || null })"
+            class="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="">— No group —</option>
+            <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </select>
+        </div>
 
         <!-- Credit top-up mini form -->
         <div v-if="showCreditForm" class="pt-3 border-t border-gray-100 space-y-2">
@@ -109,6 +135,44 @@ function submitCredit(clientId) {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Internal Notes (staff only) -->
+      <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-5">
+        <h2 class="font-semibold text-gray-900 mb-4">Internal Notes <span class="text-xs font-normal text-gray-400 ml-1">(not visible to client)</span></h2>
+
+        <!-- Add note form -->
+        <div class="mb-4 flex gap-2">
+          <textarea
+            v-model="noteForm.body"
+            rows="2"
+            placeholder="Add an internal note…"
+            class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+          />
+          <button
+            @click="submitNote(client.id)"
+            :disabled="noteForm.processing || !noteForm.body.trim()"
+            class="self-end rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {{ noteForm.processing ? 'Saving…' : 'Add' }}
+          </button>
+        </div>
+
+        <!-- Notes list -->
+        <ul class="space-y-3">
+          <li
+            v-for="note in client.notes"
+            :key="note.id"
+            class="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm"
+          >
+            <div class="flex justify-between items-start gap-2">
+              <p class="text-gray-800 whitespace-pre-wrap">{{ note.body }}</p>
+              <button @click="deleteNote(client.id, note.id)" class="text-xs text-red-400 hover:text-red-600 shrink-0">Delete</button>
+            </div>
+            <p class="mt-1 text-xs text-gray-400">{{ note.author?.name ?? 'Staff' }} · {{ note.created_at }}</p>
+          </li>
+          <li v-if="!client.notes?.length" class="text-sm text-gray-400 text-center py-4">No internal notes.</li>
+        </ul>
       </div>
     </div>
   </div>

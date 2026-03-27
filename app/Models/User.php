@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -22,6 +23,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_confirmed_at',
         'credit_balance',
         'stripe_customer_id',
+        'client_group_id',
+        'country',
+        'state',
+        'tax_exempt',
     ];
 
     protected $hidden = [
@@ -38,6 +43,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_enabled'      => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
             'credit_balance'          => 'decimal:2',
+            'tax_exempt'              => 'boolean',
         ];
     }
 
@@ -79,6 +85,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function paymentMethods(): HasMany
     {
         return $this->hasMany(PaymentMethod::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(ClientNote::class)->latest('created_at');
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(ClientGroup::class, 'client_group_id');
     }
 
     /** Convenience: check if this user is any kind of admin. */

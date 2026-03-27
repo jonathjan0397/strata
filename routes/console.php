@@ -55,3 +55,21 @@ Schedule::command('support:close-inactive')
     ->dailyAt('03:00')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Send domain renewal reminder emails at 30/14/7 days before expiry — runs daily at 09:30
+Schedule::command('domains:send-reminders')
+    ->dailyAt('09:30')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Apply late fees to overdue invoices past the configured threshold — runs daily at 02:00
+Schedule::command('billing:apply-late-fees')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Dunning: retry auto-charge on overdue invoices with saved payment methods — runs daily at 11:00
+Schedule::command('billing:retry-payments')
+    ->dailyAt('11:00')
+    ->withoutOverlapping()
+    ->runInBackground();

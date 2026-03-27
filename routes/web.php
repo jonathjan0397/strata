@@ -100,8 +100,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('clients',             [Admin\ClientController::class, 'store'])->name('clients.store');
         Route::get('clients/{client}',     [Admin\ClientController::class, 'show'])->name('clients.show');
         Route::patch('clients/{client}',   [Admin\ClientController::class, 'update'])->name('clients.update');
-        Route::post('clients/{client}/suspend', [Admin\ClientController::class, 'suspend'])->name('clients.suspend');
-        Route::post('clients/{client}/credit',  [Admin\ClientController::class, 'addCredit'])->name('clients.credit');
+        Route::post('clients/{client}/suspend',              [Admin\ClientController::class, 'suspend'])->name('clients.suspend');
+        Route::post('clients/{client}/credit',               [Admin\ClientController::class, 'addCredit'])->name('clients.credit');
+        Route::post('clients/{client}/notes',                [Admin\ClientController::class, 'storeNote'])->name('clients.notes.store');
+        Route::delete('clients/{client}/notes/{note}',       [Admin\ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
+
+        Route::get('client-groups',                          [Admin\ClientGroupController::class, 'index'])->name('client-groups.index');
+        Route::post('client-groups',                         [Admin\ClientGroupController::class, 'store'])->name('client-groups.store');
+        Route::patch('client-groups/{clientGroup}',          [Admin\ClientGroupController::class, 'update'])->name('client-groups.update');
+        Route::delete('client-groups/{clientGroup}',         [Admin\ClientGroupController::class, 'destroy'])->name('client-groups.destroy');
+        Route::post('clients/{client}/assign-group',         [Admin\ClientGroupController::class, 'assignClient'])->name('client-groups.assign');
 
         // Promo Codes
         Route::get('promo-codes',               [Admin\PromoCodeController::class, 'index'])->name('promo-codes.index');
@@ -222,6 +230,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('workflows/{workflow}/toggle',      [Admin\WorkflowController::class, 'toggleActive'])->name('workflows.toggle');
 
         Route::get('reports',                  [Admin\ReportController::class, 'index'])->name('reports.index');
+
+        Route::get('tax-rates',                [Admin\TaxRateController::class, 'index'])->name('tax-rates.index');
+        Route::post('tax-rates',               [Admin\TaxRateController::class, 'store'])->name('tax-rates.store');
+        Route::patch('tax-rates/{taxRate}',    [Admin\TaxRateController::class, 'update'])->name('tax-rates.update');
+        Route::delete('tax-rates/{taxRate}',   [Admin\TaxRateController::class, 'destroy'])->name('tax-rates.destroy');
 
         Route::get('email-log',                [Admin\EmailLogController::class, 'index'])->name('email-log.index');
         Route::get('email-log/{emailLog}',     [Admin\EmailLogController::class, 'show'])->name('email-log.show');

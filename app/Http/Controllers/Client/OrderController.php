@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\PromoCode;
 use App\Models\Service;
 use App\Models\Setting;
+use App\Models\TaxRate;
 use App\Services\DomainRegistrarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -86,18 +87,31 @@ class OrderController extends Controller
 
         try {
             DB::transaction(function () use ($request, $product, $promo, $discount) {
-                $user     = $request->user();
+                $user     = $request->user()->load('group');
                 $price    = (float) $product->price;
                 $setupFee = (float) $product->setup_fee;
                 $subtotal = $price + $setupFee;
-                $total    = max(0, $subtotal - $discount);
+
+                // Apply client group discount on top of any promo discount
+                $groupDiscount = 0;
+                if ($user->group && $discount === 0) {
+                    $groupDiscount = $user->group->calculateDiscount($subtotal);
+                }
+
+                $discountedSubtotal = max(0, $subtotal - $discount - $groupDiscount);
+
+                // Resolve tax
+                $taxRate   = $product->taxable ? TaxRate::resolveForUser($user) : null;
+                $taxRateVal = $taxRate ? (float) $taxRate->rate : 0;
+                $tax       = $taxRate ? round($discountedSubtotal * ($taxRateVal / 100), 2) : 0;
+                $total     = $discountedSubtotal + $tax;
 
                 // 1. Create order
                 $order = Order::create([
                     'user_id'    => $user->id,
                     'status'     => 'pending',
                     'subtotal'   => $subtotal,
-                    'discount'   => $discount,
+                    'discount'   => $discount + $groupDiscount,
                     'total'      => $total,
                     'promo_code' => $promo?->code,
                 ]);
@@ -128,7 +142,9 @@ class OrderController extends Controller
                 $invoice = Invoice::create([
                     'user_id'    => $user->id,
                     'status'     => 'unpaid',
-                    'subtotal'   => $subtotal,
+                    'subtotal'   => $discountedSubtotal,
+                    'tax_rate'   => $taxRateVal,
+                    'tax'        => $tax,
                     'total'      => $total,
                     'amount_due' => $total,
                     'date'       => now(),
@@ -164,6 +180,29 @@ class OrderController extends Controller
                         'total'       => -$discount,
                     ]);
                     $promo->increment('uses_count');
+                }
+
+                // Tax line item
+                if ($tax > 0 && $taxRate) {
+                    $taxLabel = Setting::get('tax_label', 'Tax');
+                    $invoice->items()->create([
+                        'service_id'  => $service->id,
+                        'description' => "{$taxLabel} ({$taxRateVal}%)",
+                        'quantity'    => 1,
+                        'unit_price'  => $tax,
+                        'total'       => $tax,
+                    ]);
+                }
+
+                // Group discount line item
+                if ($groupDiscount > 0 && $user->group) {
+                    $invoice->items()->create([
+                        'service_id'  => $service->id,
+                        'description' => 'Group Discount: '.$user->group->name,
+                        'quantity'    => 1,
+                        'unit_price'  => -$groupDiscount,
+                        'total'       => -$groupDiscount,
+                    ]);
                 }
 
                 // 6. For domain products, create a Domain record (registration triggered on payment)

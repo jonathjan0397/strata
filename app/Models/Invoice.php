@@ -15,6 +15,7 @@ class Invoice extends Model
         'user_id', 'status', 'subtotal', 'tax_rate', 'tax', 'total',
         'credit_applied', 'amount_due', 'date', 'due_date',
         'paid_at', 'payment_method', 'notes',
+        'dunning_attempts', 'dunning_last_attempt_at',
     ];
 
     protected function casts(): array
@@ -28,7 +29,8 @@ class Invoice extends Model
             'amount_due'     => 'decimal:2',
             'date'           => 'date',
             'due_date'       => 'date',
-            'paid_at'        => 'datetime',
+            'paid_at'                  => 'datetime',
+            'dunning_last_attempt_at'  => 'datetime',
         ];
     }
 
