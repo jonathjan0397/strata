@@ -32,7 +32,16 @@ if (! is_link(public_path('storage'))) {
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
 
 // ── Installer (blocked by CheckInstalled once storage/installed.lock exists) ─
-Route::prefix('install')->name('install.')->group(function () {
+// Session/cookie/CSRF middleware are stripped so no laravel-session cookie is
+// ever issued during install — prevents ModSecurity false-positive 403s on
+// shared hosting where the encrypted cookie value triggers SQL-injection rules.
+Route::prefix('install')->name('install.')->withoutMiddleware([
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \App\Http\Middleware\VerifyCsrfToken::class,
+])->group(function () {
     Route::get('/',              [InstallerController::class, 'index'])->name('index');
     Route::get('/requirements',  [InstallerController::class, 'requirements'])->name('requirements');
     Route::post('/test-database',[InstallerController::class, 'testDatabase'])->name('test-database');

@@ -1,12 +1,3 @@
-# Disable ModSecurity SQL-injection false-positives on the installer.
-# The encrypted laravel-session cookie triggers rule 981319 (contains "Xor"
-# in its base64 ciphertext). The installer does not touch the database itself.
-<IfModule mod_security2.c>
-    <If "%{REQUEST_URI} =~ m|^/install|">
-        SecRuleEngine Off
-    </If>
-</IfModule>
-
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
