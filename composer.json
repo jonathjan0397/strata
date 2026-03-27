@@ -16,6 +16,7 @@
         "laravel/tinker": "^3.0",
         "pragmarx/google2fa-laravel": "^3.0",
         "spatie/laravel-permission": "^7.2",
+        "stripe/stripe-php": "^20.0",
         "tightenco/ziggy": "^2.3"
     },
     "require-dev": {

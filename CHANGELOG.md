@@ -8,13 +8,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- Stripe payment gateway integration
 - Client-facing order / checkout flow
 - Service auto-provisioning (cPanel/WHM API)
 - PDF invoice export (`barryvdh/laravel-dompdf`)
 - Billing automation cron jobs (invoice generation, overdue detection, suspension)
 - Domain registration API (Enom / OpenSRS / Namecheap)
 - Mailable classes wired to EmailTemplates
+
+---
+
+## [0.5.0] — 2026-03-26 — Stripe Payment Integration
+
+### Added
+- **`stripe/stripe-php ^20.0`** added to `composer.json`
+- **Stripe Checkout** — `POST /client/invoices/{invoice}/checkout` creates a Stripe Checkout Session and returns a redirect URL; client is redirected to Stripe-hosted payment page; on return, `?paid=1` query param triggers a success banner
+- **`Client/PaymentController`** — validates ownership (403), guards against double-payment, builds Checkout Session with line item from `invoice.amount_due`, stores a `pending` Payment record with the Stripe session ID for webhook reconciliation
+- **Stripe Webhook** (`POST /stripe/webhook`) — `StripeWebhookController` handles `checkout.session.completed` (marks Payment completed, marks Invoice paid) and `checkout.session.expired` (marks Payment failed); signature verified via `STRIPE_WEBHOOK_SECRET`; route exempt from CSRF verification
+- **`Client/Invoices/Show`** — Pay Now button triggers Stripe redirect with loading spinner; success banner on return from Stripe; credit applied row in totals; payment history list at bottom of invoice
+- **`config/services.php`** — `stripe` block with `key`, `secret`, `webhook_secret`, `currency`
+- **`.env.example`** — `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CURRENCY`, `VITE_STRIPE_KEY`
+
+### Security
+- Webhook endpoint verified with `Stripe\Webhook::constructEvent()` — rejects requests with invalid signatures (400)
+- Invoice ownership checked before creating checkout session (403)
+- Double-payment guarded: aborts 422 if invoice status is already `paid`
 
 ---
 

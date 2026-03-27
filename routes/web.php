@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Install\InstallerController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -16,6 +17,9 @@ use App\Http\Controllers\Client;
 use App\Http\Controllers\Profile\SessionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// ── Stripe webhook (CSRF exempt — verified by signature) ─────────────────────
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
 
 // ── Installer (blocked by CheckInstalled once storage/installed.lock exists) ─
 Route::prefix('install')->name('install.')->group(function () {
@@ -141,8 +145,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/',                          Client\DashboardController::class)->name('dashboard');
         Route::get('services',                   [Client\ServiceController::class, 'index'])->name('services.index');
         Route::get('services/{service}',         [Client\ServiceController::class, 'show'])->name('services.show');
-        Route::get('invoices',                   [Client\InvoiceController::class, 'index'])->name('invoices.index');
-        Route::get('invoices/{invoice}',         [Client\InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices',                       [Client\InvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
+        Route::post('invoices/{invoice}/checkout',   [Client\PaymentController::class, 'checkout'])->name('invoices.checkout');
         Route::get('support',                    [Client\SupportController::class, 'index'])->name('support.index');
         Route::get('support/create',             [Client\SupportController::class, 'create'])->name('support.create');
         Route::post('support',                   [Client\SupportController::class, 'store'])->name('support.store');
