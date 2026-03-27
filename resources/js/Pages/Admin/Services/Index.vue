@@ -45,7 +45,9 @@ watch([search, status], ([s, st]) => {
               <Link :href="route('admin.clients.show', s.user_id)" class="text-indigo-600 hover:underline">{{ s.user?.name }}</Link>
             </td>
             <td class="px-4 py-3 text-gray-600">{{ s.product?.name }}</td>
-            <td class="px-4 py-3 text-gray-600">{{ s.domain ?? '—' }}</td>
+            <td class="px-4 py-3">
+              <Link :href="route('admin.services.show', s.id)" class="text-indigo-600 hover:underline">{{ s.domain ?? '—' }}</Link>
+            </td>
             <td class="px-4 py-3 text-right text-gray-500">{{ s.next_due_date ?? '—' }}</td>
             <td class="px-4 py-3 text-right"><StatusBadge :status="s.status" /></td>
           </tr>

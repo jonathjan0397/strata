@@ -126,6 +126,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('modules/{module}/edit',    [Admin\ModuleController::class, 'edit'])->name('modules.edit');
         Route::patch('modules/{module}',   [Admin\ModuleController::class, 'update'])->name('modules.update');
         Route::delete('modules/{module}',  [Admin\ModuleController::class, 'destroy'])->name('modules.destroy');
+
+        // Announcements
+        Route::get('announcements',                    [Admin\AnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('announcements/create',             [Admin\AnnouncementController::class, 'create'])->name('announcements.create');
+        Route::post('announcements',                   [Admin\AnnouncementController::class, 'store'])->name('announcements.store');
+        Route::get('announcements/{announcement}/edit',[Admin\AnnouncementController::class, 'edit'])->name('announcements.edit');
+        Route::patch('announcements/{announcement}',   [Admin\AnnouncementController::class, 'update'])->name('announcements.update');
+        Route::delete('announcements/{announcement}',  [Admin\AnnouncementController::class, 'destroy'])->name('announcements.destroy');
     });
 
     // ── Client portal ─────────────────────────────────────────────────────────
@@ -140,5 +148,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('support',                   [Client\SupportController::class, 'store'])->name('support.store');
         Route::get('support/{ticket}',           [Client\SupportController::class, 'show'])->name('support.show');
         Route::post('support/{ticket}/reply',    [Client\SupportController::class, 'reply'])->name('support.reply');
+        Route::get('announcements',              Client\AnnouncementController::class)->name('announcements');
     });
 });

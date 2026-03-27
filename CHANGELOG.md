@@ -14,9 +14,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - PDF invoice export (`barryvdh/laravel-dompdf`)
 - Billing automation cron jobs (invoice generation, overdue detection, suspension)
 - Domain registration API (Enom / OpenSRS / Namecheap)
-- Admin Services/Show page
 - Mailable classes wired to EmailTemplates
-- Announcements admin UI + client display
+
+---
+
+## [0.4.0] — 2026-03-26 — Services Detail & Announcements
+
+### Added
+- **Admin Services/Show** (`/admin/services/{service}`) — service detail page: service metadata (product, domain, billing cycle, amount, dates), client card with link to client show, context-sensitive action buttons (suspend/reactivate/terminate with confirmation), provisioning block (username, server hostname:port, shown only when populated), notes panel, full invoice history table with status badges
+- **Services Index → Show links** — domain column in Services Index now links to the show page
+- **Announcements admin CRUD** (`/admin/announcements`) — list with published/draft badges; create and edit form (title, body textarea, publish toggle); soft-delete via destroy
+- **Client Announcements** (`/client/announcements`) — paginated list of published announcements sorted by publish date; clean article layout with date header
+- **`AnnouncementController` (Admin)** — full CRUD; sets `published_at` to `now()` on first publish, clears it on unpublish
+- **`AnnouncementController` (Client)** — invokable; returns only published announcements ordered by `published_at` desc
+- **AppLayout nav** — Announcements added to both admin nav and client nav with megaphone icon
 
 ---
 
