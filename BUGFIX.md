@@ -128,4 +128,13 @@
 
 ---
 
+## BF-016 — Send Email feature: mail transport fails on CWP shared hosting
+**Status:** OPEN
+**Files:** `deploy/deploy-strata.js` (PROD_ENV), `app/Mail/ClientEmail.php`
+**Symptom:** POST `/admin/clients/{id}/email` returns 500; Laravel log shows `Connection to "process /usr/sbin/sendmail -bs -i" has been closed unexpectedly`
+**Root cause:** CWP shared hosting does not expose sendmail to PHP processes. Attempted `MAIL_MAILER=smtp` with `MAIL_HOST=localhost MAIL_PORT=25` — server SMTP also not accepting connections.
+**Fix needed:** Obtain correct outbound SMTP credentials from CWP hosting panel and update `PROD_ENV` in `deploy/deploy-strata.js`.
+
+---
+
 *Last updated: 2026-03-27*
