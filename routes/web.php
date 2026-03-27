@@ -91,7 +91,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('profile/sessions',             [SessionController::class, 'destroyOthers'])->name('profile.sessions.destroy-others');
 
     // ── Admin panel ──────────────────────────────────────────────────────────
-    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware(['admin', 'require.2fa'])->group(function () {
         Route::get('/',         Admin\DashboardController::class)->name('dashboard');
 
         // Clients
@@ -220,6 +220,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('workflows/{workflow}',            [Admin\WorkflowController::class, 'update'])->name('workflows.update');
         Route::delete('workflows/{workflow}',           [Admin\WorkflowController::class, 'destroy'])->name('workflows.destroy');
         Route::post('workflows/{workflow}/toggle',      [Admin\WorkflowController::class, 'toggleActive'])->name('workflows.toggle');
+
+        Route::get('reports',                  [Admin\ReportController::class, 'index'])->name('reports.index');
+
+        Route::get('email-log',                [Admin\EmailLogController::class, 'index'])->name('email-log.index');
+        Route::get('email-log/{emailLog}',     [Admin\EmailLogController::class, 'show'])->name('email-log.show');
     });
 
     // ── Client portal ─────────────────────────────────────────────────────────

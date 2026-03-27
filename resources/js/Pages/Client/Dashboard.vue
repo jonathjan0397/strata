@@ -67,6 +67,23 @@ defineProps({
           <li v-if="!unpaid_invoices.length" class="py-5 text-center text-gray-400">All invoices paid.</li>
         </ul>
       </div>
+
+      <!-- Recent tickets -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5 lg:col-span-2">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="font-semibold text-gray-900 text-sm">Recent Support Tickets</h2>
+          <Link :href="route('client.tickets.index')" class="text-xs text-indigo-600 hover:underline">View all</Link>
+        </div>
+        <ul class="divide-y divide-gray-100 text-sm">
+          <li v-for="t in recent_tickets" :key="t.id" class="py-2.5 flex items-center justify-between gap-2">
+            <Link :href="route('client.tickets.show', t.id)" class="truncate text-indigo-600 hover:underline">
+              #{{ t.id }} — {{ t.subject }}
+            </Link>
+            <StatusBadge :status="t.status" class="shrink-0" />
+          </li>
+          <li v-if="!recent_tickets.length" class="py-5 text-center text-gray-400">No open tickets.</li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>

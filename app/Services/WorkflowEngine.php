@@ -196,12 +196,16 @@ class WorkflowEngine
             throw new \RuntimeException('create.ticket: no user resolved');
         }
 
+        $deptName = $config['department'] ?? 'General';
+        $dept = \App\Models\Department::where('name', $deptName)->first();
+
         \App\Models\SupportTicket::create([
-            'user_id'     => $user->id,
-            'subject'     => $config['subject'] ?? 'Automated Ticket',
-            'department'  => $config['department'] ?? 'general',
-            'priority'    => $config['priority'] ?? 'medium',
-            'status'      => 'open',
+            'user_id'       => $user->id,
+            'subject'       => $config['subject'] ?? 'Automated Ticket',
+            'department_id' => $dept?->id,
+            'department'    => $dept?->name ?? $deptName,
+            'priority'      => $config['priority'] ?? 'medium',
+            'status'        => 'open',
             'last_reply_at' => now(),
         ]);
     }

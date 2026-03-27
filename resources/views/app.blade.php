@@ -10,6 +10,9 @@
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @inertiaHead
+    @if(config('services.stripe.key'))
+        <script src="https://js.stripe.com/v3/" defer></script>
+    @endif
 </head>
 <body class="h-full font-sans antialiased">
     @inertia
