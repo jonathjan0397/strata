@@ -147,7 +147,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('services/{service}',         [Client\ServiceController::class, 'show'])->name('services.show');
         Route::get('invoices',                       [Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
-        Route::post('invoices/{invoice}/checkout',   [Client\PaymentController::class, 'checkout'])->name('invoices.checkout');
+        Route::post('invoices/{invoice}/checkout',        [Client\PaymentController::class,       'checkout'])->name('invoices.checkout');
+        Route::post('invoices/{invoice}/paypal',          [Client\PayPalPaymentController::class,  'checkout'])->name('invoices.paypal.checkout');
+        Route::get('invoices/{invoice}/paypal/return',    [Client\PayPalPaymentController::class,  'return'])->name('invoices.paypal.return');
+        Route::get('invoices/{invoice}/paypal/cancel',    [Client\PayPalPaymentController::class,  'cancel'])->name('invoices.paypal.cancel');
         Route::get('support',                    [Client\SupportController::class, 'index'])->name('support.index');
         Route::get('support/create',             [Client\SupportController::class, 'create'])->name('support.create');
         Route::post('support',                   [Client\SupportController::class, 'store'])->name('support.store');

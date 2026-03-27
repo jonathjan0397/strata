@@ -17,6 +17,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.5.1] — 2026-03-26 — PayPal Payment Integration
+
+### Added
+- **`srmklive/paypal ^3.0`** added to `composer.json`
+- **PayPal Checkout** — `POST /client/invoices/{invoice}/paypal` creates a PayPal Orders v2 order and returns the buyer approval URL; client is redirected to PayPal-hosted approval page
+- **`Client/PayPalPaymentController`** — `checkout()` creates order with `CAPTURE` intent; `return()` captures payment on buyer return and marks invoice paid; `cancel()` marks pending payment failed and redirects with error message
+- **PayPal return/cancel routes** — `GET /client/invoices/{invoice}/paypal/return` and `/cancel` handle post-approval flow; ownership-checked (403)
+- **Invoice Show** — payment section now offers both Card (Stripe) and PayPal buttons side by side; both show loading spinners; only one can be active at a time; flash messages from PayPal redirect displayed at top
+- **`config/services.php`** — `paypal` block with `client_id`, `client_secret`, `mode`, `currency`
+- **`.env.example`** — `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE`, `PAYPAL_CURRENCY`
+- **Installer `.env` template** — payment gateway placeholders (Stripe + PayPal) written during web install
+
+---
+
 ## [0.5.0] — 2026-03-26 — Stripe Payment Integration
 
 ### Added

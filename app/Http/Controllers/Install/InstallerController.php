@@ -215,6 +215,16 @@ SESSION_LIFETIME=120
 MAIL_MAILER=log
 MAIL_FROM_ADDRESS="noreply@{$this->hostFromUrl($appUrl)}"
 MAIL_FROM_NAME="{$appName}"
+
+STRIPE_KEY=
+STRIPE_SECRET=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_CURRENCY=usd
+
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_MODE=sandbox
+PAYPAL_CURRENCY=USD
 ENV;
 
         file_put_contents(base_path('.env'), $env);
