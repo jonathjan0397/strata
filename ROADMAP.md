@@ -8,6 +8,31 @@
 
 ---
 
+## Distribution & Install Paths
+
+Strata ships two installation tracks from the same codebase:
+
+| Track | Target | How |
+|-------|--------|-----|
+| **Shared Hosting** | cPanel / Plesk / DirectAdmin shared accounts | Pre-built ZIP (`strata-x.x.x-shared.zip`): `vendor/` + compiled Vite assets bundled; no Composer or Node required on server; drop into `public_html/`, browse to `/install` |
+| **VPS / Dedicated** | Full root-access servers | Standard ZIP (`strata-x.x.x.zip`) or `git clone`; run `composer install` + `npm run build` + `php artisan ...` via CLI |
+
+Both tracks share the same browser-based installer wizard at `/install`. The wizard auto-detects the environment and adjusts defaults (queue driver, cron instructions, storage link method).
+
+### v0.x — Shared Hosting Compatibility ⏳
+- [ ] Root-level shared hosting bootstrap: `index.php` + `.htaccess` shim at project root so web root = project root (no document root change required)
+- [ ] `Artisan::call('storage:link')` added to installer; graceful fallback to `StorageController` file-serving route if symlinks are blocked by host
+- [ ] Queue mode selector in installer: **Sync** (shared hosting — jobs run inline, no worker needed) vs **Database** (VPS — jobs queued, worker runs via cron/supervisor)
+- [ ] Installer post-install screen: shows cron command (`* * * * * php /path/to/artisan schedule:run`) and, if queue=database, queue worker command
+- [ ] Installer requirements check: add `file_uploads`, `upload_max_filesize` ≥ 10 MB, `post_max_size`, `max_execution_time` ≥ 60, `memory_limit` ≥ 128 MB, `mod_rewrite` (Apache), `symlink()` availability
+- [ ] Installer detects install-type automatically: presence of `vendor/` = ZIP install (shared); absence = dev/VPS clone
+- [ ] `OPENSRS_*` keys added to installer `.env` template
+- [ ] Lock file version updated to current release on each install
+- [ ] GitHub Actions release workflow: on `v*` tag push → `composer install --no-dev` + `npm run build` → produce `strata-x.x.x-shared.zip` (with `vendor/` + `public/build/`) and `strata-x.x.x.zip` (source only) → attach to GitHub Release
+- [ ] GitHub Actions CI workflow: run Pest on every push/PR
+
+---
+
 ## Milestone 0 — Foundation
 *Goal: Installable skeleton with auth, DB schema, and dev environment*
 
@@ -17,7 +42,7 @@
 - [x] Basic admin shell layout (sidebar navigation, responsive)
 - [ ] Docker Compose: `app` (PHP-FPM), `nginx`, `mysql`, `redis`, `horizon`, `meilisearch` ⏳
 - [ ] Pest test suite bootstrapped ⏳
-- [ ] GitHub Actions CI ⏳
+- [ ] GitHub Actions CI ⏳ (see Distribution section above)
 - [ ] OpenAPI 3.0 spec scaffolded ⏳
 
 ### v0.2 — Auth & Multi-Role Access ✅
