@@ -8,7 +8,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- Domain registration API (Enom / OpenSRS / Namecheap)
+- *(open)*
+
+---
+
+## [0.8.0] — 2026-03-26 — Domain Registration API
+
+### Added
+- **`RegistrarDriver` contract** (`app/Contracts/RegistrarDriver.php`) — interface defining `checkAvailability()`, `registerDomain()`, `renewDomain()`, `transferDomain()`, `getNameservers()`, `setNameservers()`, `getInfo()`, `setLock()`, `setPrivacy()`, `slug()`
+- **`NamecheapDriver`** (`app/Services/Registrars/NamecheapDriver.php`) — Namecheap XML API v1 implementation with sandbox support; handles contact param mapping for all four contact types
+- **`EnomDriver`** (`app/Services/Registrars/EnomDriver.php`) — Enom reseller XML API implementation with sandbox support
+- **`DomainRegistrarService`** (`app/Services/DomainRegistrarService.php`) — driver factory; `driver(?string)`, `available()`, `checkAvailability(string)`
+- **`config/registrars.php`** — `REGISTRAR_DRIVER`, `NAMECHEAP_*`, `ENOM_*` config keys
+- **Admin `DomainController`** — `index` (paginated + filtered), `show`, `syncNameservers`, `setLock`, `setPrivacy`, `refresh` (pulls live info from registrar)
+- **Client `DomainController`** — `index`, `show`, `setNameservers`, `toggleAutoRenew`, `checkAvailability` (JSON; used by checkout)
+- **Admin Domains pages** — `Admin/Domains/Index.vue` (searchable, status filter, paginated), `Admin/Domains/Show.vue` (metadata, lock/privacy toggles, nameserver editor)
+- **Client Domains pages** — `Client/Domains/Index.vue`, `Client/Domains/Show.vue` (auto-renew toggle, inline nameserver editor with up to 6 NS slots)
+- **Checkout availability badge** — debounced 600ms live domain availability check in `Checkout.vue` for `domain`-type products; green "Available ✓" / red "Not available" inline indicator
+- **Domain record on order** — `OrderController::place()` creates a `Domain` record (status: pending) when `product.type === 'domain'`
+- **`domains:renew-expiring` command** — auto-renews active domains with `auto_renew=true` expiring within N days (default 30); scheduled daily at 09:00
+- **Routes** — admin: `domains.index/show/nameservers/lock/privacy/refresh`; client: `domains.index/show/nameservers/auto-renew/check`
+- **Nav** — Domains item added to both admin and client sidebars
+- **`.env.example` + installer template** — `REGISTRAR_DRIVER`, `NAMECHEAP_*`, `ENOM_*` env vars
 
 ---
 
