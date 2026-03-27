@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -19,6 +20,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_secret',
         'two_factor_enabled',
         'two_factor_confirmed_at',
+        'credit_balance',
     ];
 
     protected $hidden = [
@@ -34,7 +36,38 @@ class User extends Authenticatable implements MustVerifyEmail
             'password'                => 'hashed',
             'two_factor_enabled'      => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
+            'credit_balance'          => 'decimal:2',
         ];
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(Service::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function domains(): HasMany
+    {
+        return $this->hasMany(Domain::class);
+    }
+
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
     }
 
     /** Convenience: check if this user is any kind of admin. */
