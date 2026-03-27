@@ -8,12 +8,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- Client-facing order / checkout flow
 - Service auto-provisioning (cPanel/WHM API)
-- PDF invoice export (`barryvdh/laravel-dompdf`)
-- Billing automation cron jobs (invoice generation, overdue detection, suspension)
 - Domain registration API (Enom / OpenSRS / Namecheap)
 - Mailable classes wired to EmailTemplates
+
+---
+
+## [0.6.0] — 2026-03-26 — Orders, PDF Export & Billing Automation
+
+### Added
+- **`barryvdh/laravel-dompdf ^3.1`** added to `composer.json`
+- **PDF Invoice Export** — `GET /admin/invoices/{invoice}/download` and `GET /client/invoices/{invoice}/download` stream a styled A4 PDF; client route ownership-checked (403); admin and client invoice show pages both have Download PDF buttons
+- **Invoice PDF template** (`resources/views/pdf/invoice.blade.php`) — branded header with app name/URL, bill-to/from parties, dates, line-items table, totals with tax and credit rows, payment history section, footer with contact email
+- **Client Order Catalog** (`/client/order`) — product grid with type badge, price, billing cycle, setup fee, and Order Now link; added to client nav
+- **Client Checkout** (`/client/order/checkout`) — order summary card + domain field (shown for hosting/domain/VPS product types) + place order button; validates product, billing cycle, optional domain
+- **`Client/OrderController`** — `catalog()`, `checkout()` (GET with query params), `place()` (POST; wraps full flow in a DB transaction: creates Order → OrderItem → Service → Invoice → InvoiceItems); redirects to new invoice for immediate payment
+- **Billing Automation Commands**
+  - `billing:generate-invoices --days=14` — generates renewal invoices for active services due within N days, skipping services that already have an open unpaid invoice for the cycle
+  - `billing:flag-overdue` — marks unpaid invoices past their due date as `overdue`
+  - `billing:suspend-overdue --grace=3` — suspends active services with invoices overdue beyond the grace period
+- **Scheduler** (`routes/console.php`) — all three billing commands registered: generate-invoices at 08:00, flag-overdue at 00:05, suspend-overdue at 01:00; all run `withoutOverlapping()->runInBackground()`
 
 ---
 

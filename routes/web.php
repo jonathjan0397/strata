@@ -112,8 +112,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('invoices',             [Admin\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/create',      [Admin\InvoiceController::class, 'create'])->name('invoices.create');
         Route::post('invoices',            [Admin\InvoiceController::class, 'store'])->name('invoices.store');
-        Route::get('invoices/{invoice}',   [Admin\InvoiceController::class, 'show'])->name('invoices.show');
-        Route::post('invoices/{invoice}/mark-paid', [Admin\InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
+        Route::get('invoices/{invoice}',          [Admin\InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices/{invoice}/download',  [Admin\InvoiceController::class, 'download'])->name('invoices.download');
+        Route::post('invoices/{invoice}/mark-paid',[Admin\InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
         Route::post('invoices/{invoice}/cancel',    [Admin\InvoiceController::class, 'cancel'])->name('invoices.cancel');
 
         // Support
@@ -143,10 +144,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ── Client portal ─────────────────────────────────────────────────────────
     Route::prefix('client')->name('client.')->group(function () {
         Route::get('/',                          Client\DashboardController::class)->name('dashboard');
+        Route::get('order',                      [Client\OrderController::class, 'catalog'])->name('order.catalog');
+        Route::get('order/checkout',             [Client\OrderController::class, 'checkout'])->name('order.checkout');
+        Route::post('order',                     [Client\OrderController::class, 'place'])->name('order.place');
         Route::get('services',                   [Client\ServiceController::class, 'index'])->name('services.index');
         Route::get('services/{service}',         [Client\ServiceController::class, 'show'])->name('services.show');
         Route::get('invoices',                       [Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices/{invoice}/download',    [Client\InvoiceController::class, 'download'])->name('invoices.download');
         Route::post('invoices/{invoice}/checkout',        [Client\PaymentController::class,       'checkout'])->name('invoices.checkout');
         Route::post('invoices/{invoice}/paypal',          [Client\PayPalPaymentController::class,  'checkout'])->name('invoices.paypal.checkout');
         Route::get('invoices/{invoice}/paypal/return',    [Client\PayPalPaymentController::class,  'return'])->name('invoices.paypal.return');

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -81,6 +83,16 @@ class InvoiceController extends Controller
 
         return redirect()->route('admin.invoices.show', $invoice)
             ->with('success', "Invoice #{$invoice->id} created.");
+    }
+
+    public function download(Invoice $invoice): HttpResponse
+    {
+        $invoice->load(['user', 'items', 'payments']);
+
+        $pdf = Pdf::loadView('pdf.invoice', compact('invoice'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download("invoice-{$invoice->id}.pdf");
     }
 
     public function markPaid(Invoice $invoice): RedirectResponse
