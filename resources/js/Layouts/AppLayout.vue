@@ -16,6 +16,10 @@ const navigation = [
     { name: 'Domains',    href: '#', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9' },
     { name: 'Tickets',    href: '#', icon: 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z' },
 ];
+
+const settingsNav = [
+    { name: 'Security', href: route('profile.security'), icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z' },
+];
 </script>
 
 <template>
@@ -37,7 +41,7 @@ const navigation = [
             </div>
 
             <!-- Nav -->
-            <nav class="flex-1 overflow-y-auto py-4 px-3">
+            <nav class="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-6">
                 <ul class="space-y-1">
                     <li v-for="item in navigation" :key="item.name">
                         <Link
@@ -51,6 +55,23 @@ const navigation = [
                         </Link>
                     </li>
                 </ul>
+
+                <div>
+                    <p class="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Settings</p>
+                    <ul class="space-y-1">
+                        <li v-for="item in settingsNav" :key="item.name">
+                            <Link
+                                :href="item.href"
+                                class="group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                            >
+                                <svg class="h-5 w-5 shrink-0 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon" />
+                                </svg>
+                                {{ item.name }}
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
             </nav>
 
             <!-- User footer -->
