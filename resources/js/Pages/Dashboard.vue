@@ -1,6 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+const justVerified = computed(() => new URLSearchParams(window.location.search).get('verified') === '1');
 
 const stats = [
     { label: 'Active Clients',   value: '—', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'bg-blue-500' },
@@ -17,6 +20,11 @@ const stats = [
         <template #header>
             <h1 class="text-lg font-semibold text-gray-900">Dashboard</h1>
         </template>
+
+        <!-- Email verified banner -->
+        <div v-if="justVerified" class="mb-6 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+          Your email address has been verified.
+        </div>
 
         <!-- Stats grid -->
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-8">
