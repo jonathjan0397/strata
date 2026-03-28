@@ -9,7 +9,7 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 
 ---
 
-## What's Built (v1.8.x)
+## What's Built (v1.9.x)
 
 ### Authentication & Access Control
 - Email + password login and self-registration
@@ -35,8 +35,9 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 |---------|-------------|
 | **Dashboard** | Summary stats: clients, active services, open tickets, MRR |
 | **Clients** | List, create, edit, suspend; detail with services, invoices, tickets, internal notes, group assignment |
-| **Products** | Full CRUD; type, billing cycle, price, setup fee, stock, sort order |
-| **Services** | List and detail; suspend, unsuspend, terminate; approve/reject cancellation requests |
+| **Products** | Full CRUD; type, billing cycle, price, setup fee, stock, sort order; **auto-setup trigger** (on_order/on_payment/manual/never); **trial period** (days) |
+| **Services** | List and detail; suspend, unsuspend, terminate; **Approve & Provision** button; approve/reject cancellation requests; cancellation type (immediate/end-of-period) |
+| **Quotes** | Create freeform quotes with line items, tax, valid-until date; send to client; convert accepted quote to invoice |
 | **Invoices** | List, create, view, download PDF; mark paid, cancel; line items |
 | **Support** | Full ticket queue; reply, assign, close, reopen; department transfer; merge tickets; bulk actions; SLA indicators; canned responses; internal notes; file attachments; first-reply tracking; satisfaction rating view |
 | **Servers** | cPanel/WHM/Plesk/DirectAdmin/HestiaCP server CRUD |
@@ -44,22 +45,23 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 | **Client Groups** | Group-level pricing (percent/fixed discount); assign clients to groups |
 | **Tax Rates** | Country/state-based tax rules; priority resolution; applied at checkout |
 | **Announcements** | Create, edit, delete; publish/draft toggle |
-| **Email Templates** | Inline editor for all 10 system templates; `{{variable}}` reference panel; active toggle |
+| **Email Templates** | Inline editor for all 11 system templates; `{{variable}}` reference panel; active toggle |
 | **Email Log** | Full outbound history; search by recipient/subject; detail view |
 | **Audit Log** | Append-only action log (actor, IP, target); filterable; admin/client/system tabs |
 | **Reports** | MRR/ARR, 12-month revenue chart, growth %, top clients, service status, support stats |
 | **Workflows** | Trigger-based automation (conditions + actions + delay); run history |
 | **Knowledge Base** | Categories + articles; **Tiptap rich text editor** (formatting + images); publish toggle |
 | **Staff** | Per-staff permission editor |
-| **Settings** | App, email (SMTP/sendmail/test), billing, payments, maintenance |
+| **Settings** | App, email (SMTP/sendmail/test), billing, payments, **fraud check (MaxMind minFraud)**, maintenance |
 
 ### Client Portal
 
 | Section | Capabilities |
 |---------|-------------|
 | **Dashboard** | Active services, unpaid invoices, recent tickets |
-| **Order** | Product catalog; live domain availability check; group discount + tax at checkout |
-| **Services** | List and detail; submit cancellation request |
+| **Order** | Product catalog; live domain availability check; promo codes (percent/fixed/free-setup); group discount + tax at checkout; client notes; order numbers; fraud scoring |
+| **Services** | List and detail; submit cancellation request (immediate or end-of-period); **upgrade/downgrade plan** with prorated invoice or credit; trial end date |
+| **Quotes** | View quotes sent by admin; accept or decline; link to converted invoice |
 | **Invoices** | List and detail; pay via Stripe, PayPal, or Authorize.net; apply credit; download PDF |
 | **Payment Methods** | Save/remove Stripe cards; set default; auto-charged on renewal |
 | **Support** | Create tickets with file attachments; view thread; reply with attachments; download files; search/filter tickets; 1–5 star satisfaction rating on closed tickets |
@@ -68,6 +70,15 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 | **Announcements** | Paginated published announcements |
 | **Security** | Enable/disable TOTP 2FA; QR code and confirmation |
 | **Sessions** | View active sessions; revoke individual or all others |
+
+### Order Management
+- **Order numbers** — `ORD-YYYYMMDD-NNNN`; client notes captured at checkout
+- **Auto-provisioning** — per-product trigger: `on_order`, `on_payment`, `manual`, `never`; `OrderProvisioner` service handles all paths
+- **Trial periods** — `trial_days` on products; service activates immediately; invoice due at trial end; billing automation skips active trials
+- **Promo codes** — percent, fixed, or free-setup-fee discount; date window; recurring cycle limit; new-clients-only flag; model-level enforcement
+- **Cancellations** — immediate or end-of-period; scheduled cancellations processed nightly by `billing:process-cancellations`
+- **Plan upgrades/downgrades** — client self-service; prorated invoice (net charge) or account credit (net credit) applied automatically
+- **Fraud scoring** — optional MaxMind minFraud Score integration; configurable threshold + flag/reject action; scores stored on order
 
 ### Payments
 - **Stripe Checkout** — hosted checkout; webhook reconciliation; stored cards with SetupIntent; off-session auto-charge on renewal
@@ -107,9 +118,10 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 
 | Command | Schedule | What it does |
 |---------|----------|-------------|
-| `billing:generate-invoices` | Daily 08:00 | Renewal invoices for services due within 14 days |
+| `billing:generate-invoices` | Daily 08:00 | Renewal invoices for services due within 14 days; skips trials and end-of-period cancel services |
 | `billing:flag-overdue` | Daily 00:05 | Marks past-due invoices overdue; sends email |
-| `billing:suspend-overdue` | Daily 01:00 | Suspends services past 3-day grace; sends email |
+| `billing:suspend-overdue` | Daily 01:00 | Suspends services past 3-day grace; skips trial-active services; sends email |
+| `billing:process-cancellations` | Daily 00:30 | Cancels services whose end-of-period `scheduled_cancel_at` has been reached |
 | `billing:send-reminders` | Daily 10:00 | Payment reminder emails per configurable schedule |
 | `billing:apply-late-fees` | Daily 02:00 | Fixed/percent late fee on overdue invoices past threshold |
 | `billing:retry-payments` | Daily 11:00 | Retries failed Stripe auto-charges (dunning) |

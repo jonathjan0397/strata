@@ -1,6 +1,6 @@
 # Strata — Current Features
 
-> Complete feature inventory as of v1.8.0 (2026-03-28).
+> Complete feature inventory as of v1.9.0 (2026-03-28).
 > Updated after each release. See [CHANGELOG.md](CHANGELOG.md) for history.
 
 ---
@@ -49,12 +49,25 @@
 - Full CRUD — name, type, billing cycle, price, setup fee, stock, sort order
 - Product types: hosting, domain, VPS, dedicated, email, SSL, other
 - Billing cycles: monthly, quarterly, semi-annual, annual, biennial, triennial, one-time
+- **Auto-setup trigger** — `on_order`, `on_payment`, `manual`, `never`
+- **Trial period** — `trial_days` field; service activates immediately; invoice due at trial end
 
 ### Services
 - List and detail view
-- Admin actions: suspend, unsuspend, terminate
+- Admin actions: suspend, unsuspend, terminate, approve & provision
 - Approve / reject cancellation requests
+- **Cancellation type** — immediate or end-of-period; end-of-period sets `scheduled_cancel_at`
+- **Client upgrade/downgrade** — change plan within same product type; prorated invoice or credit applied automatically
+- **Trial badge** — "Free Trial Active" notice with expiry date on client service detail
 - Provisioning info (module, credentials) stored on service record
+
+### Quotes
+- Admin creates freeform quotes: line items, tax rate, valid-until date, client message, internal notes
+- Quote numbers: `QUO-YYYYMMDD-NNNN`
+- Status lifecycle: `draft → sent → accepted / declined`
+- Admin sends quote — emails client with `quote.sent` template
+- Client accepts or declines from client portal; expired-quote notice shown past `valid_until`
+- Admin converts accepted quote to invoice with one click
 
 ### Invoices
 - List and detail view
@@ -134,12 +147,13 @@
 | `invoice.created` | Order placed |
 | `invoice.paid` | Invoice marked paid |
 | `invoice.overdue` | Overdue billing command |
-| `service.activated` | Provisioning runner |
+| `service.activated` | Provisioning runner (includes credential variables) |
 | `service.suspended` | Suspension command |
 | `support.reply` | Admin/staff reply on ticket |
 | `support.opened` | New ticket submitted (admin notification) |
 | `support.closed` | Ticket auto-closed (client notification) |
 | `support.assigned` | Ticket assigned to staff agent |
+| `quote.sent` | Admin sends quote to client |
 
 ### Email Log
 - Full outbound email history
@@ -173,6 +187,7 @@
 - Send Test button for verifying mail delivery
 - Billing: currency, invoice prefix, grace period, dunning config, late fee config, payment reminder days
 - Payments: Stripe, PayPal, Authorize.net key entry
+- **Fraud Check**: MaxMind account ID/license key, score threshold, action (flag or reject)
 
 ### Maintenance
 - In-browser migration runner — runs `artisan migrate --force`
@@ -190,11 +205,20 @@
 - Product catalog with type badges and billing cycle pricing
 - Domain availability check (live, debounced 600ms)
 - Group discount + tax applied automatically at checkout
-- Promo code support
+- **Promo codes** — percent, fixed, or free-setup-fee; date window; recurring cycle limit; new-clients-only flag
+- **Client notes** — optional free-text field for special instructions
+- **Order numbers** — `ORD-YYYYMMDD-NNNN` displayed on confirmation
+- **Fraud scoring** — orders silently scored via MaxMind minFraud before placement (if configured)
 
 ### Services
 - List and detail view
-- Submit cancellation request with reason
+- Submit cancellation request — choose immediate or end-of-period
+- **Plan change** — upgrade or downgrade to any product of the same type; prorated invoice or credit applied
+
+### Quotes
+- View quotes sent by the admin team
+- Accept or decline a quote
+- View the invoice created from an accepted quote
 
 ### Invoices
 - List and detail view
@@ -277,9 +301,10 @@
 
 | Command | Schedule | What it does |
 |---------|----------|-------------|
-| `billing:generate-invoices` | Daily 08:00 | Creates renewal invoices for services due within 14 days |
+| `billing:generate-invoices` | Daily 08:00 | Creates renewal invoices for services due within 14 days; skips trial-active and end-of-period cancel services |
 | `billing:flag-overdue` | Daily 00:05 | Marks past-due unpaid invoices overdue; sends `invoice.overdue` email |
-| `billing:suspend-overdue` | Daily 01:00 | Suspends services overdue past 3-day grace; sends `service.suspended` email |
+| `billing:suspend-overdue` | Daily 01:00 | Suspends services overdue past 3-day grace; skips trial-active services; sends `service.suspended` email |
+| `billing:process-cancellations` | Daily 00:30 | Cancels services whose end-of-period `scheduled_cancel_at` date has been reached |
 | `billing:send-reminders` | Daily 10:00 | Sends payment reminder emails per configurable day schedule |
 | `billing:apply-late-fees` | Daily 02:00 | Applies fixed/percent late fee to overdue invoices past threshold |
 | `billing:retry-payments` | Daily 11:00 | Retries failed Stripe auto-charges (dunning); tracks attempt count |

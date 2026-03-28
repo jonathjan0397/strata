@@ -8,11 +8,89 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
+- Product addons — extras attachable to services with separate billing
+- Affiliate system — referral tracking, commission calculation, payout management
 - Client billing history page (full invoice list with filters + PDF download)
 - Authorize.net Accept.js Vue component (client-side card entry)
-- Apply credit at checkout
-- HEXONET registrar driver — confirm sandbox testing
-- country/state fields on client profile for automatic tax resolution
+
+---
+
+## [1.9.0] — 2026-03-28 — Order Flow & Billing Management
+
+### Added
+
+#### Order Flow
+- **Human-readable order numbers** — `ORD-YYYYMMDD-NNNN` format; generated atomically after insert; shown in admin order list and service show
+- **Client notes on orders** — free-text field at checkout; shown in admin service detail and order card
+- **Auto-provision trigger per product** (`autosetup` field): `on_order` (provision immediately), `on_payment` (provision when invoice paid), `manual` (admin approves), `never`
+- **`OrderProvisioner` service** — centralised provisioning engine called by all paths: web request (`on_order`), payment webhooks (`on_payment`), admin manual approval, Artisan cron
+- **Welcome email with credential variables** — `service.activated` template updated to include `{{username}}`, `{{password}}`, `{{server}}`, `{{nameserver1}}`, `{{nameserver2}}`
+- **Approve & Provision button** on admin service show page; one-click provisioning for pending services
+
+#### Promo Code Enhancements
+- **Free setup fee type** (`free_setup`) — waives setup fee, shows "Setup fee waived" label at checkout
+- **Date window** (`starts_at`, `expires_at`) — promo codes can be restricted to a date range
+- **Recurring cycles** (`recurring_cycles`) — `null` = first invoice only, `n` = n cycles, `-1` = always applied
+- **New clients only** (`new_clients_only`) — restricts code to clients with no active/suspended services
+- **`PromoCode::isValid(?User)`** — model-level enforcement; `applies_once` and `new_clients_only` checks run regardless of code path
+- **`PromoCode::calculateDiscount(float $price, float $setupFee)`** — signature separates price from setup fee to correctly support `free_setup` type
+
+#### Cancellation Improvements
+- **Cancellation type** — client chooses `immediate` or `end_of_period` when requesting cancellation
+- **End-of-period cancellation** — sets `scheduled_cancel_at = next_due_date`; service stays `active`; renewal invoice generation and overdue suspension both skip scheduled-cancel services
+- **`billing:process-cancellations`** command — daily 00:30; cancels services whose `scheduled_cancel_at` date has been reached
+- Admin service show: amber banner for both pending and scheduled cancellations; cancellation type display
+
+#### Trial Periods
+- **`products.trial_days`** — integer; when set, service activates immediately regardless of `autosetup`
+- **`services.trial_ends_at`** — trial expiry date; set to `now() + trial_days` on order placement
+- Invoice due date set to `trial_ends_at` (not the standard `invoice_due_days` setting)
+- `billing:generate-renewals` and `billing:suspend-overdue` both skip services in active trial
+- Client service show: "Free Trial Active" indigo banner with expiry date
+- Admin service show: trial end date displayed in service details card
+
+#### Service Upgrade / Downgrade with Proration
+- Client can change plan from service show page — products of same type, not hidden, not current
+- Proration: remaining days × (new daily rate − old daily rate)
+  - Net positive → prorated invoice created (due 7 days); notes reference old → new product
+  - Net negative → difference added as account credit immediately
+- Route `POST client/services/{service}/upgrade`
+- Plan selector labels each option as **Upgrade** or **Downgrade** with price and billing cycle
+
+#### Fraud Check (MaxMind minFraud Score)
+- **`FraudChecker::evaluate()`** service — calls minFraud Score API before any DB writes on order placement
+- Graceful fallback: API errors logged as warnings; order always proceeds if API is unreachable
+- Two actions: `flag` (stores score on order, order proceeds) or `reject` (blocks order, returns error)
+- `orders.fraud_score` and `orders.fraud_flags` columns; score visible to admin
+- Settings → Integrations: account ID, license key, score threshold (0–100), and action selector
+
+#### Quote System
+- Admin creates quotes with freeform line items, optional tax rate, valid-until date, client message, internal notes
+- **Quote numbers**: `QUO-YYYYMMDD-NNNN`
+- **Status lifecycle**: `draft → sent → accepted / declined`
+- Admin sends quote — transitions to `sent`; emails client with `quote.sent` template (seeded on migration)
+- Client accepts or declines from `/client/quotes/{id}` — expired-quote notice shown if past `valid_until`
+- Admin converts accepted quote to invoice (`POST admin/quotes/{id}/convert`) — `converted_invoice_id` links quote to invoice
+- 5 new Vue pages: `Admin/Quotes/Index`, `Admin/Quotes/Form`, `Admin/Quotes/Show`, `Client/Quotes/Index`, `Client/Quotes/Show`
+
+### Changed
+- `ProvisionPendingServices` command rewritten — filters by `autosetup = on_payment`, delegates entirely to `OrderProvisioner::provision()`; removed duplicate credential logic and `Mail::queue()` calls
+- `OrderController::place()` — service created before order item (fixes `service_id` always being null on `order_items`); promo validation moved into `PromoCode::isValid()`
+- `Admin/ServiceController::approveCancellation()` — branches on `cancellation_type`; end-of-period sets `scheduled_cancel_at`, immediate marks `cancelled`
+- `Client/ServiceController::requestCancellation()` — now validates and stores `cancellation_type`
+- `Client/PromoController::validate()` — accepts `price` + `setup_fee` instead of `subtotal`; passes user to `isValid()`; returns 'Setup fee waived' label for `free_setup`
+- All invoice-paid paths (admin mark-paid, Stripe webhook, PayPal capture, Authorize.net capture, client apply-credit) now call `OrderProvisioner::handleInvoicePaid()`
+- Admin Products Form — added Auto Setup dropdown; Trial Period days field
+- Client Services Show — cancellation type radio (end-of-period / immediate); upgrade/downgrade plan panel
+
+### Database
+- `products`: `autosetup` enum, `trial_days` smallint
+- `orders`: `order_number` varchar, `client_notes` text, `fraud_score` decimal, `fraud_flags` json
+- `services`: `cancellation_type` enum, `scheduled_cancel_at` date, `trial_ends_at` date
+- `promo_codes`: `free_setup` added to type enum, `starts_at` timestamp, `recurring_cycles` smallint, `new_clients_only` boolean
+- `quotes` table (new)
+- `quote_items` table (new)
+- `email_templates`: `service.active` updated with credential variables; `quote.sent` seeded
 
 ---
 
