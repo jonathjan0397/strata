@@ -46,7 +46,7 @@ const typeColor = {
       {{ tagline }}
     </p>
     <div class="flex flex-wrap justify-center gap-4">
-      <Link href="/services"
+      <Link :href="route('portal.products')"
         class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all"
         style="background: linear-gradient(135deg, #0ea5e9, #6366f1); box-shadow: 0 4px 20px rgba(14,165,233,0.4);">
         View Services
@@ -54,7 +54,7 @@ const typeColor = {
           <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
         </svg>
       </Link>
-      <Link href="/login"
+      <Link :href="route('login')"
         class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white/80 transition-all"
         style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px);"
         onmouseover="this.style.background='rgba(255,255,255,0.14)'"
@@ -77,7 +77,7 @@ const typeColor = {
   <section v-if="products?.length" class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-white">Popular Plans</h2>
-      <Link href="/services" class="text-sm text-sky-400 hover:text-sky-300 transition-colors">
+      <Link :href="route('portal.products')" class="text-sm text-sky-400 hover:text-sky-300 transition-colors">
         View all →
       </Link>
     </div>
@@ -102,7 +102,7 @@ const typeColor = {
             <span class="text-sm text-white/50">{{ cycleLabel[p.billing_cycle] ?? '' }}</span>
             <div v-if="Number(p.setup_fee) > 0" class="text-xs text-white/40 mt-1">${{ p.setup_fee }} setup fee</div>
           </div>
-          <Link href="/register"
+          <Link :href="route('register')"
             class="block w-full text-center px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
             style="background: linear-gradient(135deg, #0ea5e9, #6366f1);"
             onmouseover="this.style.opacity='0.85'"
@@ -134,7 +134,7 @@ const typeColor = {
   <section v-if="announcements?.length" class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-white">Latest News</h2>
-      <Link href="/announcements" class="text-sm text-sky-400 hover:text-sky-300 transition-colors">All announcements →</Link>
+      <Link :href="route('portal.announcements')" class="text-sm text-sky-400 hover:text-sky-300 transition-colors">All announcements →</Link>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
       <div v-for="a in announcements" :key="a.id"
@@ -153,7 +153,7 @@ const typeColor = {
   <section v-if="categories?.length" class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-white">Help Center</h2>
-      <Link href="/kb" class="text-sm text-sky-400 hover:text-sky-300 transition-colors">Browse all →</Link>
+      <Link :href="route('portal.kb')" class="text-sm text-sky-400 hover:text-sky-300 transition-colors">Browse all →</Link>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       <div v-for="cat in categories" :key="cat.id"
@@ -162,13 +162,13 @@ const typeColor = {
         <h3 class="font-semibold text-sky-300 mb-3 text-sm uppercase tracking-wider">{{ cat.name }}</h3>
         <ul class="space-y-1.5">
           <li v-for="art in cat.published_articles" :key="art.id">
-            <Link :href="`/kb/${art.slug}`"
+            <Link :href="route('portal.kb.show', art.slug)"
               class="text-sm text-white/70 hover:text-white transition-colors hover:underline underline-offset-2">
               {{ art.title }}
             </Link>
           </li>
         </ul>
-        <Link :href="`/kb`" class="mt-4 inline-block text-xs text-sky-400/70 hover:text-sky-300 transition-colors">
+        <Link :href="route('portal.kb')" class="mt-4 inline-block text-xs text-sky-400/70 hover:text-sky-300 transition-colors">
           More articles →
         </Link>
       </div>
@@ -183,7 +183,7 @@ const typeColor = {
         style="background: radial-gradient(circle at 50% 50%, #38bdf8 0%, transparent 70%);"/>
       <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4 relative">Ready to get started?</h2>
       <p class="text-white/60 mb-8 relative">Create your account and order a service in under 2 minutes.</p>
-      <Link href="/register"
+      <Link :href="route('register')"
         class="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold text-white relative"
         style="background: linear-gradient(135deg, #0ea5e9, #6366f1); box-shadow: 0 4px 20px rgba(14,165,233,0.4);">
         Create Free Account

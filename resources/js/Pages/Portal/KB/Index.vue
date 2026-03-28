@@ -95,7 +95,7 @@ const filtered = computed(() => {
       style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(8px);">
       <h3 class="font-semibold text-white mb-2">Can't find what you're looking for?</h3>
       <p class="text-sm text-white/50 mb-5">Our support team is available 24/7 to help you.</p>
-      <Link href="/login"
+      <Link :href="route('login')"
         class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
         style="background: linear-gradient(135deg, #0ea5e9, #6366f1); box-shadow: 0 2px 12px rgba(14,165,233,0.3);">
         Open a Support Ticket

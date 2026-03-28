@@ -311,6 +311,7 @@ APP_ENV=production
 APP_KEY={$appKey}
 APP_DEBUG=false
 APP_URL={$appUrl}
+ASSET_URL={$appUrl}
 APP_INSTALLED=true
 
 LOG_CHANNEL=stack

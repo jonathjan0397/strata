@@ -355,7 +355,7 @@ function b64(str) {
             <label class="block text-xs font-medium text-gray-400 mb-1">Site URL</label>
             <input v-model="site.url" type="url" placeholder="https://billing.yourdomain.com"
               class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            <p class="mt-1 text-xs text-gray-500">Must match the URL you will access this site from. No trailing slash.</p>
+            <p class="mt-1 text-xs text-gray-500">Full URL including any subdirectory. No trailing slash. Examples: <code class="text-gray-400">https://yourdomain.com</code> or <code class="text-gray-400">https://yourdomain.com/billing</code></p>
           </div>
         </div>
         <div class="flex gap-3">

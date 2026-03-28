@@ -16,11 +16,11 @@ defineProps({
 
     <!-- Breadcrumb -->
     <nav class="flex items-center gap-2 text-sm text-white/40 mb-8">
-      <Link href="/kb" class="hover:text-white/70 transition-colors">Help Center</Link>
+      <Link :href="route('portal.kb')" class="hover:text-white/70 transition-colors">Help Center</Link>
       <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
       </svg>
-      <Link v-if="article.category" href="/kb" class="hover:text-white/70 transition-colors">
+      <Link v-if="article.category" :href="route('portal.kb')" class="hover:text-white/70 transition-colors">
         {{ article.category.name }}
       </Link>
       <svg v-if="article.category" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -69,7 +69,7 @@ defineProps({
               onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.7)'">
               👍 Yes
             </button>
-            <Link href="/login"
+            <Link :href="route('login')"
               class="px-4 py-1.5 rounded-lg text-sm text-white/70 transition-colors"
               style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);"
               onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#fca5a5'"
@@ -87,7 +87,7 @@ defineProps({
           <h3 class="text-xs font-semibold uppercase tracking-wider text-sky-400/80 mb-4">Related Articles</h3>
           <ul class="space-y-3">
             <li v-for="r in related" :key="r.id">
-              <Link :href="`/kb/${r.slug}`"
+              <Link :href="route('portal.kb.show', r.slug)"
                 class="text-sm text-white/65 hover:text-white transition-colors leading-snug hover:underline underline-offset-2 block">
                 {{ r.title }}
               </Link>
@@ -96,7 +96,7 @@ defineProps({
           </ul>
 
           <div class="mt-6 pt-5" style="border-top: 1px solid rgba(255,255,255,0.1);">
-            <Link href="/kb"
+            <Link :href="route('portal.kb')"
               class="block w-full text-center py-2 rounded-lg text-xs font-medium text-white/70 transition-colors"
               style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);"
               onmouseover="this.style.background='rgba(255,255,255,0.14)'"

@@ -114,7 +114,7 @@ const typeColor = {
             </li>
           </ul>
 
-          <Link href="/register"
+          <Link :href="route('register')"
             class="block w-full text-center px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
             style="background: linear-gradient(135deg, #0ea5e9, #6366f1); box-shadow: 0 2px 12px rgba(14,165,233,0.3);"
             onmouseover="this.style.boxShadow='0 4px 20px rgba(14,165,233,0.5)'"

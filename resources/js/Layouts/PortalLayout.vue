@@ -9,11 +9,11 @@ const siteName = computed(() => page.props.siteName ?? 'Strata')
 
 const mobileOpen = ref(false)
 
-const nav = [
-  { label: 'Services',      href: '/services' },
-  { label: 'Announcements', href: '/announcements' },
-  { label: 'Help Center',   href: '/kb' },
-]
+const nav = computed(() => [
+  { label: 'Services',      href: route('portal.products') },
+  { label: 'Announcements', href: route('portal.announcements') },
+  { label: 'Help Center',   href: route('portal.kb') },
+])
 </script>
 
 <template>
@@ -37,7 +37,7 @@ const nav = [
       <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
 
         <!-- Logo -->
-        <Link href="/" class="flex items-center gap-2 shrink-0">
+        <Link :href="route('home')" class="flex items-center gap-2 shrink-0">
           <div class="h-8 w-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
             style="background: linear-gradient(135deg, #38bdf8, #6366f1);">S</div>
           <span class="text-white font-semibold text-lg tracking-tight">{{ siteName }}</span>
@@ -66,14 +66,14 @@ const nav = [
             </Link>
           </template>
           <template v-else>
-            <Link href="/login"
+            <Link :href="route('login')"
               class="hidden sm:inline-flex px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
               style="color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.2);"
               onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='#fff'"
               onmouseout="this.style.background='transparent';this.style.color='rgba(255,255,255,0.8)'">
               Sign In
             </Link>
-            <Link href="/register"
+            <Link :href="route('register')"
               class="inline-flex px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-all"
               style="background: linear-gradient(135deg, #0ea5e9, #6366f1); box-shadow: 0 2px 12px rgba(14,165,233,0.35);"
               onmouseover="this.style.boxShadow='0 4px 20px rgba(14,165,233,0.5)'"
@@ -100,8 +100,8 @@ const nav = [
           {{ n.label }}
         </a>
         <div class="pt-2 border-t border-white/10 flex gap-2">
-          <Link href="/login" class="flex-1 text-center py-2 rounded-lg text-sm text-white/80 border border-white/20 hover:bg-white/10">Sign In</Link>
-          <Link href="/register" class="flex-1 text-center py-2 rounded-lg text-sm text-white font-semibold"
+          <Link :href="route('login')" class="flex-1 text-center py-2 rounded-lg text-sm text-white/80 border border-white/20 hover:bg-white/10">Sign In</Link>
+          <Link :href="route('register')" class="flex-1 text-center py-2 rounded-lg text-sm text-white font-semibold"
             style="background: linear-gradient(135deg, #0ea5e9, #6366f1);">Get Started</Link>
         </div>
       </div>
@@ -137,10 +137,10 @@ const nav = [
             <span class="text-white/60 text-sm">{{ siteName }}</span>
           </div>
           <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/50">
-            <a href="/services"      class="hover:text-white/80 transition-colors">Services</a>
-            <a href="/kb"            class="hover:text-white/80 transition-colors">Help Center</a>
-            <a href="/announcements" class="hover:text-white/80 transition-colors">News</a>
-            <a href="/login"         class="hover:text-white/80 transition-colors">Client Login</a>
+            <a :href="route('portal.products')"      class="hover:text-white/80 transition-colors">Services</a>
+            <a :href="route('portal.kb')"            class="hover:text-white/80 transition-colors">Help Center</a>
+            <a :href="route('portal.announcements')" class="hover:text-white/80 transition-colors">News</a>
+            <a :href="route('login')"                class="hover:text-white/80 transition-colors">Client Login</a>
           </nav>
           <p class="text-white/30 text-xs">&copy; {{ new Date().getFullYear() }} {{ siteName }}. All rights reserved.</p>
         </div>
