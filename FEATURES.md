@@ -316,7 +316,7 @@
 
 | Command | Schedule | What it does |
 |---------|----------|-------------|
-| `billing:generate-invoices` | Daily 08:00 | Creates renewal invoices for services due within 14 days; skips trial-active and end-of-period cancel services |
+| `billing:generate-renewals` | Daily 08:00 | Creates renewal invoices for services due within 14 days (skips trial-active and end-of-period cancel services); also generates addon renewal invoices |
 | `billing:flag-overdue` | Daily 00:05 | Marks past-due unpaid invoices overdue; sends `invoice.overdue` email |
 | `billing:suspend-overdue` | Daily 01:00 | Suspends services overdue past 3-day grace; skips trial-active services; sends `service.suspended` email |
 | `billing:process-cancellations` | Daily 00:30 | Cancels services whose end-of-period `scheduled_cancel_at` date has been reached |
