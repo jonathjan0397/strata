@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\OrderProvisioner;
 use App\Services\WorkflowEngine;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -142,6 +143,13 @@ class InvoiceController extends Controller
             'status'  => 'paid',
             'paid_at' => now(),
         ]);
+
+        // Trigger on_payment provisioning for any pending services linked to this invoice
+        try {
+            OrderProvisioner::handleInvoicePaid($invoice);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+        }
 
         try {
             Mail::to($invoice->user->email)->send(new TemplateMailable('invoice.paid', [

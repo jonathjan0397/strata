@@ -24,6 +24,7 @@ const form = useForm({
   domain:        props.domain ?? '',
   promo_code:    '',
   apply_credit:  false,
+  client_notes:  '',
 })
 
 const cycleLabel = {
@@ -189,6 +190,15 @@ watch(() => form.domain, (val) => {
           <span class="text-indigo-500 font-normal">(Balance: ${{ creditBalance.toFixed(2) }})</span>
         </label>
         <input id="apply_credit" v-model="applyCredit" type="checkbox" class="ml-3 rounded border-indigo-300 text-indigo-600" />
+      </div>
+
+      <!-- Notes for provider -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Notes <span class="text-gray-400 font-normal">(optional — special requests or information for our team)</span>
+        </label>
+        <textarea v-model="form.client_notes" rows="3" maxlength="2000" placeholder="Any special instructions or requirements…"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
       </div>
 
       <!-- Terms notice -->

@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\OrderProvisioner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
@@ -45,10 +47,17 @@ class AuthorizeNetPaymentController extends Controller
             ]);
 
             $invoice->update([
-                'status'  => 'paid',
-                'paid_at' => now(),
+                'status'     => 'paid',
+                'paid_at'    => now(),
                 'amount_due' => 0,
             ]);
+
+            // Trigger on_payment provisioning
+            try {
+                OrderProvisioner::handleInvoicePaid($invoice);
+            } catch (\Throwable $e) {
+                Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+            }
 
             try {
                 Mail::to($request->user()->email)->send(new TemplateMailable('invoice.paid', [

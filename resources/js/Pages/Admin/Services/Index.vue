@@ -37,6 +37,7 @@ watch([search, status], ([s, st]) => {
             <th class="px-4 py-3 text-left font-medium text-gray-500">Domain</th>
             <th class="px-4 py-3 text-right font-medium text-gray-500">Due</th>
             <th class="px-4 py-3 text-right font-medium text-gray-500">Status</th>
+            <th class="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -50,6 +51,13 @@ watch([search, status], ([s, st]) => {
             </td>
             <td class="px-4 py-3 text-right text-gray-500">{{ s.next_due_date ?? '—' }}</td>
             <td class="px-4 py-3 text-right"><StatusBadge :status="s.status" /></td>
+            <td class="px-4 py-3 text-right">
+              <button v-if="s.status === 'pending'"
+                @click="router.post(route('admin.services.approve', s.id))"
+                class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg">
+                Approve
+              </button>
+            </td>
           </tr>
           <tr v-if="!services.data.length">
             <td colspan="5" class="px-4 py-8 text-center text-gray-400">No services found.</td>

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\OrderProvisioner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
 use Throwable;
 
@@ -141,6 +143,13 @@ class PayPalPaymentController extends Controller
                         'status'  => 'paid',
                         'paid_at' => now(),
                     ]);
+
+                    // Trigger on_payment provisioning
+                    try {
+                        OrderProvisioner::handleInvoicePaid($invoice);
+                    } catch (\Throwable $e) {
+                        Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+                    }
                 }
 
                 return redirect()->route('client.invoices.show', $invoice->id)

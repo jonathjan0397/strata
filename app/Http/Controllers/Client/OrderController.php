@@ -13,9 +13,11 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Models\TaxRate;
 use App\Services\DomainRegistrarService;
+use App\Services\OrderProvisioner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,6 +68,7 @@ class OrderController extends Controller
             'domain'        => ['nullable', 'string', 'max:253'],
             'promo_code'    => ['nullable', 'string', 'max:64'],
             'apply_credit'  => ['nullable', 'boolean'],
+            'client_notes'  => ['nullable', 'string', 'max:2000'],
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -89,8 +92,12 @@ class OrderController extends Controller
 
         $applyCredit = (bool) $request->input('apply_credit', false);
 
+        // These will be populated inside the transaction
+        $createdService = null;
+        $createdOrder   = null;
+
         try {
-            DB::transaction(function () use ($request, $product, $promo, $discount, $applyCredit) {
+            DB::transaction(function () use ($request, $product, $promo, $discount, $applyCredit, &$createdService, &$createdOrder) {
                 $user     = $request->user()->load('group');
                 $price    = (float) $product->price;
                 $setupFee = (float) $product->setup_fee;
@@ -105,32 +112,28 @@ class OrderController extends Controller
                 $discountedSubtotal = max(0, $subtotal - $discount - $groupDiscount);
 
                 // Resolve tax
-                $taxRate   = $product->taxable ? TaxRate::resolveForUser($user) : null;
+                $taxRate    = $product->taxable ? TaxRate::resolveForUser($user) : null;
                 $taxRateVal = $taxRate ? (float) $taxRate->rate : 0;
-                $tax       = $taxRate ? round($discountedSubtotal * ($taxRateVal / 100), 2) : 0;
-                $total     = $discountedSubtotal + $tax;
+                $tax        = $taxRate ? round($discountedSubtotal * ($taxRateVal / 100), 2) : 0;
+                $total      = $discountedSubtotal + $tax;
 
                 // 1. Create order
                 $order = Order::create([
-                    'user_id'    => $user->id,
-                    'status'     => 'pending',
-                    'subtotal'   => $subtotal,
-                    'discount'   => $discount + $groupDiscount,
-                    'total'      => $total,
-                    'promo_code' => $promo?->code,
+                    'user_id'      => $user->id,
+                    'status'       => 'pending',
+                    'subtotal'     => $subtotal,
+                    'discount'     => $discount + $groupDiscount,
+                    'total'        => $total,
+                    'promo_code'   => $promo?->code,
+                    'client_notes' => $request->client_notes,
                 ]);
 
-                // 2. Order item
-                $order->items()->create([
-                    'product_id'    => $product->id,
-                    'domain'        => $request->domain,
-                    'description'   => $product->name.($request->domain ? ' — '.$request->domain : ''),
-                    'price'         => $price,
-                    'setup_fee'     => $setupFee,
-                    'billing_cycle' => $request->billing_cycle,
+                // Generate human-readable order number: ORD-YYYYMMDD-NNNN
+                $order->update([
+                    'order_number' => 'ORD-' . now()->format('Ymd') . '-' . str_pad($order->id, 4, '0', STR_PAD_LEFT),
                 ]);
 
-                // 3. Service record (pending provisioning)
+                // 2. Service record (pending provisioning)
                 $service = Service::create([
                     'user_id'           => $user->id,
                     'product_id'        => $product->id,
@@ -140,6 +143,17 @@ class OrderController extends Controller
                     'billing_cycle'     => $request->billing_cycle,
                     'registration_date' => now(),
                     'next_due_date'     => $this->nextDueDate($request->billing_cycle),
+                ]);
+
+                // 3. Order item — linked to the service
+                $order->items()->create([
+                    'product_id'    => $product->id,
+                    'service_id'    => $service->id,
+                    'domain'        => $request->domain,
+                    'description'   => $product->name . ($request->domain ? ' — ' . $request->domain : ''),
+                    'price'         => $price,
+                    'setup_fee'     => $setupFee,
+                    'billing_cycle' => $request->billing_cycle,
                 ]);
 
                 // 4. Invoice
@@ -159,7 +173,7 @@ class OrderController extends Controller
                 if ($setupFee > 0) {
                     $invoice->items()->create([
                         'service_id'  => $service->id,
-                        'description' => 'Setup Fee — '.$product->name,
+                        'description' => 'Setup Fee — ' . $product->name,
                         'quantity'    => 1,
                         'unit_price'  => $setupFee,
                         'total'       => $setupFee,
@@ -168,7 +182,7 @@ class OrderController extends Controller
 
                 $invoice->items()->create([
                     'service_id'  => $service->id,
-                    'description' => $product->name.($request->domain ? ' — '.$request->domain : ''),
+                    'description' => $product->name . ($request->domain ? ' — ' . $request->domain : ''),
                     'quantity'    => 1,
                     'unit_price'  => $price,
                     'total'       => $price,
@@ -178,7 +192,7 @@ class OrderController extends Controller
                 if ($discount > 0 && $promo) {
                     $invoice->items()->create([
                         'service_id'  => $service->id,
-                        'description' => 'Promo: '.$promo->code,
+                        'description' => 'Promo: ' . $promo->code,
                         'quantity'    => 1,
                         'unit_price'  => -$discount,
                         'total'       => -$discount,
@@ -202,7 +216,7 @@ class OrderController extends Controller
                 if ($groupDiscount > 0 && $user->group) {
                     $invoice->items()->create([
                         'service_id'  => $service->id,
-                        'description' => 'Group Discount: '.$user->group->name,
+                        'description' => 'Group Discount: ' . $user->group->name,
                         'quantity'    => 1,
                         'unit_price'  => -$groupDiscount,
                         'total'       => -$groupDiscount,
@@ -244,21 +258,43 @@ class OrderController extends Controller
                     ]);
                 }
 
-                // 8. Mark order active
-                $order->update(['status' => 'active']);
-
-                session(['last_order_invoice_id' => $invoice->id]);
+                session(['last_order_invoice_id'     => $invoice->id]);
                 session(['last_order_invoice_amount' => $total]);
-                session(['last_order_invoice_due' => now()->addDays((int) Setting::get('invoice_due_days', 7))->format('M d, Y')]);
+                session(['last_order_invoice_due'    => now()->addDays((int) Setting::get('invoice_due_days', 7))->format('M d, Y')]);
+
+                $createdService = $service;
+                $createdOrder   = $order;
             });
 
         } catch (Throwable $e) {
-            return back()->with('error', 'Order could not be placed: '.$e->getMessage());
+            return back()->with('error', 'Order could not be placed: ' . $e->getMessage());
         }
 
-        $invoiceId  = session()->pull('last_order_invoice_id');
-        $amount     = session()->pull('last_order_invoice_amount');
-        $due        = session()->pull('last_order_invoice_due');
+        $invoiceId = session()->pull('last_order_invoice_id');
+        $amount    = session()->pull('last_order_invoice_amount');
+        $due       = session()->pull('last_order_invoice_due');
+
+        // Trigger immediate provisioning for on_order products
+        if ($createdService && $product->autosetup === 'on_order') {
+            try {
+                $createdService->refresh();
+                OrderProvisioner::provision($createdService);
+            } catch (Throwable $e) {
+                Log::error("on_order provisioning failed for service #{$createdService->id}: " . $e->getMessage());
+            }
+        }
+
+        // If invoice was fully covered by credit, trigger on_payment provisioning too
+        if ($createdService && $product->autosetup === 'on_payment') {
+            $invoice = Invoice::with('items.service.product')->find($invoiceId);
+            if ($invoice && $invoice->status === 'paid') {
+                try {
+                    OrderProvisioner::handleInvoicePaid($invoice);
+                } catch (Throwable $e) {
+                    Log::error("on_payment provisioning failed for invoice #{$invoiceId}: " . $e->getMessage());
+                }
+            }
+        }
 
         try {
             Mail::to($request->user()->email)->send(new TemplateMailable('invoice.created', [

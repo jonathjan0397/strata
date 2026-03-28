@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\TemplateMailable;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\OrderProvisioner;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -94,6 +95,14 @@ class StripeWebhookController extends Controller
         ]);
 
         $invoice->load('user');
+
+        // Trigger on_payment provisioning for any pending services linked to this invoice
+        try {
+            OrderProvisioner::handleInvoicePaid($invoice);
+        } catch (\Throwable $e) {
+            Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+        }
+
         try {
             Mail::to($invoice->user->email)->send(new TemplateMailable('invoice.paid', [
                 'name'        => $invoice->user->name,

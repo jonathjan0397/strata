@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Mail\TemplateMailable;
 use App\Models\Service;
 use App\Services\AuditLogger;
+use App\Services\OrderProvisioner;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,31 +35,23 @@ class ServiceController extends Controller
 
     public function show(Service $service): Response
     {
-        $service->load(['user', 'product', 'invoiceItems.invoice']);
+        $service->load(['user', 'product', 'invoiceItems.invoice', 'orderItem.order']);
 
         return Inertia::render('Admin/Services/Show', ['service' => $service]);
     }
 
+    /**
+     * Manually approve a pending service.
+     * Runs the provisioner (if a module is configured) and sends the welcome email.
+     */
     public function approve(Service $service): RedirectResponse
     {
         abort_unless($service->status === 'pending', 422);
 
-        $service->load(['user', 'product']);
-        $service->update(['status' => 'active']);
-
-        AuditLogger::log('service.activated', $service);
-        WorkflowEngine::fire('service.active', $service);
-
         try {
-            Mail::to($service->user->email)->send(new TemplateMailable('service.active', [
-                'name'         => $service->user->name,
-                'app_name'     => config('app.name'),
-                'service_name' => $service->product->name ?? 'Service',
-                'domain'       => $service->domain ?? '—',
-                'portal_url'   => route('client.services.show', $service->id),
-            ]));
-        } catch (\Throwable) {
-            // mail failure must not block service activation
+            OrderProvisioner::provision($service);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Provisioning failed: ' . $e->getMessage());
         }
 
         return back()->with('success', 'Service approved and activated.');

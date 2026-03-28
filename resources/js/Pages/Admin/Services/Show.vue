@@ -14,6 +14,11 @@ function terminate() {
     router.post(route('admin.services.terminate', props.service.id))
   }
 }
+function approve() {
+  if (confirm('Approve and provision this service now?')) {
+    router.post(route('admin.services.approve', props.service.id))
+  }
+}
 function approveCancellation() {
   if (confirm('Approve cancellation? The service will be marked cancelled.')) {
     router.post(route('admin.services.approve-cancellation', props.service.id))
@@ -87,6 +92,11 @@ function fmt(val) {
           </template>
           <template v-else>
             <button
+              v-if="service.status === 'pending'"
+              @click="approve"
+              class="w-full px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+            >Approve &amp; Provision</button>
+            <button
               v-if="service.status === 'active'"
               @click="suspend"
               class="w-full px-3 py-2 rounded-lg bg-yellow-500 text-white text-sm font-medium hover:bg-yellow-600"
@@ -112,7 +122,20 @@ function fmt(val) {
         <div v-if="service.server_hostname"><span class="text-gray-500">Server:</span> {{ service.server_hostname }}<span v-if="service.server_port">:{{ service.server_port }}</span></div>
       </div>
 
-      <!-- Notes -->
+      <!-- Order info (client notes + order number) -->
+      <div v-if="service.order_item?.order" class="bg-white rounded-xl border border-gray-200 p-5 space-y-2 text-sm">
+        <h2 class="font-semibold text-gray-900 mb-3">Order</h2>
+        <div v-if="service.order_item.order.order_number">
+          <span class="text-gray-500">Order:</span>
+          <span class="font-mono">{{ service.order_item.order.order_number }}</span>
+        </div>
+        <div v-if="service.order_item.order.client_notes">
+          <p class="text-gray-500 mb-1">Client Notes:</p>
+          <p class="text-gray-700 whitespace-pre-wrap bg-amber-50 border border-amber-100 rounded-lg p-3">{{ service.order_item.order.client_notes }}</p>
+        </div>
+      </div>
+
+      <!-- Service Notes -->
       <div v-if="service.notes" class="bg-white rounded-xl border border-gray-200 p-5 text-sm">
         <h2 class="font-semibold text-gray-900 mb-3">Notes</h2>
         <p class="text-gray-600 whitespace-pre-wrap">{{ service.notes }}</p>

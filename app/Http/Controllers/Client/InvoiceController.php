@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ClientCredit;
 use App\Models\Invoice;
+use App\Services\OrderProvisioner;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,7 +73,8 @@ class InvoiceController extends Controller
         }
 
         // Apply as much as we have, up to the full amount due
-        $apply = min($available, $amountDue);
+        $apply        = min($available, $amountDue);
+        $newAmountDue = round($amountDue - $apply, 2);
 
         DB::transaction(function () use ($user, $invoice, $apply) {
             ClientCredit::create([
@@ -94,6 +96,16 @@ class InvoiceController extends Controller
                 'paid_at'        => $newAmountDue <= 0 ? now() : $invoice->paid_at,
             ]);
         });
+
+        // If credit fully covered the invoice, trigger on_payment provisioning
+        if ($newAmountDue <= 0) {
+            $invoice->refresh();
+            try {
+                OrderProvisioner::handleInvoicePaid($invoice);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+            }
+        }
 
         return back()->with('success', '$'.number_format($apply, 2).' credit applied to invoice.');
     }

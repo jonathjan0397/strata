@@ -12,19 +12,20 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'description', 'type', 'price', 'setup_fee',
-        'billing_cycle', 'module', 'module_config', 'stock',
+        'name', 'category', 'short_description', 'description', 'type', 'price', 'setup_fee',
+        'billing_cycle', 'module', 'autosetup', 'module_config', 'configurable_options', 'stock',
         'hidden', 'taxable', 'sort_order',
     ];
 
     protected function casts(): array
     {
         return [
-            'price'         => 'decimal:2',
-            'setup_fee'     => 'decimal:2',
-            'module_config' => 'array',
-            'hidden'        => 'boolean',
-            'taxable'       => 'boolean',
+            'price'                 => 'decimal:2',
+            'setup_fee'             => 'decimal:2',
+            'module_config'         => 'array',
+            'configurable_options'  => 'array',
+            'hidden'                => 'boolean',
+            'taxable'               => 'boolean',
         ];
     }
 

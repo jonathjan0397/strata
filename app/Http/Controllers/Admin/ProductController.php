@@ -29,17 +29,24 @@ class ProductController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'description'   => ['nullable', 'string'],
-            'type'          => ['required', 'in:shared,reseller,vps,dedicated,domain,ssl,other'],
-            'price'         => ['required', 'numeric', 'min:0'],
-            'setup_fee'     => ['required', 'numeric', 'min:0'],
-            'billing_cycle' => ['required', 'in:monthly,quarterly,semi_annual,annual,biennial,triennial,one_time'],
-            'module'        => ['nullable', 'string'],
-            'module_config' => ['nullable', 'array'],
-            'hidden'        => ['boolean'],
-            'taxable'       => ['boolean'],
-            'sort_order'    => ['integer'],
+            'name'                  => ['required', 'string', 'max:255'],
+            'category'              => ['nullable', 'string', 'max:100'],
+            'short_description'     => ['nullable', 'string', 'max:255'],
+            'description'           => ['nullable', 'string'],
+            'type'                  => ['required', 'in:shared,reseller,vps,dedicated,domain,ssl,other'],
+            'price'                 => ['required', 'numeric', 'min:0'],
+            'setup_fee'             => ['required', 'numeric', 'min:0'],
+            'billing_cycle'         => ['required', 'in:monthly,quarterly,semi_annual,annual,biennial,triennial,one_time'],
+            'module'                => ['nullable', 'string'],
+            'autosetup'             => ['nullable', 'in:on_order,on_payment,manual,never'],
+            'module_config'         => ['nullable', 'array'],
+            'configurable_options'  => ['nullable', 'array'],
+            'configurable_options.*.name'    => ['required_with:configurable_options', 'string', 'max:100'],
+            'configurable_options.*.choices' => ['required_with:configurable_options', 'array', 'min:1'],
+            'stock'                 => ['nullable', 'integer', 'min:0'],
+            'hidden'                => ['boolean'],
+            'taxable'               => ['boolean'],
+            'sort_order'            => ['integer'],
         ]);
 
         $product = Product::create($data);
@@ -56,17 +63,24 @@ class ProductController extends Controller
     public function update(Request $request, Product $product): RedirectResponse
     {
         $data = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'description'   => ['nullable', 'string'],
-            'type'          => ['required', 'in:shared,reseller,vps,dedicated,domain,ssl,other'],
-            'price'         => ['required', 'numeric', 'min:0'],
-            'setup_fee'     => ['required', 'numeric', 'min:0'],
-            'billing_cycle' => ['required', 'in:monthly,quarterly,semi_annual,annual,biennial,triennial,one_time'],
-            'module'        => ['nullable', 'string'],
-            'module_config' => ['nullable', 'array'],
-            'hidden'        => ['boolean'],
-            'taxable'       => ['boolean'],
-            'sort_order'    => ['integer'],
+            'name'                  => ['required', 'string', 'max:255'],
+            'category'              => ['nullable', 'string', 'max:100'],
+            'short_description'     => ['nullable', 'string', 'max:255'],
+            'description'           => ['nullable', 'string'],
+            'type'                  => ['required', 'in:shared,reseller,vps,dedicated,domain,ssl,other'],
+            'price'                 => ['required', 'numeric', 'min:0'],
+            'setup_fee'             => ['required', 'numeric', 'min:0'],
+            'billing_cycle'         => ['required', 'in:monthly,quarterly,semi_annual,annual,biennial,triennial,one_time'],
+            'module'                => ['nullable', 'string'],
+            'autosetup'             => ['nullable', 'in:on_order,on_payment,manual,never'],
+            'module_config'         => ['nullable', 'array'],
+            'configurable_options'  => ['nullable', 'array'],
+            'configurable_options.*.name'    => ['required_with:configurable_options', 'string', 'max:100'],
+            'configurable_options.*.choices' => ['required_with:configurable_options', 'array', 'min:1'],
+            'stock'                 => ['nullable', 'integer', 'min:0'],
+            'hidden'                => ['boolean'],
+            'taxable'               => ['boolean'],
+            'sort_order'            => ['integer'],
         ]);
 
         $product->update($data);

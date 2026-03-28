@@ -12,8 +12,8 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'status', 'subtotal', 'tax', 'total',
-        'promo_code', 'discount', 'notes',
+        'user_id', 'order_number', 'status', 'subtotal', 'tax', 'total',
+        'promo_code', 'discount', 'notes', 'client_notes',
     ];
 
     protected function casts(): array
