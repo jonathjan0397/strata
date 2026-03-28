@@ -291,6 +291,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('email-log',                [Admin\EmailLogController::class, 'index'])->name('email-log.index');
         Route::get('email-log/{emailLog}',     [Admin\EmailLogController::class, 'show'])->name('email-log.show');
+
+        // Quotes
+        Route::get('quotes',                   [Admin\QuoteController::class, 'index'])->name('quotes.index');
+        Route::get('quotes/create',            [Admin\QuoteController::class, 'create'])->name('quotes.create');
+        Route::post('quotes',                  [Admin\QuoteController::class, 'store'])->name('quotes.store');
+        Route::get('quotes/{quote}',           [Admin\QuoteController::class, 'show'])->name('quotes.show');
+        Route::get('quotes/{quote}/edit',      [Admin\QuoteController::class, 'edit'])->name('quotes.edit');
+        Route::patch('quotes/{quote}',         [Admin\QuoteController::class, 'update'])->name('quotes.update');
+        Route::delete('quotes/{quote}',        [Admin\QuoteController::class, 'destroy'])->name('quotes.destroy');
+        Route::post('quotes/{quote}/send',     [Admin\QuoteController::class, 'send'])->name('quotes.send');
+        Route::post('quotes/{quote}/convert',  [Admin\QuoteController::class, 'convert'])->name('quotes.convert');
     });
 
     // ── Client portal ─────────────────────────────────────────────────────────
@@ -328,6 +339,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('domains/{domain}/auto-renew',  [Client\DomainController::class, 'toggleAutoRenew'])->name('domains.auto-renew');
         Route::get('domains/check',              [Client\DomainController::class, 'checkAvailability'])->name('domains.check');
         Route::post('promo/validate',            [Client\PromoController::class, 'validate'])->name('promo.validate');
+        Route::get('quotes',                     [Client\QuoteController::class, 'index'])->name('quotes.index');
+        Route::get('quotes/{quote}',             [Client\QuoteController::class, 'show'])->name('quotes.show');
+        Route::post('quotes/{quote}/accept',     [Client\QuoteController::class, 'accept'])->name('quotes.accept');
+        Route::post('quotes/{quote}/decline',    [Client\QuoteController::class, 'decline'])->name('quotes.decline');
 
         // Payment Methods
         Route::get('payment-methods',                              [Client\PaymentMethodController::class, 'index'])->name('payment-methods.index');

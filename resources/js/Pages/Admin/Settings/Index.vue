@@ -122,6 +122,12 @@ const intForm = useForm({
     integration_authorizenet_transaction_key: s.integration_authorizenet_transaction_key ?? '',
     integration_authorizenet_client_key:      s.integration_authorizenet_client_key      ?? '',
     integration_authorizenet_sandbox:         s.integration_authorizenet_sandbox         ?? true,
+    // Fraud check
+    fraud_check_enabled:                      s.fraud_check_enabled                      ?? false,
+    fraud_maxmind_account_id:                 s.fraud_maxmind_account_id                 ?? '',
+    fraud_maxmind_license_key:                s.fraud_maxmind_license_key                ?? '',
+    fraud_score_threshold:                    s.fraud_score_threshold                    ?? 75,
+    fraud_action:                             s.fraud_action                             ?? 'flag',
 })
 
 // Masked display helpers — show last 4 chars of a secret, rest as •
@@ -314,6 +320,45 @@ const timezones = [
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                   Use Sandbox (testing mode)
                 </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fraud Check (MaxMind minFraud) -->
+          <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-gray-800">Fraud Check</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Automatically score new orders using MaxMind minFraud. Get credentials at <span class="font-medium">maxmind.com → Account → Manage License Keys</span>.</p>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input v-model="intForm.fraud_check_enabled" type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+              Enable fraud scoring on new orders
+            </label>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account ID</label>
+                <input v-model="intForm.fraud_maxmind_account_id" type="text" autocomplete="off" placeholder="123456"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">License Key</label>
+                <input v-model="intForm.fraud_maxmind_license_key" type="password" autocomplete="new-password" placeholder="••••••••"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Score Threshold (0–100)</label>
+                <input v-model="intForm.fraud_score_threshold" type="number" min="1" max="100"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <p class="text-xs text-gray-400 mt-0.5">Orders at or above this score trigger the action below</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Action When Threshold Exceeded</label>
+                <select v-model="intForm.fraud_action"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="flag">Flag for review — order is placed, score shown in admin</option>
+                  <option value="reject">Reject — order is blocked immediately</option>
+                </select>
               </div>
             </div>
           </div>

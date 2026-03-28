@@ -154,6 +154,12 @@ class SettingController extends Controller
             'integration_authorizenet_transaction_key'=> ['nullable', 'string', 'max:100'],
             'integration_authorizenet_client_key'     => ['nullable', 'string', 'max:255'],
             'integration_authorizenet_sandbox'        => ['nullable', 'boolean'],
+            // Fraud check (MaxMind minFraud)
+            'fraud_check_enabled'                     => ['nullable', 'boolean'],
+            'fraud_maxmind_account_id'                => ['nullable', 'string', 'max:20'],
+            'fraud_maxmind_license_key'               => ['nullable', 'string', 'max:255'],
+            'fraud_score_threshold'                   => ['nullable', 'integer', 'min:1', 'max:100'],
+            'fraud_action'                            => ['nullable', 'in:flag,reject'],
         ]);
 
         Setting::setMany($data);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
+use App\Services\FraudChecker;
 use App\Models\Domain;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -74,6 +75,16 @@ class OrderController extends Controller
         $product = Product::findOrFail($request->product_id);
         abort_if($product->hidden, 404);
 
+        // Fraud check — run before any DB writes; reject early if blocked
+        $fraudResult = FraudChecker::evaluate(
+            $request,
+            $request->user()->email,
+            (float) $product->price + (float) $product->setup_fee
+        );
+        if ($fraudResult['blocked']) {
+            return back()->with('error', 'Your order could not be placed. Please contact support if you believe this is an error.');
+        }
+
         // Resolve promo code if provided
         $promo    = null;
         $discount = 0;
@@ -99,7 +110,7 @@ class OrderController extends Controller
         $createdOrder   = null;
 
         try {
-            DB::transaction(function () use ($request, $product, $promo, $discount, $applyCredit, &$createdService, &$createdOrder) {
+            DB::transaction(function () use ($request, $product, $promo, $discount, $applyCredit, $fraudResult, &$createdService, &$createdOrder) {
                 $user     = $request->user()->load('group');
                 $price    = (float) $product->price;
                 $setupFee = (float) $product->setup_fee;
@@ -133,6 +144,8 @@ class OrderController extends Controller
                 // Generate human-readable order number: ORD-YYYYMMDD-NNNN
                 $order->update([
                     'order_number' => 'ORD-' . now()->format('Ymd') . '-' . str_pad($order->id, 4, '0', STR_PAD_LEFT),
+                    'fraud_score'  => $fraudResult['score'],
+                    'fraud_flags'  => $fraudResult['flags'] ?: null,
                 ]);
 
                 // 2. Service record — trial products activate immediately

@@ -13,16 +13,18 @@ class Order extends Model
 
     protected $fillable = [
         'user_id', 'order_number', 'status', 'subtotal', 'tax', 'total',
-        'promo_code', 'discount', 'notes', 'client_notes',
+        'promo_code', 'discount', 'notes', 'client_notes', 'fraud_score', 'fraud_flags',
     ];
 
     protected function casts(): array
     {
         return [
-            'subtotal' => 'decimal:2',
-            'tax'      => 'decimal:2',
-            'total'    => 'decimal:2',
-            'discount' => 'decimal:2',
+            'subtotal'     => 'decimal:2',
+            'tax'          => 'decimal:2',
+            'total'        => 'decimal:2',
+            'discount'     => 'decimal:2',
+            'fraud_score'  => 'decimal:2',
+            'fraud_flags'  => 'array',
         ];
     }
 
