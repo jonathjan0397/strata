@@ -40,6 +40,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
+            'twoFactorWarning' => fn () => $request->user()?->hasAnyRole(['super-admin', 'admin', 'staff'])
+                && ! ($request->user()->two_factor_enabled && $request->user()->two_factor_confirmed_at),
             'stripeKey' => config('services.stripe.key'),
         ]);
     }

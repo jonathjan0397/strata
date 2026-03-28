@@ -20,19 +20,7 @@ class RequireTwoFactor
             return $next($request);
         }
 
-        // Already passed 2FA or has it confirmed
-        if ($user->two_factor_enabled && $user->two_factor_confirmed_at) {
-            return $next($request);
-        }
-
-        // Allow the security page and 2FA-related routes through so they can set it up
-        if ($request->routeIs('profile.security', 'two-factor.*')) {
-            return $next($request);
-        }
-
-        return redirect()->route('profile.security')->with(
-            'error',
-            'You must enable two-factor authentication before accessing the admin panel.'
-        );
+        // 2FA is optional but strongly recommended — always let the user through.
+        // A warning banner is shown in the UI via the twoFactorWarning shared prop.
     }
 }

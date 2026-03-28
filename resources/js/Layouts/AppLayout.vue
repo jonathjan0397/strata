@@ -8,7 +8,8 @@ const flash = computed(() => page.props.flash);
 
 const sidebarOpen = ref(false);
 
-const isAdmin = computed(() => user.value?.roles?.some(r => ['super-admin','admin','staff'].includes(r.name)));
+const isAdmin          = computed(() => user.value?.roles?.some(r => ['super-admin','admin','staff'].includes(r.name)));
+const twoFactorWarning = computed(() => page.props.twoFactorWarning);
 
 const adminNav = [
     { name: 'Dashboard', href: route('admin.dashboard'), icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -141,6 +142,17 @@ const settingsNav = [
                     <slot name="header" />
                 </div>
             </header>
+
+            <!-- 2FA warning banner -->
+            <div v-if="twoFactorWarning" class="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
+                <p class="text-sm text-amber-800">
+                    <strong>Recommended:</strong> Your account does not have two-factor authentication enabled.
+                    Enabling 2FA protects the admin panel from unauthorized access.
+                </p>
+                <Link :href="route('profile.security')" class="shrink-0 text-sm font-medium text-amber-900 underline hover:text-amber-700">
+                    Enable 2FA
+                </Link>
+            </div>
 
             <!-- Flash messages -->
             <div v-if="flash.success || flash.error" class="px-4 sm:px-6 pt-4">
