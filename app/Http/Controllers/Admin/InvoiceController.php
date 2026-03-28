@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Invoice;
-use App\Models\User;
+use App\Mail\InvoiceMail;
 use App\Mail\TemplateMailable;
+use App\Models\Invoice;
+use App\Models\Setting;
+use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\WorkflowEngine;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -42,38 +44,54 @@ class InvoiceController extends Controller
     {
         $invoice->load(['user', 'items.service.product', 'payments']);
 
-        return Inertia::render('Admin/Invoices/Show', ['invoice' => $invoice]);
+        return Inertia::render('Admin/Invoices/Show', [
+            'invoice'  => $invoice,
+            'currency' => Setting::get('currency_symbol', '$'),
+            'flash'    => session()->only(['success', 'error']),
+        ]);
     }
 
     public function create(Request $request): Response
     {
         return Inertia::render('Admin/Invoices/Create', [
-            'clients' => User::role('client')->orderBy('name')->get(['id', 'name', 'email']),
+            'clients'   => User::role('client')->orderBy('name')->get(['id', 'name', 'email', 'country', 'state', 'tax_exempt', 'credit_balance']),
+            'taxRates'  => \App\Models\TaxRate::where('active', true)->orderBy('name')->get(['id', 'name', 'rate', 'country', 'state', 'is_default']),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'user_id'  => ['required', 'exists:users,id'],
-            'due_date' => ['required', 'date'],
-            'items'    => ['required', 'array', 'min:1'],
+            'user_id'    => ['required', 'exists:users,id'],
+            'date'       => ['nullable', 'date'],
+            'due_date'   => ['required', 'date'],
+            'status'     => ['nullable', 'in:draft,unpaid'],
+            'notes'      => ['nullable', 'string', 'max:5000'],
+            'tax_rate'   => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'items'      => ['required', 'array', 'min:1'],
             'items.*.description' => ['required', 'string'],
-            'items.*.quantity'    => ['required', 'integer', 'min:1'],
+            'items.*.quantity'    => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_price'  => ['required', 'numeric', 'min:0'],
         ]);
 
         $subtotal = collect($request->items)
             ->sum(fn ($i) => $i['quantity'] * $i['unit_price']);
 
+        $taxRate    = (float) ($request->tax_rate ?? 0);
+        $tax        = round($subtotal * ($taxRate / 100), 2);
+        $total      = $subtotal + $tax;
+
         $invoice = Invoice::create([
             'user_id'    => $request->user_id,
-            'status'     => 'unpaid',
+            'status'     => $request->status ?? 'unpaid',
             'subtotal'   => $subtotal,
-            'total'      => $subtotal,
-            'amount_due' => $subtotal,
-            'date'       => now(),
+            'tax_rate'   => $taxRate,
+            'tax'        => $tax,
+            'total'      => $total,
+            'amount_due' => $total,
+            'date'       => $request->date ?? now()->toDateString(),
             'due_date'   => $request->due_date,
+            'notes'      => $request->notes,
         ]);
 
         foreach ($request->items as $item) {
@@ -92,14 +110,28 @@ class InvoiceController extends Controller
             ->with('success', "Invoice #{$invoice->id} created.");
     }
 
-    public function download(Invoice $invoice): HttpResponse
+    public function download(Invoice $invoice): HttpResponse|\Illuminate\Http\JsonResponse
     {
         $invoice->load(['user', 'items', 'payments']);
 
-        $pdf = Pdf::loadView('pdf.invoice', compact('invoice'))
-            ->setPaper('a4', 'portrait');
+        $settings = [
+            'company_name'    => \App\Models\Setting::get('company_name', config('app.name')),
+            'company_address' => \App\Models\Setting::get('company_address', ''),
+            'currency_symbol' => \App\Models\Setting::get('currency_symbol', '$'),
+            'logo_path'       => \App\Models\Setting::get('logo_path'),
+        ];
 
-        return $pdf->download("invoice-{$invoice->id}.pdf");
+        try {
+            $pdf = Pdf::loadView('pdf.invoice', compact('invoice', 'settings'))
+                ->setPaper('a4', 'portrait');
+
+            return $pdf->download("invoice-{$invoice->id}.pdf");
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile() . ':' . $e->getLine(),
+            ], 500);
+        }
     }
 
     public function markPaid(Invoice $invoice): RedirectResponse
@@ -111,13 +143,17 @@ class InvoiceController extends Controller
             'paid_at' => now(),
         ]);
 
-        Mail::to($invoice->user->email)->queue(new TemplateMailable('invoice.paid', [
-            'name'        => $invoice->user->name,
-            'app_name'    => config('app.name'),
-            'invoice_id'  => $invoice->id,
-            'amount'      => number_format((float) $invoice->total, 2),
-            'invoice_url' => route('client.invoices.show', $invoice->id),
-        ]));
+        try {
+            Mail::to($invoice->user->email)->send(new TemplateMailable('invoice.paid', [
+                'name'        => $invoice->user->name,
+                'app_name'    => config('app.name'),
+                'invoice_id'  => $invoice->id,
+                'amount'      => number_format((float) $invoice->total, 2),
+                'invoice_url' => route('client.invoices.show', $invoice->id),
+            ]));
+        } catch (\Throwable) {
+            // Mail failure should not prevent the invoice from being marked paid
+        }
 
         AuditLogger::log('invoice.paid', $invoice, ['amount' => $invoice->total]);
         WorkflowEngine::fire('invoice.paid', $invoice);
@@ -130,5 +166,20 @@ class InvoiceController extends Controller
         $invoice->update(['status' => 'cancelled']);
 
         return back()->with('success', 'Invoice cancelled.');
+    }
+
+    public function sendEmail(Invoice $invoice): RedirectResponse
+    {
+        $invoice->load('user');
+
+        try {
+            Mail::to($invoice->user->email)->send(new InvoiceMail($invoice));
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to send email: ' . $e->getMessage());
+        }
+
+        AuditLogger::log('invoice.emailed', $invoice, ['to' => $invoice->user->email]);
+
+        return back()->with('success', "Invoice #{$invoice->id} emailed to {$invoice->user->email}.");
     }
 }

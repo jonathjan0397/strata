@@ -177,6 +177,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('invoices/{invoice}/download',  [Admin\InvoiceController::class, 'download'])->name('invoices.download');
         Route::post('invoices/{invoice}/mark-paid',[Admin\InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
         Route::post('invoices/{invoice}/cancel',    [Admin\InvoiceController::class, 'cancel'])->name('invoices.cancel');
+        Route::post('invoices/{invoice}/send',      [Admin\InvoiceController::class, 'sendEmail'])->name('invoices.send');
 
         // Support
         Route::get('support',                            [Admin\SupportController::class, 'index'])->name('support.index');
