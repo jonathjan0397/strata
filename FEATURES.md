@@ -1,6 +1,6 @@
 # Strata — Current Features
 
-> Complete feature inventory as of v1.9.0 (2026-03-28).
+> Complete feature inventory as of v2.0.0 (2026-03-28).
 > Updated after each release. See [CHANGELOG.md](CHANGELOG.md) for history.
 
 ---
@@ -60,6 +60,13 @@
 - **Client upgrade/downgrade** — change plan within same product type; prorated invoice or credit applied automatically
 - **Trial badge** — "Free Trial Active" notice with expiry date on client service detail
 - Provisioning info (module, credentials) stored on service record
+
+### Addons
+- Global addons catalog — name, description, price, setup fee, billing cycle, active flag, sort order
+- Attach addons to services from admin service detail page; auto-generates invoice
+- Clients can add addons from service detail page
+- Addons tracked in `service_addons` join table with own billing cycle and next due date
+- Addon renewal invoices generated automatically by `billing:generate-renewals` cron
 
 ### Quotes
 - Admin creates freeform quotes: line items, tax rate, valid-until date, client message, internal notes
@@ -214,6 +221,7 @@
 - List and detail view
 - Submit cancellation request — choose immediate or end-of-period
 - **Plan change** — upgrade or downgrade to any product of the same type; prorated invoice or credit applied
+- **Addon management** — view active addons, add new addons from available catalog, invoice generated automatically
 
 ### Quotes
 - View quotes sent by the admin team
@@ -254,6 +262,13 @@
 
 ### Announcements
 - Paginated list of published announcements
+
+### Affiliate Program
+- Apply to join from client portal
+- Unique referral code + shareable link
+- Balance, total earned, and referral count dashboard
+- Referral history with commission and status
+- Payout request form with method field; enforces minimum threshold
 
 ### Security
 - Enable / disable TOTP two-factor authentication

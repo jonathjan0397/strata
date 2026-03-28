@@ -8,10 +8,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planned (next priorities)
-- Product addons — extras attachable to services with separate billing
-- Affiliate system — referral tracking, commission calculation, payout management
 - Client billing history page (full invoice list with filters + PDF download)
 - Authorize.net Accept.js Vue component (client-side card entry)
+
+---
+
+## [2.0.0] — 2026-03-28 — Product Addons & Affiliate System
+
+### Added
+
+#### Product Addons (Gap 13)
+- **Addons catalog** — admin creates global addon products: name, description, price, setup fee, billing cycle, active flag, sort order
+- **Admin CRUD** — `Admin/Addons/Index.vue` + `Admin/Addons/Form.vue`; routes `admin.addons.*`
+- **Attach addons to services** — admin service show page has add/remove addon panel; creates `ServiceAddon` record and an invoice covering price + setup fee
+- **Client addon panel** — client service show page lists active addons and allows ordering new ones (creates invoice; status set to `pending` until invoice paid)
+- **`service_addon_id` on invoice_items** — nullable FK; mirrors `service_id` for renewal tracking
+- **Addon renewal invoices** — `billing:generate-renewals` now runs a second pass for `ServiceAddon` records whose `next_due_date` is within the window and have no outstanding invoice
+
+#### Affiliate System (Gap 14)
+- **`affiliates` table** — `code` (unique), `commission_type` (percent/fixed), `commission_value`, `balance`, `total_earned`, `payout_threshold`, `status` (pending/active/inactive)
+- **`affiliate_referrals` table** — links affiliate → referred user → first order; tracks `amount`, `commission`, `status` (pending/approved/paid/rejected)
+- **`affiliate_payouts` table** — payout requests: affiliate, amount, method, notes, status (pending/paid), processed_at
+- **Referral cookie tracking** — `TrackAffiliateReferral` middleware reads `?ref=CODE` on any page visit and sets a 30-day `strata_ref` cookie
+- **Registration hook** — on user registration, the `strata_ref` cookie is read; if an active affiliate is found, an `AffiliateReferral` record is created with `referred_user_id`
+- **Commission on first order** — `OrderController::place()` finds the pending referral for the client and records `order_id`, `amount`, and `commission` (calculated via `Affiliate::calculateCommission()`)
+- **Admin affiliate management** — `Admin/Affiliates/Index.vue` (paginated list) + `Admin/Affiliates/Show.vue` (stats, referral list, payout history, commission settings); approve / deactivate / reactivate affiliate; approve individual referrals (credits commission to balance); mark payouts as paid
+- **Client affiliate dashboard** — `Client/Affiliate/Dashboard.vue` — apply to join, referral link with copy button, stats (balance, total earned, referral count), referral history, payout request form (enforces `payout_threshold`)
+- **`User::affiliate()` relationship** — `HasOne` added to User model
 
 ---
 
