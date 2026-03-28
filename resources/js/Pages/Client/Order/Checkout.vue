@@ -35,7 +35,9 @@ const cycleLabel = {
 const needsDomain = ['shared', 'reseller', 'domain', 'vps', 'dedicated'].includes(props.product.type)
 const isDomainProduct = props.product.type === 'domain'
 
-const subtotal = Number(props.product.price) + Number(props.product.setup_fee)
+const productPrice = Number(props.product.price)
+const productSetupFee = Number(props.product.setup_fee)
+const subtotal = productPrice + productSetupFee
 
 // Promo code state
 const promoStatus   = ref(null)  // null | 'checking' | { valid, label, discount, message }
@@ -52,7 +54,8 @@ async function applyPromo() {
     const { data } = await axios.post(route('client.promo.validate'), {
       code,
       product_id: props.product.id,
-      subtotal,
+      price:      productPrice,
+      setup_fee:  productSetupFee,
     })
     promoStatus.value = { valid: true, label: data.label, discount: data.discount }
     promoDiscount.value = data.discount

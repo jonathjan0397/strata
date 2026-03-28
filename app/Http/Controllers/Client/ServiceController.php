@@ -37,13 +37,15 @@ class ServiceController extends Controller
         abort_if(in_array($service->status, ['cancelled', 'terminated']), 422);
 
         $request->validate([
-            'reason' => ['required', 'string', 'max:1000'],
+            'reason'            => ['required', 'string', 'max:1000'],
+            'cancellation_type' => ['required', 'in:immediate,end_of_period'],
         ]);
 
         $service->update([
             'status'                    => 'cancellation_requested',
             'cancellation_reason'       => $request->reason,
             'cancellation_requested_at' => now(),
+            'cancellation_type'         => $request->cancellation_type,
         ]);
 
         return back()->with('success', 'Cancellation request submitted. Our team will process it shortly.');

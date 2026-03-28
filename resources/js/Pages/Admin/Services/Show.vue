@@ -73,11 +73,21 @@ function fmt(val) {
       <div class="bg-white rounded-xl border border-gray-200 p-5 text-sm">
         <h2 class="font-semibold text-gray-900 mb-3">Actions</h2>
 
+        <!-- Scheduled end-of-period cancellation -->
+        <div v-if="service.scheduled_cancel_at"
+            class="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+          <p class="font-semibold">Cancellation Scheduled</p>
+          <p class="mt-1">Service will auto-cancel on <strong>{{ new Date(service.scheduled_cancel_at).toLocaleDateString() }}</strong>.</p>
+        </div>
+
         <!-- Cancellation request alert -->
-        <div v-if="service.status === 'cancellation_requested'"
+        <div v-else-if="service.status === 'cancellation_requested'"
             class="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
           <p class="font-semibold">Cancellation Requested</p>
           <p class="mt-1">{{ service.cancellation_reason }}</p>
+          <p class="mt-1">
+            Type: <strong class="capitalize">{{ service.cancellation_type?.replace('_',' ') ?? 'immediate' }}</strong>
+          </p>
           <p class="mt-1 text-amber-500">{{ new Date(service.cancellation_requested_at).toLocaleDateString() }}</p>
         </div>
 

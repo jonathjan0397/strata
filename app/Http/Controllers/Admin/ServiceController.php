@@ -88,6 +88,17 @@ class ServiceController extends Controller
     {
         abort_unless($service->status === 'cancellation_requested', 422);
 
+        if ($service->cancellation_type === 'end_of_period' && $service->next_due_date) {
+            // Service stays active until the current period ends
+            $service->update([
+                'status'              => 'active',
+                'scheduled_cancel_at' => $service->next_due_date,
+            ]);
+
+            return back()->with('success', "Cancellation approved — service will cancel on {$service->next_due_date->format('M d, Y')}.");
+        }
+
+        // Immediate cancellation
         $service->update([
             'status'           => 'cancelled',
             'termination_date' => now(),
@@ -107,6 +118,8 @@ class ServiceController extends Controller
             'status'                    => 'active',
             'cancellation_reason'       => null,
             'cancellation_requested_at' => null,
+            'cancellation_type'         => null,
+            'scheduled_cancel_at'       => null,
         ]);
 
         return back()->with('success', 'Cancellation request rejected — service restored to active.');

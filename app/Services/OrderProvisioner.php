@@ -43,7 +43,10 @@ class OrderProvisioner
                     'password_enc'    => encrypt($result['password']),
                     'server_hostname' => $module->hostname,
                     'server_port'     => $module->port,
+                    'module_data'     => ['module_id' => $module->id, 'provisioned_at' => now()->toIso8601String()],
                 ];
+
+                $module->increment('current_accounts');
             }
         }
 

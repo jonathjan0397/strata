@@ -73,3 +73,9 @@ Schedule::command('billing:retry-payments')
     ->dailyAt('11:00')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Cancel services whose end-of-period cancellation date has been reached — runs daily at 00:30
+Schedule::command('billing:process-cancellations')
+    ->dailyAt('00:30')
+    ->withoutOverlapping()
+    ->runInBackground();

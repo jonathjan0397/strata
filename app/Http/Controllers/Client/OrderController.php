@@ -81,11 +81,13 @@ class OrderController extends Controller
         if ($request->filled('promo_code')) {
             $promo = PromoCode::where('code', strtoupper($request->promo_code))->first();
 
-            if ($promo && $promo->isValid()) {
+            if ($promo && $promo->isValid($request->user())) {
                 // Product restriction
                 if ($promo->product_id === null || (int) $promo->product_id === (int) $product->id) {
-                    $subtotal = (float) $product->price + (float) $product->setup_fee;
-                    $discount = $promo->calculateDiscount($subtotal);
+                    $discount = $promo->calculateDiscount(
+                        (float) $product->price,
+                        (float) $product->setup_fee
+                    );
                 }
             }
         }
