@@ -78,10 +78,50 @@ class SettingController extends Controller
             'to' => ['required', 'email'],
         ]);
 
+        set_time_limit(15);
+
+        $mailer  = Setting::get('mail_mailer', config('mail.default'));
+        $from    = Setting::get('mail_from_address', config('mail.from.address'));
+        $to      = $request->input('to');
+
+        // For sendmail: bypass Laravel's mail system and call the binary directly
+        // so we can detect hangs and return a clean error.
+        if ($mailer === 'sendmail') {
+            $path = Setting::get('mail_sendmail_path', '/usr/sbin/sendmail -t -i');
+            $bin  = explode(' ', $path)[0];
+
+            if (! file_exists($bin) || ! is_executable($bin)) {
+                return response()->json(['success' => false, 'message' => "sendmail binary not found or not executable: {$bin}"], 422);
+            }
+
+            $message  = "To: {$to}\r\nFrom: {$from}\r\nSubject: Strata - Mail Test\r\n\r\n";
+            $message .= "This is a test email from Strata. Your mail configuration is working.\r\n";
+
+            $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+            $proc = proc_open($path, $descriptors, $pipes);
+
+            if (! is_resource($proc)) {
+                return response()->json(['success' => false, 'message' => 'Failed to open sendmail process.'], 422);
+            }
+
+            fwrite($pipes[0], $message);
+            fclose($pipes[0]);
+
+            $stderr = stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            $exit = proc_close($proc);
+
+            if ($exit !== 0) {
+                return response()->json(['success' => false, 'message' => "sendmail exited with code {$exit}: {$stderr}"], 422);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Test email sent via sendmail.']);
+        }
+
         try {
-            Mail::raw('This is a test email from Strata. Your mail configuration is working.', function ($msg) use ($request) {
-                $msg->to($request->input('to'))
-                    ->subject('Strata — Mail Test');
+            Mail::raw('This is a test email from Strata. Your mail configuration is working.', function ($msg) use ($to) {
+                $msg->to($to)->subject('Strata — Mail Test');
             });
 
             return response()->json(['success' => true, 'message' => 'Test email sent.']);
