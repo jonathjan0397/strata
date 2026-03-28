@@ -37,8 +37,8 @@ class HandleInertiaRequests extends Middleware
                 ]),
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
+                'success' => fn () => $request->hasSession() ? $request->session()->get('success') : null,
+                'error'   => fn () => $request->hasSession() ? $request->session()->get('error') : null,
             ],
             'twoFactorWarning' => fn () => $request->user()?->hasAnyRole(['super-admin', 'admin', 'staff'])
                 && ! ($request->user()->two_factor_enabled && $request->user()->two_factor_confirmed_at),

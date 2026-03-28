@@ -13,7 +13,7 @@ class CheckInstalled
 
         // If not installed and not already heading to the installer, redirect there
         if (! $installed && ! $request->is('install', 'install/*')) {
-            return redirect('/install');
+            return redirect($request->getSchemeAndHttpHost() . $request->getBaseUrl() . '/install');
         }
 
         // If already installed and trying to access the installer, block it
