@@ -203,7 +203,7 @@ class SampleDataSeeder extends Seeder
         ]);
         InvoiceItem::create(['invoice_id' => $aliceProInv->id, 'service_id' => $aliceProService->id, 'description' => 'Professional Hosting — Setup Fee', 'quantity' => 1, 'unit_price' => 5.00, 'total' => 5.00]);
         InvoiceItem::create(['invoice_id' => $aliceProInv->id, 'service_id' => $aliceProService->id, 'description' => 'Professional Hosting — ' . now()->subMonth()->format('F Y'), 'quantity' => 1, 'unit_price' => 19.99, 'total' => 19.99]);
-        Payment::create(['invoice_id' => $aliceProInv->id, 'user_id' => $alice->id, 'gateway' => 'stripe', 'transaction_id' => 'ch_demo_pro001', 'amount' => 24.99, 'currency' => 'usd', 'status' => 'paid', 'paid_at' => now()->subMonth()->addDay()]);
+        Payment::create(['invoice_id' => $aliceProInv->id, 'user_id' => $alice->id, 'gateway' => 'stripe', 'transaction_id' => 'ch_demo_pro001', 'amount' => 24.99, 'currency' => 'usd', 'status' => 'completed', 'paid_at' => now()->subMonth()->addDay()]);
 
         // Alice domain
         Domain::create([
@@ -246,7 +246,7 @@ class SampleDataSeeder extends Seeder
             'paid_at'   => now()->subMonths(2)->addDays(2),
         ]);
         InvoiceItem::create(['invoice_id' => $bobPaid->id, 'service_id' => $bobService->id, 'description' => 'Starter Hosting — ' . now()->subMonths(2)->format('F Y'), 'quantity' => 1, 'unit_price' => 4.99, 'total' => 4.99]);
-        Payment::create(['invoice_id' => $bobPaid->id, 'user_id' => $bob->id, 'gateway' => 'paypal', 'transaction_id' => 'PAYPAL_DEMO_001', 'amount' => 4.99, 'currency' => 'usd', 'status' => 'paid', 'paid_at' => now()->subMonths(2)->addDays(2)]);
+        Payment::create(['invoice_id' => $bobPaid->id, 'user_id' => $bob->id, 'gateway' => 'paypal', 'transaction_id' => 'PAYPAL_DEMO_001', 'amount' => 4.99, 'currency' => 'usd', 'status' => 'completed', 'paid_at' => now()->subMonths(2)->addDays(2)]);
 
         $bobUnpaid = Invoice::create([
             'user_id'   => $bob->id,
@@ -311,12 +311,12 @@ class SampleDataSeeder extends Seeder
             'paid_at'   => now()->subMonths(2)->addDays(1),
         ]);
         InvoiceItem::create(['invoice_id' => $davidPaid1->id, 'service_id' => $davidService->id, 'description' => 'VPS Basic — ' . now()->subMonths(2)->format('F Y'), 'quantity' => 1, 'unit_price' => 29.99, 'total' => 29.99]);
-        Payment::create(['invoice_id' => $davidPaid1->id, 'user_id' => $david->id, 'gateway' => 'stripe', 'transaction_id' => 'ch_demo_vps001', 'amount' => 32.39, 'currency' => 'usd', 'status' => 'paid', 'paid_at' => now()->subMonths(2)->addDays(1)]);
+        Payment::create(['invoice_id' => $davidPaid1->id, 'user_id' => $david->id, 'gateway' => 'stripe', 'transaction_id' => 'ch_demo_vps001', 'amount' => 32.39, 'currency' => 'usd', 'status' => 'completed', 'paid_at' => now()->subMonths(2)->addDays(1)]);
 
         // David has a credit note applied to last invoice (billing dispute)
         $davidPartialInv = Invoice::create([
             'user_id'        => $david->id,
-            'status'         => 'completed',
+            'status'         => 'paid',
             'subtotal'       => 29.99,
             'tax_rate'       => 8.00,
             'tax'            => 2.40,
@@ -328,7 +328,7 @@ class SampleDataSeeder extends Seeder
             'paid_at'        => now()->subMonth()->addDays(3),
         ]);
         InvoiceItem::create(['invoice_id' => $davidPartialInv->id, 'service_id' => $davidService->id, 'description' => 'VPS Basic — ' . now()->subMonth()->format('F Y'), 'quantity' => 1, 'unit_price' => 29.99, 'total' => 29.99]);
-        Payment::create(['invoice_id' => $davidPartialInv->id, 'user_id' => $david->id, 'gateway' => 'stripe', 'transaction_id' => 'ch_demo_vps002', 'amount' => 22.39, 'currency' => 'usd', 'status' => 'paid', 'paid_at' => now()->subMonth()->addDays(3)]);
+        Payment::create(['invoice_id' => $davidPartialInv->id, 'user_id' => $david->id, 'gateway' => 'stripe', 'transaction_id' => 'ch_demo_vps002', 'amount' => 22.39, 'currency' => 'usd', 'status' => 'completed', 'paid_at' => now()->subMonth()->addDays(3)]);
 
         $davidCN = \App\Models\CreditNote::create([
             'invoice_id'         => $davidPartialInv->id,
