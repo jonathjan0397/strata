@@ -61,6 +61,6 @@ class TwoFactorChallengeController extends Controller
 
         AuditLogger::log('auth.login_2fa', null, [], $userId);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('admin.dashboard'));
     }
 }
