@@ -14,6 +14,19 @@ return [
     |
     */
 
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('APP_URL') . '/auth/google/callback',
+    ],
+
+    'microsoft' => [
+        'client_id'     => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect'      => env('APP_URL') . '/auth/microsoft/callback',
+        'tenant'        => env('MICROSOFT_TENANT_ID', 'common'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

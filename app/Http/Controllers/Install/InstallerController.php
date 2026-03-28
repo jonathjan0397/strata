@@ -238,6 +238,15 @@ class InstallerController extends Controller
             // 5. Create admin user
             $this->createAdminUser($request);
 
+            // 5a. Optional sample data
+            if ($request->boolean('sample_data')) {
+                Artisan::call('db:seed', [
+                    '--class'          => 'SampleDataSeeder',
+                    '--force'          => true,
+                    '--no-interaction' => true,
+                ]);
+            }
+
             // 6. Create storage symlink; fall back to controller-served files if symlinks are blocked.
             $storageMode = 'symlink';
             try {
@@ -268,6 +277,7 @@ class InstallerController extends Controller
                     'version'        => $version,
                     'queue'          => $request->queue_connection,
                     'storage_mode'   => $storageMode,
+                    'sample_data'    => $request->boolean('sample_data'),
                 ])
             );
 

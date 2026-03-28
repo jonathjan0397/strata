@@ -8,6 +8,8 @@ const props = defineProps({ user: Object })
 
 const form = useForm({
   name:    props.user.name,
+  company: props.user.company ?? '',
+  phone:   props.user.phone   ?? '',
   country: props.user.country ?? '',
   state:   props.user.state   ?? '',
 })
@@ -57,6 +59,20 @@ const countries = [
         <input :value="user.email" type="email" disabled
           class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-400 cursor-not-allowed" />
         <p class="text-xs text-gray-400 mt-1">Contact support to change your email address.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Company <span class="text-gray-400 font-normal">(optional)</span></label>
+        <input v-model="form.company" type="text" placeholder="Your company name"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <p v-if="form.errors.company" class="text-red-500 text-xs mt-1">{{ form.errors.company }}</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Phone <span class="text-gray-400 font-normal">(optional)</span></label>
+        <input v-model="form.phone" type="tel" placeholder="+1 555 000 0000"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <p v-if="form.errors.phone" class="text-red-500 text-xs mt-1">{{ form.errors.phone }}</p>
       </div>
 
       <div>

@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'V*'
 
 jobs:
   build:
@@ -15,61 +16,111 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up PHP
+      - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, pdo, pdo_mysql, openssl, tokenizer, json, ctype, bcmath
+          extensions: mbstring, pdo, pdo_mysql, openssl, tokenizer, json, ctype, bcmath, fileinfo, xml, gd
           tools: composer:v2
 
-      - name: Set up Node
+      - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      # ── VPS / Standard ZIP (source only, no vendor/) ──────────────────────
-      - name: Build standard ZIP
-        run: |
-          zip -r "strata-${{ steps.version.outputs.VERSION }}.zip" . \
-            --exclude "*.git*" \
-            --exclude "node_modules/*" \
-            --exclude "vendor/*" \
-            --exclude "public/build/*" \
-            --exclude ".env" \
-            --exclude "storage/installed.lock" \
-            --exclude "tests/*" \
-            --exclude ".github/*"
-
-      # ── Shared Hosting ZIP (vendor/ + compiled assets bundled) ────────────
-      - name: Install Composer dependencies (no-dev)
+      - name: Install PHP dependencies (production only)
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-      - name: Install NPM dependencies
+      - name: Install Node dependencies
         run: npm ci
 
-      - name: Build Vite assets
+      - name: Build frontend assets
         run: npm run build
 
+      # ── Ensure required empty storage directories exist in the package ───────
+      - name: Prepare storage structure
+        run: |
+          mkdir -p storage/app/public
+          mkdir -p storage/framework/cache/data
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          mkdir -p storage/logs
+          touch storage/app/public/.gitkeep
+          touch storage/framework/cache/data/.gitkeep
+          touch storage/framework/sessions/.gitkeep
+          touch storage/framework/views/.gitkeep
+          touch storage/logs/.gitkeep
+          touch bootstrap/cache/.gitkeep
+
+      # ── Shared Hosting ZIP — vendor/ + built assets included ─────────────────
+      # Users upload this ZIP, point domain root to public/, run /install.
       - name: Build shared-hosting ZIP
         run: |
-          zip -r "strata-${{ steps.version.outputs.VERSION }}-shared.zip" . \
-            --exclude "*.git*" \
-            --exclude "node_modules/*" \
-            --exclude ".env" \
-            --exclude "storage/installed.lock" \
-            --exclude "tests/*" \
-            --exclude ".github/*"
+          TAG="${GITHUB_REF_NAME}"
+          ZIP="Strata-Billing-${TAG}.zip"
 
-      # ── Attach both ZIPs to the GitHub Release ───────────────────────────
+          zip -r "${ZIP}" . \
+            --exclude "*.git*" \
+            --exclude ".github/*" \
+            --exclude "node_modules/*" \
+            --exclude "tests/*" \
+            --exclude ".env" \
+            --exclude ".env.*" \
+            --exclude "storage/installed.lock" \
+            --exclude "storage/logs/*.log" \
+            --exclude "storage/framework/cache/data/*" \
+            --exclude "storage/framework/sessions/*" \
+            --exclude "storage/framework/views/*" \
+            --exclude "storage/app/public/*" \
+            --exclude "Dockerfile" \
+            --exclude "docker-compose.yml" \
+            --exclude "docker/*" \
+            --exclude "phpunit.xml" \
+            --exclude "vite.config.js" \
+            --exclude "package.json" \
+            --exclude "package-lock.json" \
+            --exclude ".gitignore" \
+            --exclude ".gitattributes" \
+            --exclude "HANDOFF.md" \
+            --exclude "BUGFIX.md"
+
+          echo "ZIP=${ZIP}" >> "$GITHUB_ENV"
+
+      # ── Detect pre-release (any tag containing beta, alpha, or rc) ───────────
+      - name: Detect pre-release
+        id: prerelease
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if echo "$TAG" | grep -qiE '(beta|alpha|rc)'; then
+            echo "IS_PRERELEASE=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "IS_PRERELEASE=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Publish GitHub Release with ZIP attached ──────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            strata-${{ steps.version.outputs.VERSION }}.zip
-            strata-${{ steps.version.outputs.VERSION }}-shared.zip
-          generate_release_notes: true
+          name: "Strata Billing ${{ github.ref_name }}"
+          prerelease: ${{ steps.prerelease.outputs.IS_PRERELEASE }}
+          files: ${{ env.ZIP }}
+          body: |
+            ## Strata Billing ${{ github.ref_name }}
+
+            > **${{ steps.prerelease.outputs.IS_PRERELEASE == 'true' && 'Beta Release — test in a non-production environment' || 'Stable Release' }}**
+            > Report issues at: https://github.com/${{ github.repository }}/issues
+
+            ### Quick Install (Shared Hosting)
+
+            1. Download `${{ env.ZIP }}` below
+            2. Extract and upload all files to your server **above** `public_html`
+            3. Point your domain's document root to the `public/` subdirectory
+            4. Visit `https://yourdomain.com/install` to run the setup wizard
+            5. Set up the cron job shown at the end of the wizard
+
+            Full installation instructions are included in `README-INSTALL.md` inside the ZIP.
+
+            ---
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md) for what changed in this release.

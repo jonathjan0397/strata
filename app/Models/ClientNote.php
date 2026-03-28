@@ -9,7 +9,7 @@ class ClientNote extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['user_id', 'author_id', 'body', 'created_at'];
+    protected $fillable = ['user_id', 'author_id', 'body', 'type', 'created_at'];
 
     public function user(): BelongsTo
     {

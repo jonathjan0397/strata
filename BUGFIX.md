@@ -121,9 +121,9 @@
 ---
 
 ## BF-015 — Remove debug logging from InstallerController
-**Status:** DEFERRED — address before production release
+**Status:** DEFERRED — must fix before v1.0 stable release
 **File:** `app/Http/Controllers/Install/InstallerController.php`
-**Symptom:** `INSTALL_DB_TEST` debug entries with password hex dumps written to laravel.log
+**Symptom:** `INSTALL_DB_TEST` debug entries with password hex dumps written to laravel.log during database connection test.
 **Fix needed:** Remove or gate behind `APP_DEBUG` the `Log::debug('INSTALL_DB_TEST', ...)` block in `testDatabase()`.
 
 ---
@@ -173,6 +173,44 @@
 **Symptom:** Stripe webhooks return 400 "Invalid signature" when `STRIPE_WEBHOOK_SECRET` is absent from `.env`, breaking invoice reconciliation on installations that haven't set up webhook signing.
 **Root cause:** `Webhook::constructEvent()` was called unconditionally and always throws `SignatureVerificationException` when no secret is set.
 **Fix:** Added conditional: if `$secret` is set, verify signature normally; otherwise skip to `Event::constructFrom(json_decode($payload, true))` and log a warning. Webhook processing continues regardless of whether the secret is configured.
+
+---
+
+---
+
+## BF-022 — `Pagination` component missing causes runtime crash on Affiliates list
+**Status:** FIXED
+**File:** `resources/js/Pages/Admin/Affiliates/Index.vue`
+**Symptom:** Navigating to `/admin/affiliates` throws a Vue runtime error — `Failed to resolve component: Pagination` — resulting in a blank page.
+**Root cause:** `Admin/Affiliates/Index.vue` imported `@/Components/Pagination.vue` which was never created. All other admin list pages use inline prev/next HTML pagination; no shared `Pagination` component exists in the codebase.
+**Fix:** Removed the import and replaced `<Pagination :links="affiliates.links" />` with the same inline prev/next pattern used by every other admin list page.
+
+---
+
+## BF-023 — Nav links missing for Quotes, Addons, Affiliates (admin) and Quotes, Affiliate (client)
+**Status:** FIXED
+**File:** `resources/js/Layouts/AppLayout.vue`
+**Symptom:** Admin pages for Quotes, Addons, and Affiliates existed and had working routes but were completely unreachable from the sidebar navigation. Same for the client Quotes and Affiliate pages.
+**Root cause:** Nav arrays in `AppLayout.vue` were never updated when these features were added in earlier sessions.
+**Fix:** Added `Quotes` and `Orders` to the admin Clients & Billing nav group; `Addons` to Products & Services; `Affiliates` to Administration. Added `Quotes` (after Invoices) and `Affiliate` (after Payment Methods) to the client nav list.
+
+---
+
+## BF-024 — Admin Orders page missing entirely
+**Status:** FIXED
+**Files:** `app/Http/Controllers/Admin/OrderController.php` (new), `routes/web.php`, `resources/js/Pages/Admin/Orders/Index.vue` (new)
+**Symptom:** Orders were created at checkout and stored in the database but admin had no way to list, search, or view them. The Orders nav link (once added) had no route to point to.
+**Root cause:** `Admin/OrderController` and its route were never created.
+**Fix:** Created `Admin/OrderController@index` with search (order number, client name/email) and status filter; registered `admin.orders.index` route; created `Admin/Orders/Index.vue` with searchable table and inline pagination.
+
+---
+
+## BF-025 — Client profile missing Company and Phone fields
+**Status:** FIXED
+**Files:** `app/Http/Controllers/ProfileController.php`, `resources/js/Pages/Profile/Edit.vue`
+**Symptom:** The profile edit page had no fields for company name or phone number despite both columns existing on the `users` table and being used for tax resolution and invoice display.
+**Root cause:** `ProfileController::edit()` only passed `name`, `email`, `country`, `state` to the view; `update()` only validated and saved those four fields.
+**Fix:** Added `company` and `phone` to the controller's `only()` call and validation rules; added two corresponding optional input fields to `Profile/Edit.vue` between the Name and Country fields.
 
 ---
 

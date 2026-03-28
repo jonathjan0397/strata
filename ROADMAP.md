@@ -10,14 +10,16 @@
 
 ## Distribution & Install Paths
 
-Strata ships two installation tracks from the same codebase:
+Strata ships a single pre-built shared-hosting ZIP on every tagged GitHub Release. No Composer, Node, or CLI access required by end users.
 
 | Track | Target | How |
 |-------|--------|-----|
-| **Shared Hosting** | cPanel / Plesk / DirectAdmin shared accounts | Pre-built ZIP (`strata-x.x.x-shared.zip`): `vendor/` + compiled Vite assets bundled; no Composer or Node required on server; drop into `public_html/`, browse to `/install` |
-| **VPS / Dedicated** | Full root-access servers | Standard ZIP (`strata-x.x.x.zip`) or `git clone`; run `composer install` + `npm run build` + `php artisan ...` via CLI |
+| **Shared Hosting** | cPanel / Plesk / DirectAdmin shared accounts | Download pre-built ZIP from GitHub Releases: `vendor/` + compiled Vite assets bundled; upload above `public_html`, point document root to `public/`, browse to `/install` |
+| **VPS / Developer** | Full root-access servers | `git clone` + `composer install` + `npm run build`; browse to `/install` |
 
 Both tracks share the same browser-based installer wizard at `/install`. The wizard auto-detects the environment and adjusts defaults (queue driver, cron instructions, storage link method).
+
+**GitHub Actions release workflow** — pushing a `v*` or `V*` tag automatically runs `composer install --no-dev`, `npm run build`, packages the ZIP (excluding dev artifacts), and publishes a GitHub Release with the ZIP attached and install instructions in the release body. Tags containing `beta`, `alpha`, or `rc` are automatically marked as pre-releases.
 
 ### v0.x — Shared Hosting Compatibility ✅
 - [x] Root-level shared hosting bootstrap: `index.php` + `.htaccess` shim at project root so web root = project root (no document root change required)
@@ -28,7 +30,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] Installer detects install-type automatically: presence of `vendor/` = ZIP install (shared); absence = dev/VPS clone
 - [x] `OPENSRS_*` keys added to installer `.env` template
 - [x] Lock file version updated to current release on each install
-- [x] GitHub Actions release workflow: on `v*` tag push → `composer install --no-dev` + `npm run build` → produce `strata-x.x.x-shared.zip` (with `vendor/` + `public/build/`) and `strata-x.x.x.zip` (source only) → attach to GitHub Release
+- [x] GitHub Actions release workflow: on `v*`/`V*` tag push → `composer install --no-dev` + `npm run build` → produce `Strata-Billing-{TAG}.zip` (with `vendor/` + `public/build/`, dev artifacts excluded) → attach to GitHub Release with install instructions; auto-marks `beta`/`alpha`/`rc` tags as pre-releases
 - [x] GitHub Actions CI workflow: run Pest on every push/PR
 
 ---
@@ -113,7 +115,7 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [x] `billing:suspend-overdue` — suspends services past grace period, sends email
 - [x] Transactions log per invoice (Payments table)
 - [x] Payment reminders: configurable schedule ✅
-- [ ] Credit notes / partial refunds ⏳
+- [x] Credit notes / partial refunds ✅ — flat amount, reason, disposition (account balance or invoice deduction), numbered CN-YYYYMMDD-NNNN, voidable with full reversal
 - [ ] Multi-currency invoicing ⏳
 - [x] Late fee automation ✅
 
@@ -255,12 +257,15 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [ ] Reseller product catalog with markup pricing
 - [ ] Reseller credit system
 
-### v2.5 — Affiliate Management ⭐ ⏳
-- [ ] Referral links + commission tiers
-- [ ] Payout management
+### v2.5 — Affiliate Management ✅ (promoted to core)
+- [x] 30-day referral cookie; referral recorded on registration
+- [x] Commission recorded on first order (percent or fixed); admin approval workflow
+- [x] Affiliate balance, total earned, payout requests
+- [x] Admin: approve/deactivate affiliates, set commission type, approve referrals, mark payouts paid
+- [x] Client: affiliate dashboard, referral link with copy button, stats, payout request form
 
 ### v2.6 — Revenue Analytics & Reporting ⭐ 🔄
-- [x] MRR / ARR dashboard — 12-month revenue chart, growth %, unpaid/overdue totals, top 10 clients, service status breakdown, support stats
+- [x] MRR / ARR dashboard — 12-month revenue chart, growth %, unpaid/overdue totals, top 10 clients, service status breakdown, support stats ✅
 - [ ] Churn rate, cohort analysis, projected revenue ⏳
 - [ ] Exportable reports (CSV, PDF) ⏳
 
@@ -268,6 +273,20 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [ ] Import clients, services, products, invoices, and tickets from an external billing platform DB dump
 - [ ] Dry-run mode + conflict resolution
 - [ ] Post-import validation report
+
+---
+
+## Beta-1 — Pre-Release Polish ✅
+*Goal: Everything reachable from the UI, sample data for testing, automated release packaging*
+
+- [x] **Admin nav** — added Quotes, Orders, Addons, Affiliates links (pages existed but were unreachable)
+- [x] **Client nav** — added Quotes and Affiliate links
+- [x] **Admin Orders page** — searchable, filterable list of all orders with client, status, total, and date
+- [x] **Profile** — added Company and Phone fields (needed for invoice accuracy and tax resolution)
+- [x] **Sample data installer option** — checkbox in setup wizard creates 5 demo clients, products, services, invoices (paid/unpaid/overdue), payments, support tickets with replies, quotes, domains, credit note, affiliate, promo code, and announcement
+- [x] **GitHub Actions release workflow** — tag push auto-builds and publishes pre-built shared-hosting ZIP
+- [x] **README-INSTALL.md** — concise end-user installation guide included in the release ZIP
+- [x] **Beta-1 warning banner** in README and release notes directing testers to GitHub Issues
 
 ---
 
@@ -317,14 +336,15 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 
 ## Milestones at a Glance
 
-| Milestone | Version Range | Status |
-|-----------|--------------|--------|
-| 0 — Foundation | v0.1–v0.3 | ✅ Complete |
-| 1 — Core Billing | v0.4–v0.8 | ✅ Complete (incl. tax rates, client groups, dunning, late fees, Authorize.net) |
-| 2 — Provisioning | v1.0–v1.4 | ✅ cPanel, Plesk, DirectAdmin, HestiaCP complete |
-| 3 — Domains | v1.5–v1.9 | ✅ Namecheap + Enom + OpenSRS + HEXONET + renewal reminders complete |
-| 4 — Support | v2.0–v2.1 | ✅ Tickets, departments, canned responses, priority, KB, auto-close complete |
-| 5 — Premium ⭐ | v2.2–v2.7 | 🔄 Workflows + reports dashboard done; usage billing, reseller, affiliate planned |
-| 6 — Polish | v3.0–v3.4 | ⏳ Planned |
+| Milestone | Status |
+|-----------|--------|
+| 0 — Foundation | ✅ Complete |
+| 1 — Core Billing (incl. credit notes, tax, dunning, late fees, Authorize.net) | ✅ Complete |
+| 2 — Provisioning (cPanel, Plesk, DirectAdmin, HestiaCP) | ✅ Complete |
+| 3 — Domains (Namecheap, Enom, OpenSRS, HEXONET, renewal reminders) | ✅ Complete |
+| 4 — Support (tickets, KB, departments, SLA, merge, ratings, auto-close) | ✅ Complete |
+| 5 — Premium ⭐ (workflows, reports, affiliates promoted to core) | 🔄 Partial — usage billing, reseller, exportable reports planned |
+| Beta-1 — nav complete, orders, sample data, release workflow | ✅ Complete |
+| 6 — Polish & Scale | ⏳ Planned |
 
-*Last updated: 2026-03-27*
+*Last updated: 2026-03-28*

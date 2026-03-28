@@ -5,17 +5,16 @@ import { useForm, Link } from '@inertiajs/vue3'
 defineOptions({ layout: AppLayout })
 
 const props = defineProps({
-  member:               Object,
   availablePermissions: Array,
 })
 
 const form = useForm({
-  name:                  props.member.name,
-  email:                 props.member.email,
+  name:                  '',
+  email:                 '',
   password:              '',
   password_confirmation: '',
-  role:                  props.member.role,
-  permissions:           [...(props.member.permissions ?? [])],
+  role:                  'staff',
+  permissions:           [],
 })
 
 const permLabel = (p) => p.replace('access.', '').charAt(0).toUpperCase() + p.replace('access.', '').slice(1)
@@ -29,7 +28,7 @@ const permDescriptions = {
 }
 
 function submit() {
-  form.patch(route('admin.staff.update', props.member.id))
+  form.post(route('admin.staff.store'))
 }
 </script>
 
@@ -38,7 +37,7 @@ function submit() {
     <div class="flex items-center gap-3 mb-6">
       <Link :href="route('admin.staff.index')" class="text-sm text-slate-400 hover:text-slate-600">← Team</Link>
       <span class="text-slate-200">/</span>
-      <h1 class="text-xl font-bold text-slate-800">Edit {{ member.name }}</h1>
+      <h1 class="text-xl font-bold text-slate-800">Add Team Member</h1>
     </div>
 
     <form @submit.prevent="submit" class="space-y-5">
@@ -65,28 +64,26 @@ function submit() {
           <label class="block text-sm font-medium text-slate-700 mb-1">Role <span class="text-red-500">*</span></label>
           <select v-model="form.role"
             class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="super-admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
+            <option value="admin">Admin — full access, no individual permissions needed</option>
+            <option value="staff">Staff — limited access, set permissions below</option>
           </select>
         </div>
       </div>
 
-      <!-- Change Password -->
+      <!-- Password -->
       <div class="bg-white/70 backdrop-blur-sm rounded-xl border border-blue-100/60 p-6 shadow-sm space-y-4">
-        <h2 class="text-sm font-semibold text-slate-600 uppercase tracking-wider">Change Password <span class="text-slate-400 font-normal normal-case">(leave blank to keep current)</span></h2>
-
+        <h2 class="text-sm font-semibold text-slate-600 uppercase tracking-wider">Password</h2>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">New Password</label>
-            <input v-model="form.password" type="password" autocomplete="new-password"
+            <label class="block text-sm font-medium text-slate-700 mb-1">Password <span class="text-red-500">*</span></label>
+            <input v-model="form.password" type="password" autocomplete="new-password" required
               class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••" />
+              placeholder="Min. 8 characters" />
             <p v-if="form.errors.password" class="text-red-500 text-xs mt-0.5">{{ form.errors.password }}</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
-            <input v-model="form.password_confirmation" type="password" autocomplete="new-password"
+            <label class="block text-sm font-medium text-slate-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
+            <input v-model="form.password_confirmation" type="password" autocomplete="new-password" required
               class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••" />
           </div>
@@ -110,7 +107,7 @@ function submit() {
         </div>
       </div>
       <div v-else class="bg-slate-50/60 rounded-xl border border-slate-200/60 px-5 py-4 text-sm text-slate-500">
-        <span class="font-medium">{{ form.role === 'super-admin' ? 'Super admins' : 'Admins' }}</span> have full access to all sections — individual permissions do not apply.
+        <span class="font-medium">Admins</span> have full access to all sections — individual permissions do not apply.
       </div>
 
       <!-- Actions -->
@@ -118,7 +115,7 @@ function submit() {
         <Link :href="route('admin.staff.index')" class="text-sm text-slate-500 px-4 py-2 hover:text-slate-700">Cancel</Link>
         <button type="submit" :disabled="form.processing"
           class="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium px-6 py-2 rounded-lg shadow-sm transition-colors">
-          {{ form.processing ? 'Saving…' : 'Save Changes' }}
+          {{ form.processing ? 'Adding…' : 'Add Team Member' }}
         </button>
       </div>
 

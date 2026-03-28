@@ -35,10 +35,11 @@ const site = reactive({
 })
 
 const admin = reactive({
-  name:     '',
-  email:    '',
-  password: '',
-  confirm:  '',
+  name:        '',
+  email:       '',
+  password:    '',
+  confirm:     '',
+  sampleData:  false,
 })
 
 // ── Progress bar labels ───────────────────────────────────────────────────────
@@ -113,6 +114,7 @@ async function runInstall() {
       admin_email:      admin.email,
       admin_password:   b64(admin.password),
       queue_connection: env.queue,
+      sample_data:      admin.sampleData,
     })
     installResult.value = data
     step.value = 8
@@ -397,6 +399,24 @@ function b64(str) {
             <p v-if="admin.confirm && admin.confirm !== admin.password" class="mt-1 text-xs text-red-400">Passwords do not match.</p>
           </div>
         </div>
+
+        <!-- Sample data option -->
+        <div class="mb-6">
+          <label class="flex items-start gap-3 cursor-pointer rounded-xl border-2 p-4 transition-colors"
+            :class="admin.sampleData ? 'border-indigo-500 bg-indigo-900/20' : 'border-gray-700 hover:border-gray-600'"
+          >
+            <input type="checkbox" v-model="admin.sampleData" class="mt-0.5 h-4 w-4 rounded accent-indigo-500 cursor-pointer" />
+            <div>
+              <p class="text-sm font-semibold text-white">Install sample data <span class="ml-1 text-xs font-normal text-yellow-400">— Beta testing</span></p>
+              <p class="mt-1 text-xs text-gray-400 leading-relaxed">
+                Creates 5 demo client accounts, products, services, invoices (paid, unpaid, overdue), support tickets, quotes, domains, and a credit note —
+                so you can explore every part of the system immediately after install.
+                <strong class="text-yellow-300">Do not enable on a live production site.</strong>
+              </p>
+            </div>
+          </label>
+        </div>
+
         <div class="flex gap-3">
           <button @click="step = 5" class="flex-1 border border-gray-700 text-gray-300 hover:bg-gray-800 rounded-lg py-2.5 text-sm transition-colors">← Back</button>
           <button @click="runInstall" :disabled="!adminValid"
@@ -415,7 +435,11 @@ function b64(str) {
           </svg>
         </div>
         <h2 class="text-xl font-semibold text-white mb-2">Installing…</h2>
-        <p class="text-sm text-gray-400">Creating tables, seeding roles, and setting up your account.<br>This may take 15–30 seconds.</p>
+        <p class="text-sm text-gray-400">
+          Creating tables, seeding roles, and setting up your account.<br>
+          <span v-if="admin.sampleData">Sample data is being created — this may take up to 60 seconds.</span>
+          <span v-else>This may take 15–30 seconds.</span>
+        </p>
       </div>
 
       <!-- Step 8: Complete -->

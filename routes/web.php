@@ -183,6 +183,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('invoices/{invoice}/credit-notes',                          [Admin\InvoiceController::class, 'issueCreditNote'])->name('invoices.credit-notes.store');
         Route::post('invoices/{invoice}/credit-notes/{creditNote}/void',        [Admin\InvoiceController::class, 'voidCreditNote'])->name('invoices.credit-notes.void');
 
+        // Orders
+        Route::get('orders', [Admin\OrderController::class, 'index'])->name('orders.index');
+
         // Support
         Route::get('support',                            [Admin\SupportController::class, 'index'])->name('support.index');
         Route::post('support/bulk',                      [Admin\SupportController::class, 'bulkAction'])->name('support.bulk');

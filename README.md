@@ -1,7 +1,14 @@
 # Strata
 
-> **Pre-Release — Active Development**
-> Strata is not yet production-ready. APIs, database schemas, and features may change between versions. v1.0 is the first recommended production release.
+> ## ⚠️ Beta-1 — Test in a Non-Production Environment
+>
+> Strata is currently in **Beta-1**. It is feature-complete enough for evaluation and testing, but **should not be used in production** at this stage. Database schemas, APIs, and behaviour may change before v1.0.
+>
+> **We need your help testing!** Please install Strata in a safe, isolated environment and report any bugs, unexpected behaviour, or missing features by [opening an issue on GitHub](../../issues). The more feedback we receive, the faster we reach a stable release.
+>
+> - Do **not** use real client data or live payment credentials during beta testing.
+> - Back up your database before upgrading between beta builds.
+> - See the [issue tracker](../../issues) for known issues before filing a duplicate.
 
 **Strata** is a self-hosted billing and client management platform built for web hosting providers. Manage client accounts, automate recurring invoices, process payments, provision cPanel hosting accounts, register domains, and handle support tickets — all through a clean, modern browser-based interface.
 
@@ -9,7 +16,7 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 
 ---
 
-## What's Built (v2.0.0)
+## What's Built (Beta-1)
 
 ### Authentication & Access Control
 - Email + password login and self-registration
@@ -22,11 +29,13 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 - **Staff permission groups** — granular scopes: billing, support, technical, clients, reports
 
 ### Browser Installer
-- Multi-step wizard at `/install` — no CLI required; works on CWP/shared hosting
+- Multi-step wizard at `/install` — no CLI required; works on cPanel/shared hosting
 - PHP extension requirements check with pass/fail indicators
 - Database connection test before committing
 - Special-character-safe password handling (base64 transport, WAF-compatible)
 - Writes a scoped `.env` file (mode `0600`) and runs migrations + seeders in-browser
+- Queue mode selector: **Sync** (shared hosting) or **Database** (VPS/dedicated)
+- **Optional sample data** — installs 5 demo clients, products, services, invoices, tickets, quotes, domains, and a credit note for immediate hands-on testing
 - `storage/installed.lock` prevents re-running the installer
 
 ### Admin Panel
@@ -39,7 +48,8 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 | **Services** | List and detail; suspend, unsuspend, terminate; **Approve & Provision** button; approve/reject cancellation requests; cancellation type (immediate/end-of-period) |
 | **Addons** | Global addon catalog (name, price, setup fee, billing cycle); attach addons to services from admin or client portal; auto-renewal invoices via cron |
 | **Quotes** | Create freeform quotes with line items, tax, valid-until date; send to client; convert accepted quote to invoice |
-| **Invoices** | List, create, view, download PDF; mark paid, cancel; line items |
+| **Orders** | List all orders with client, status, total, and date; search by order number or client |
+| **Invoices** | List, create, view, download PDF; mark paid, cancel; line items; **credit notes** (amount, reason, apply to invoice or account balance; voidable; numbered CN-YYYYMMDD-NNNN) |
 | **Support** | Full ticket queue; reply, assign, close, reopen; department transfer; merge tickets; bulk actions; SLA indicators; canned responses; internal notes; file attachments; first-reply tracking; satisfaction rating view |
 | **Servers** | cPanel/WHM/Plesk/DirectAdmin/HestiaCP server CRUD |
 | **Domains** | List; detail with NS editor, lock/privacy toggles, refresh from registrar |
@@ -64,7 +74,7 @@ A developer-friendly, self-hostable hosting billing and client management platfo
 | **Order** | Product catalog; live domain availability check; promo codes (percent/fixed/free-setup); group discount + tax at checkout; client notes; order numbers; fraud scoring |
 | **Services** | List and detail; submit cancellation request (immediate or end-of-period); **upgrade/downgrade plan** with prorated invoice or credit; **addons** (view active, order new); trial end date |
 | **Quotes** | View quotes sent by admin; accept or decline; link to converted invoice |
-| **Invoices** | List and detail; pay via Stripe, PayPal, or Authorize.net; apply credit; download PDF |
+| **Invoices** | List and detail; pay via Stripe, PayPal, or Authorize.net; apply credit; download PDF; view credit notes |
 | **Payment Methods** | Save/remove Stripe cards; set default; auto-charged on renewal |
 | **Support** | Create tickets with file attachments; view thread; reply with attachments; download files; search/filter tickets; 1–5 star satisfaction rating on closed tickets |
 | **Domains** | List; manage nameservers (up to 6); toggle auto-renew |
@@ -179,47 +189,35 @@ All features work on CWP/shared hosting without a queue worker:
 
 ## Installation
 
-### Requirements
-- PHP 8.3+ with: `pdo`, `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `fileinfo`, `curl`
-- MySQL 8+ or MariaDB 10.5+
-- Composer 2
-- Node.js 18+ + npm (for building frontend assets)
-- A web server (Apache or Nginx) pointed at the `public/` directory
+### Shared Hosting — No CLI Required
 
-### Quick Start
+1. Download the latest **pre-built ZIP** from [GitHub Releases](https://github.com/jonathjan0397/strata/releases)
+2. Extract and upload all files to your server **above** `public_html`
+3. Point your domain's document root to the `public/` subdirectory
+4. Visit `https://yourdomain.com/install` — the browser wizard handles everything
+5. Add the cron job shown at the end of the wizard
+
+Full step-by-step instructions with screenshots are in **`README-INSTALL.md`** (included in the ZIP).
+
+### VPS / Developer Install
+
+**Requirements:** PHP 8.3+, MySQL 8+ / MariaDB 10.5+, Composer 2, Node 18+
 
 ```bash
-# 1. Clone
 git clone https://github.com/jonathjan0397/strata.git
 cd strata
-
-# 2. Install PHP dependencies
 composer install --no-dev --optimize-autoloader
-
-# 3. Build frontend assets
 npm ci && npm run build
-
-# 4. Copy env template
-cp .env.example .env
-php artisan key:generate
-
-# 5. Point your web server at public/ and navigate to /install
+# Point web server document root at public/ and navigate to /install
 ```
-
-The browser installer will guide you through:
-- PHP requirements check
-- Database connection configuration + test
-- Application name and URL
-- Initial admin account creation
-- Running migrations and seeders
 
 ### Scheduler
-Add one cron entry to run Laravel's scheduler:
+
 ```cron
-* * * * * cd /path/to/strata && php artisan schedule:run >> /dev/null 2>&1
+* * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
 ```
 
-> **No queue worker required.** All background tasks run through the scheduler on shared hosting.
+> **No queue worker required on shared hosting.** Select Sync mode during installation.
 
 ---
 
@@ -307,19 +305,20 @@ database/
 
 ## Roadmap Summary
 
-| Milestone | Version | Status |
-|-----------|---------|--------|
-| Foundation — installer, auth, schema | v0.1–v0.3 | ✅ Complete |
-| Core Billing — clients, products, invoices, payments, tax, dunning | v0.4–v0.8 | ✅ Complete |
-| Provisioning — cPanel, Plesk, DirectAdmin, HestiaCP | v1.0–v1.4 | ✅ Complete |
-| Domain Registrars — Namecheap, Enom, OpenSRS, HEXONET | v1.5–v1.9 | ✅ Complete |
-| Full Support System — attachments, ratings, SLA, bulk, merge, email templates | v1.7.0 | ✅ Complete |
-| Knowledge Base — Tiptap rich text editor with image upload | v1.8.0 | ✅ Complete |
-| Advanced Billing — quotes, fraud check, trial periods, plan upgrades, proration | v1.9.0 | ✅ Complete |
-| Product Addons + Affiliate System | v2.0.0 | ✅ Complete |
-| Premium — Workflows + Reports Dashboard | v2.x | 🔄 Partial |
-| Usage Billing, Reseller | v2.x | ⏳ Planned |
-| PWA, Full API, Compliance | v3.x | ⏳ Planned |
+| Milestone | Status |
+|-----------|--------|
+| Foundation — installer, auth, schema | ✅ Complete |
+| Core Billing — clients, products, invoices, payments, tax, dunning, credit notes | ✅ Complete |
+| Provisioning — cPanel, Plesk, DirectAdmin, HestiaCP | ✅ Complete |
+| Domain Registrars — Namecheap, Enom, OpenSRS, HEXONET | ✅ Complete |
+| Full Support System — attachments, ratings, SLA, bulk, merge, email templates | ✅ Complete |
+| Knowledge Base — Tiptap rich text editor with image upload | ✅ Complete |
+| Advanced Billing — quotes, fraud check, trial periods, plan upgrades, proration | ✅ Complete |
+| Product Addons + Affiliate System | ✅ Complete |
+| **Beta-1 — nav complete, orders page, sample data, GitHub release workflow** | ✅ Complete |
+| Premium — Workflows + Reports Dashboard | 🔄 Partial |
+| Usage Billing, Reseller | ⏳ Planned |
+| PWA, Full API, Compliance | ⏳ Planned |
 
 See [ROADMAP.md](ROADMAP.md) for the full breakdown.
 
@@ -363,4 +362,4 @@ Contributions are welcome for the core platform. Please open an issue before sub
 
 ---
 
-*Strata is pre-release software. Star the repo to follow progress.*
+*Strata Beta-1 — test in a non-production environment. [Report issues on GitHub.](https://github.com/jonathjan0397/strata/issues)*

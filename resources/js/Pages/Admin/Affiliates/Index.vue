@@ -1,7 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { Link } from '@inertiajs/vue3'
-import Pagination from '@/Components/Pagination.vue'
 
 defineOptions({ layout: AppLayout })
 
@@ -55,6 +54,14 @@ defineProps({ affiliates: Object })
       </table>
     </div>
 
-    <Pagination :links="affiliates.links" class="mt-4" />
+    <div v-if="affiliates.last_page > 1" class="mt-4 flex items-center justify-between text-sm text-gray-500">
+      <span>Showing {{ affiliates.from }}–{{ affiliates.to }} of {{ affiliates.total }}</span>
+      <div class="flex gap-2">
+        <Link v-if="affiliates.prev_page_url" :href="affiliates.prev_page_url"
+          class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">← Prev</Link>
+        <Link v-if="affiliates.next_page_url" :href="affiliates.next_page_url"
+          class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">Next →</Link>
+      </div>
+    </div>
   </div>
 </template>

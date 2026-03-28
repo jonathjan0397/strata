@@ -12,7 +12,7 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         return Inertia::render('Profile/Edit', [
-            'user' => $request->user()->only('name', 'email', 'country', 'state'),
+            'user' => $request->user()->only('name', 'email', 'company', 'phone', 'country', 'state'),
         ]);
     }
 
@@ -20,6 +20,8 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'name'    => ['required', 'string', 'max:100'],
+            'company' => ['nullable', 'string', 'max:100'],
+            'phone'   => ['nullable', 'string', 'max:30'],
             'country' => ['nullable', 'string', 'max:2'],
             'state'   => ['nullable', 'string', 'max:100'],
         ]);
