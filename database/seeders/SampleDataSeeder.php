@@ -40,7 +40,7 @@ class SampleDataSeeder extends Seeder
             'type'             => 'percent',
             'value'            => 20.00,
             'max_uses'         => 100,
-            'uses'             => 0,
+            'uses_count'       => 0,
             'valid_from'       => now()->toDateString(),
             'valid_until'      => now()->addYear()->toDateString(),
             'active'           => true,
