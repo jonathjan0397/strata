@@ -129,12 +129,26 @@
 ---
 
 ## BF-016 — Send Email feature: mail transport fails on CWP shared hosting
-**Status:** OPEN
-**Files:** `deploy/deploy-strata.js` (PROD_ENV), `app/Mail/ClientEmail.php`
-**Symptom:** POST `/admin/clients/{id}/email` returns 500; Laravel log shows `Connection to "process /usr/sbin/sendmail -bs -i" has been closed unexpectedly`
-**Root cause:** CWP shared hosting does not expose sendmail to PHP processes. Attempted `MAIL_MAILER=smtp` with `MAIL_HOST=localhost MAIL_PORT=25` — server SMTP also not accepting connections.
-**Fix needed:** Obtain correct outbound SMTP credentials from CWP hosting panel and update `PROD_ENV` in `deploy/deploy-strata.js`.
+**Status:** FIXED
+**Files:** `config/mail.php`, `app/Providers/MailSettingsServiceProvider.php`, `app/Http/Controllers/Admin/SettingController.php`, `resources/js/Pages/Admin/Settings/Index.vue`
+**Symptom:** POST `/admin/clients/{id}/email` returns 500; sendmail flag `-bs -i` (SMTP mode) caused connection errors on CWP.
+**Root cause:** `-bs` flag expects SMTP dialog on stdin; CWP sendmail only supports pipe mode (`-t -i`).
+**Fix:** Changed sendmail default to `/usr/sbin/sendmail -t -i`. Added Email tab to Admin Settings panel so mailer (sendmail/SMTP/log), from address, SMTP credentials, and sendmail path are all configurable at runtime without `.env` changes. Added Send Test button with inline result.
+
+## BF-017 — 500 after 2FA login: route 'dashboard' not defined
+**Status:** FIXED
+**Files:** `app/Http/Controllers/Auth/TwoFactorChallengeController.php` + 5 other auth controllers
+**Symptom:** Successful 2FA login resulted in HTTP 500 — `Route [dashboard] not defined`
+**Root cause:** All auth controllers redirected to `route('dashboard')` which does not exist; correct route is `admin.dashboard`.
+**Fix:** Replaced `route('dashboard')` with `route('admin.dashboard')` across all auth controllers.
+
+## BF-018 — RequireTwoFactor middleware returns void causing 500
+**Status:** FIXED
+**File:** `app/Http/Middleware/RequireTwoFactor.php`
+**Symptom:** Any admin page load returns 500 after 2FA enforcement was changed to optional.
+**Root cause:** Middleware `handle()` had no return statement after removing the redirect.
+**Fix:** Added `return $next($request)` to always pass the request through. 2FA is now optional but a persistent amber banner prompts admins to enable it.
 
 ---
 
-*Last updated: 2026-03-27*
+*Last updated: 2026-03-28*
