@@ -364,7 +364,7 @@ class SampleDataSeeder extends Seeder
         $emmaQuote = Quote::create([
             'user_id'      => $emma->id,
             'quote_number' => 'QT-DEMO-0001',
-            'status'       => 'pending',
+            'status'       => 'sent',
             'subtotal'     => 59.97,
             'tax_rate'     => 0,
             'tax'          => 0.00,
