@@ -10,19 +10,23 @@ return new class extends Migration
     {
         // Trial days on products
         Schema::table('products', function (Blueprint $table) {
-            $table->unsignedSmallInteger('trial_days')
-                ->nullable()
-                ->default(null)
-                ->after('autosetup')
-                ->comment('Free trial length in days; null = no trial');
+            if (!Schema::hasColumn('products', 'trial_days')) {
+                $table->unsignedSmallInteger('trial_days')
+                    ->nullable()
+                    ->default(null)
+                    ->after('autosetup')
+                    ->comment('Free trial length in days; null = no trial');
+            }
         });
 
         // Trial end date on services
         Schema::table('services', function (Blueprint $table) {
-            $table->date('trial_ends_at')
-                ->nullable()
-                ->after('scheduled_cancel_at')
-                ->comment('Date the free trial expires; null = not a trial service');
+            if (!Schema::hasColumn('services', 'trial_ends_at')) {
+                $table->date('trial_ends_at')
+                    ->nullable()
+                    ->after('scheduled_cancel_at')
+                    ->comment('Date the free trial expires; null = not a trial service');
+            }
         });
     }
 

@@ -15,29 +15,27 @@ return new class extends Migration
                 ->default('percent')
                 ->change();
 
-            // Valid-from date (null = valid immediately)
-            $table->timestamp('starts_at')->nullable()->after('expires_at');
-
-            // How many billing cycles the discount carries forward:
-            //   null / 0 = first invoice only
-            //   n > 0    = n invoices
-            //   -1       = all invoices (forever)
-            $table->smallInteger('recurring_cycles')->nullable()->after('starts_at');
-
-            // Restrict to clients with no prior active/paid services
-            $table->boolean('new_clients_only')->default(false)->after('recurring_cycles');
+            if (!Schema::hasColumn('promo_codes', 'starts_at')) {
+                $table->timestamp('starts_at')->nullable()->after('expires_at');
+            }
+            if (!Schema::hasColumn('promo_codes', 'recurring_cycles')) {
+                $table->smallInteger('recurring_cycles')->nullable()->after('starts_at');
+            }
+            if (!Schema::hasColumn('promo_codes', 'new_clients_only')) {
+                $table->boolean('new_clients_only')->default(false)->after('recurring_cycles');
+            }
         });
 
         // ── Service cancellation type ─────────────────────────────────────────
         Schema::table('services', function (Blueprint $table) {
-            // Set by client when requesting cancellation
-            $table->enum('cancellation_type', ['immediate', 'end_of_period'])
-                ->nullable()
-                ->after('cancellation_requested_at');
-
-            // Set by admin when approving an end_of_period cancellation
-            // Service stays active until this date, then auto-cancelled by scheduler
-            $table->date('scheduled_cancel_at')->nullable()->after('cancellation_type');
+            if (!Schema::hasColumn('services', 'cancellation_type')) {
+                $table->enum('cancellation_type', ['immediate', 'end_of_period'])
+                    ->nullable()
+                    ->after('cancellation_requested_at');
+            }
+            if (!Schema::hasColumn('services', 'scheduled_cancel_at')) {
+                $table->date('scheduled_cancel_at')->nullable()->after('cancellation_type');
+            }
         });
     }
 

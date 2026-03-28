@@ -11,15 +11,21 @@ return new class extends Migration
     {
         // Add autosetup trigger to products
         Schema::table('products', function (Blueprint $table) {
-            $table->enum('autosetup', ['on_order', 'on_payment', 'manual', 'never'])
-                ->default('manual')
-                ->after('module');
+            if (!Schema::hasColumn('products', 'autosetup')) {
+                $table->enum('autosetup', ['on_order', 'on_payment', 'manual', 'never'])
+                    ->default('manual')
+                    ->after('module');
+            }
         });
 
         // Add order number and client notes to orders
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('order_number', 30)->nullable()->unique()->after('user_id');
-            $table->text('client_notes')->nullable()->after('notes');
+            if (!Schema::hasColumn('orders', 'order_number')) {
+                $table->string('order_number', 30)->nullable()->unique()->after('user_id');
+            }
+            if (!Schema::hasColumn('orders', 'client_notes')) {
+                $table->text('client_notes')->nullable()->after('notes');
+            }
         });
 
         // Update service.active email template to include credential variables

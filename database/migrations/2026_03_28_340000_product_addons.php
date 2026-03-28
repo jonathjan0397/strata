@@ -36,7 +36,9 @@ return new class extends Migration
 
         // Allow invoice items to reference a service addon (for addon renewal billing)
         Schema::table('invoice_items', function (Blueprint $table) {
-            $table->unsignedBigInteger('service_addon_id')->nullable()->after('service_id');
+            if (!Schema::hasColumn('invoice_items', 'service_addon_id')) {
+                $table->unsignedBigInteger('service_addon_id')->nullable()->after('service_id');
+            }
         });
     }
 

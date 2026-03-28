@@ -11,39 +11,47 @@ return new class extends Migration
     {
         // Fraud scoring on orders
         Schema::table('orders', function (Blueprint $table) {
-            $table->decimal('fraud_score', 5, 2)->nullable()->after('client_notes');
-            $table->json('fraud_flags')->nullable()->after('fraud_score');
+            if (!Schema::hasColumn('orders', 'fraud_score')) {
+                $table->decimal('fraud_score', 5, 2)->nullable()->after('client_notes');
+            }
+            if (!Schema::hasColumn('orders', 'fraud_flags')) {
+                $table->json('fraud_flags')->nullable()->after('fraud_score');
+            }
         });
 
         // Quotes table
-        Schema::create('quotes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('quote_number', 30)->nullable()->unique();
-            $table->enum('status', ['draft', 'sent', 'accepted', 'declined', 'expired'])->default('draft');
-            $table->decimal('subtotal', 12, 2)->default(0);
-            $table->decimal('tax_rate', 5, 2)->default(0);
-            $table->decimal('tax', 12, 2)->default(0);
-            $table->decimal('total', 12, 2)->default(0);
-            $table->date('valid_until')->nullable();
-            $table->text('client_message')->nullable();
-            $table->text('notes')->nullable();
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('converted_invoice_id')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (!Schema::hasTable('quotes')) {
+            Schema::create('quotes', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->string('quote_number', 30)->nullable()->unique();
+                $table->enum('status', ['draft', 'sent', 'accepted', 'declined', 'expired'])->default('draft');
+                $table->decimal('subtotal', 12, 2)->default(0);
+                $table->decimal('tax_rate', 5, 2)->default(0);
+                $table->decimal('tax', 12, 2)->default(0);
+                $table->decimal('total', 12, 2)->default(0);
+                $table->date('valid_until')->nullable();
+                $table->text('client_message')->nullable();
+                $table->text('notes')->nullable();
+                $table->unsignedBigInteger('created_by')->nullable();
+                $table->unsignedBigInteger('converted_invoice_id')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
 
         // Quote line items
-        Schema::create('quote_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('quote_id')->constrained()->cascadeOnDelete();
-            $table->string('description');
-            $table->decimal('quantity', 8, 2)->default(1);
-            $table->decimal('unit_price', 12, 2)->default(0);
-            $table->decimal('total', 12, 2)->default(0);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('quote_items')) {
+            Schema::create('quote_items', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('quote_id')->constrained()->cascadeOnDelete();
+                $table->string('description');
+                $table->decimal('quantity', 8, 2)->default(1);
+                $table->decimal('unit_price', 12, 2)->default(0);
+                $table->decimal('total', 12, 2)->default(0);
+                $table->timestamps();
+            });
+        }
 
         // Seed quote.sent email template
         DB::table('email_templates')->insertOrIgnore([[
@@ -76,8 +84,7 @@ return new class extends Migration
                 'Thank you,',
                 '{{app_name}}',
             ]),
-            'variables'  => 'name,app_name,quote_number,total,valid_until,quote_url,message',
-            'is_active'  => 1,
+            'active'     => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]]);

@@ -210,9 +210,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Maintenance — run pending database migrations (super-admin only)
         Route::post('maintenance/migrate', function () {
             abort_unless(auth()->user()?->hasRole('super-admin'), 403);
-            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-            $output = trim(\Illuminate\Support\Facades\Artisan::output()) ?: 'Nothing to migrate.';
-            return response()->json(['success' => true, 'output' => $output]);
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                $output = trim(\Illuminate\Support\Facades\Artisan::output()) ?: 'Nothing to migrate.';
+                return response()->json(['success' => true, 'output' => $output]);
+            } catch (\Throwable $e) {
+                return response()->json(['success' => false, 'error' => $e->getMessage(), 'output' => trim(\Illuminate\Support\Facades\Artisan::output())], 500);
+            }
         })->name('maintenance.migrate');
 
         // Departments
