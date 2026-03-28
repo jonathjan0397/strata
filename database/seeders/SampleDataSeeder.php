@@ -119,9 +119,8 @@ class SampleDataSeeder extends Seeder
 
         // ── Announcement ───────────────────────────────────────────────────────
         Announcement::firstOrCreate(['title' => 'Welcome to Strata — Beta Testing'], [
-            'content'    => '<p>Welcome! This installation includes <strong>sample data</strong> to help you explore all features. All clients, invoices, and services shown are fictional and for demonstration purposes only.</p><p>Use the admin panel to explore billing, services, support tickets, quotes, and more. Default demo client password: <code>demo1234</code></p>',
-            'published'  => true,
-            'pinned'     => true,
+            'body'         => '<p>Welcome! This installation includes <strong>sample data</strong> to help you explore all features. All clients, invoices, and services shown are fictional and for demonstration purposes only.</p><p>Use the admin panel to explore billing, services, support tickets, quotes, and more. Default demo client password: <code>demo1234</code></p>',
+            'published'    => true,
             'published_at' => now(),
         ]);
 
@@ -173,7 +172,7 @@ class SampleDataSeeder extends Seeder
                 'transaction_id' => 'ch_demo_' . strtolower(str_pad($inv->id, 8, '0', STR_PAD_LEFT)),
                 'amount'         => 9.99,
                 'currency'       => 'usd',
-                'status'         => 'paid',
+                'status'         => 'completed',
                 'paid_at'        => $inv->paid_at,
             ]);
         }
@@ -317,7 +316,7 @@ class SampleDataSeeder extends Seeder
         // David has a credit note applied to last invoice (billing dispute)
         $davidPartialInv = Invoice::create([
             'user_id'        => $david->id,
-            'status'         => 'paid',
+            'status'         => 'completed',
             'subtotal'       => 29.99,
             'tax_rate'       => 8.00,
             'tax'            => 2.40,
