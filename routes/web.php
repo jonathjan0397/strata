@@ -180,6 +180,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('invoices/{invoice}/mark-paid',[Admin\InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
         Route::post('invoices/{invoice}/cancel',    [Admin\InvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::post('invoices/{invoice}/send',      [Admin\InvoiceController::class, 'sendEmail'])->name('invoices.send');
+        Route::post('invoices/{invoice}/credit-notes',                          [Admin\InvoiceController::class, 'issueCreditNote'])->name('invoices.credit-notes.store');
+        Route::post('invoices/{invoice}/credit-notes/{creditNote}/void',        [Admin\InvoiceController::class, 'voidCreditNote'])->name('invoices.credit-notes.void');
 
         // Support
         Route::get('support',                            [Admin\SupportController::class, 'index'])->name('support.index');

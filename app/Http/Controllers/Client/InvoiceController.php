@@ -40,7 +40,7 @@ class InvoiceController extends Controller
     {
         abort_unless($invoice->user_id === $request->user()->id, 403);
 
-        $invoice->load(['items.service', 'payments']);
+        $invoice->load(['items.service', 'payments', 'creditNotes']);
 
         $authNetLoginId  = config('services.authorizenet.login_id');
         $authNetClientKey = config('services.authorizenet.client_key');

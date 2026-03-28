@@ -232,6 +232,22 @@ async function payPayPal(invoiceId) {
         </button>
       </div>
 
+      <!-- Credit notes -->
+      <div v-if="invoice.credit_notes?.filter(cn => cn.status !== 'voided').length"
+          class="mt-6 pt-5 border-t border-gray-100">
+        <h2 class="text-sm font-semibold text-gray-700 mb-3">Credit Notes</h2>
+        <ul class="space-y-2 text-sm">
+          <li v-for="cn in invoice.credit_notes.filter(cn => cn.status !== 'voided')" :key="cn.id"
+              class="flex justify-between text-gray-600">
+            <div>
+              <span class="font-mono text-xs text-gray-500 mr-2">{{ cn.credit_note_number }}</span>
+              <span>{{ cn.reason }}</span>
+            </div>
+            <span class="font-medium text-green-700">-${{ cn.amount }}</span>
+          </li>
+        </ul>
+      </div>
+
       <!-- Payment history -->
       <div v-if="invoice.payments?.length" class="mt-6 pt-5 border-t border-gray-100">
         <h2 class="text-sm font-semibold text-gray-700 mb-3">Payment History</h2>

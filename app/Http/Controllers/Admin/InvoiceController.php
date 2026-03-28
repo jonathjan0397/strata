@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\InvoiceMail;
 use App\Mail\TemplateMailable;
+use App\Models\ClientCredit;
+use App\Models\CreditNote;
 use App\Models\Invoice;
 use App\Models\Setting;
 use App\Models\User;
@@ -15,6 +17,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,7 +46,7 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice): Response
     {
-        $invoice->load(['user', 'items.service.product', 'payments']);
+        $invoice->load(['user', 'items.service.product', 'payments', 'creditNotes']);
 
         return Inertia::render('Admin/Invoices/Show', [
             'invoice'  => $invoice,
@@ -189,5 +192,111 @@ class InvoiceController extends Controller
         AuditLogger::log('invoice.emailed', $invoice, ['to' => $invoice->user->email]);
 
         return back()->with('success', "Invoice #{$invoice->id} emailed to {$invoice->user->email}.");
+    }
+
+    public function issueCreditNote(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $request->validate([
+            'amount'      => ['required', 'numeric', 'min:0.01', 'max:' . $invoice->total],
+            'reason'      => ['required', 'string', 'max:500'],
+            'disposition' => ['required', 'in:balance,invoice'],
+            'notes'       => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        DB::transaction(function () use ($request, $invoice) {
+            $cn = CreditNote::create([
+                'invoice_id'  => $invoice->id,
+                'user_id'     => $invoice->user_id,
+                'amount'      => $request->amount,
+                'reason'      => $request->reason,
+                'disposition' => $request->disposition,
+                'notes'       => $request->notes,
+                'status'      => 'issued',
+                'issued_at'   => now(),
+            ]);
+
+            // Generate number: CN-YYYYMMDD-NNNN
+            $cn->update([
+                'credit_note_number' => 'CN-' . now()->format('Ymd') . '-' . str_pad($cn->id, 4, '0', STR_PAD_LEFT),
+            ]);
+
+            $amount = (float) $request->amount;
+
+            if ($request->disposition === 'balance') {
+                // Credit the client's account balance
+                ClientCredit::create([
+                    'user_id'     => $invoice->user_id,
+                    'amount'      => $amount,
+                    'description' => "Credit note {$cn->credit_note_number} — {$cn->reason}",
+                    'invoice_id'  => $invoice->id,
+                ]);
+
+                $invoice->user->increment('credit_balance', $amount);
+                $cn->update(['status' => 'applied']);
+
+            } else {
+                // Apply directly to the invoice amount_due
+                $newAmountDue = max(0, round((float) $invoice->amount_due - $amount, 2));
+
+                $invoice->update([
+                    'amount_due'     => $newAmountDue,
+                    'credit_applied' => round((float) $invoice->credit_applied + $amount, 2),
+                    'status'         => $newAmountDue <= 0 ? 'paid' : $invoice->status,
+                    'paid_at'        => $newAmountDue <= 0 ? now() : $invoice->paid_at,
+                ]);
+
+                $cn->update(['status' => 'applied']);
+            }
+
+            AuditLogger::log('invoice.credit_note_issued', $invoice, [
+                'credit_note'  => $cn->credit_note_number,
+                'amount'       => $amount,
+                'disposition'  => $request->disposition,
+            ]);
+        });
+
+        return back()->with('success', 'Credit note issued.');
+    }
+
+    public function voidCreditNote(Invoice $invoice, CreditNote $creditNote): RedirectResponse
+    {
+        abort_unless($creditNote->invoice_id === $invoice->id, 404);
+        abort_unless($creditNote->status !== 'voided', 422);
+
+        DB::transaction(function () use ($invoice, $creditNote) {
+            // Reverse balance credit if that was the disposition
+            if ($creditNote->disposition === 'balance') {
+                $amount = (float) $creditNote->amount;
+
+                ClientCredit::create([
+                    'user_id'     => $creditNote->user_id,
+                    'amount'      => -$amount,
+                    'description' => "Void of credit note {$creditNote->credit_note_number}",
+                    'invoice_id'  => $invoice->id,
+                ]);
+
+                $creditNote->user->decrement('credit_balance', $amount);
+            }
+
+            // Reverse invoice application
+            if ($creditNote->disposition === 'invoice') {
+                $amount = (float) $creditNote->amount;
+
+                $invoice->update([
+                    'amount_due'     => round((float) $invoice->amount_due + $amount, 2),
+                    'credit_applied' => max(0, round((float) $invoice->credit_applied - $amount, 2)),
+                    'status'         => $invoice->status === 'paid' && $invoice->amount_due > 0 ? 'unpaid' : $invoice->status,
+                    'paid_at'        => $invoice->status === 'paid' && $invoice->amount_due > 0 ? null : $invoice->paid_at,
+                ]);
+            }
+
+            $creditNote->update(['status' => 'voided']);
+
+            AuditLogger::log('invoice.credit_note_voided', $invoice, [
+                'credit_note' => $creditNote->credit_note_number,
+            ]);
+        });
+
+        return back()->with('success', 'Credit note voided.');
     }
 }

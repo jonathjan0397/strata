@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
-import { Link, router, usePage } from '@inertiajs/vue3'
+import { Link, router, usePage, useForm } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 
 defineOptions({ layout: AppLayout })
@@ -14,7 +14,27 @@ const props = defineProps({
 const page  = usePage()
 const flash = computed(() => page.props.flash)
 
-const sending = ref(false)
+const sending      = ref(false)
+const showCNForm   = ref(false)
+
+const cnForm = useForm({
+    amount:      '',
+    reason:      '',
+    disposition: 'balance',
+    notes:       '',
+})
+
+function submitCreditNote() {
+    cnForm.post(route('admin.invoices.credit-notes.store', props.invoice.id), {
+        onSuccess: () => { showCNForm.value = false; cnForm.reset() },
+    })
+}
+
+function voidCreditNote(cnId) {
+    if (confirm('Void this credit note? This will reverse any balance credited.')) {
+        router.post(route('admin.invoices.credit-notes.void', { invoice: props.invoice.id, creditNote: cnId }))
+    }
+}
 
 function fmt(val) {
     return props.currency + Number(val ?? 0).toFixed(2)
@@ -155,6 +175,105 @@ function sendEmail() {
                 </div>
 
             </div><!-- /p-6 -->
+        </div>
+
+        <!-- Credit Notes -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-semibold text-gray-700">Credit Notes</h2>
+                <button v-if="!showCNForm && invoice.status !== 'cancelled'"
+                    @click="showCNForm = true"
+                    class="text-xs text-indigo-600 border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg">
+                    Issue Credit Note
+                </button>
+            </div>
+
+            <!-- Existing credit notes -->
+            <table v-if="invoice.credit_notes?.length" class="min-w-full text-sm mb-4">
+                <thead>
+                    <tr class="text-xs uppercase tracking-wider text-gray-400">
+                        <th class="pb-2 text-left font-semibold">Number</th>
+                        <th class="pb-2 text-left font-semibold">Reason</th>
+                        <th class="pb-2 text-center font-semibold">Applied To</th>
+                        <th class="pb-2 text-center font-semibold">Status</th>
+                        <th class="pb-2 text-right font-semibold">Amount</th>
+                        <th class="pb-2 text-right font-semibold">Date</th>
+                        <th class="pb-2"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="cn in invoice.credit_notes" :key="cn.id" class="text-gray-600">
+                        <td class="py-2 font-mono text-xs">{{ cn.credit_note_number }}</td>
+                        <td class="py-2 text-gray-700">{{ cn.reason }}</td>
+                        <td class="py-2 text-center text-xs capitalize">
+                            {{ cn.disposition === 'balance' ? 'Account Balance' : 'Invoice' }}
+                        </td>
+                        <td class="py-2 text-center">
+                            <span :class="{
+                                'bg-green-100 text-green-700': cn.status === 'applied',
+                                'bg-yellow-100 text-yellow-700': cn.status === 'issued',
+                                'bg-gray-100 text-gray-500': cn.status === 'voided',
+                            }" class="text-xs px-2 py-0.5 rounded-full font-medium capitalize">{{ cn.status }}</span>
+                        </td>
+                        <td class="py-2 text-right font-medium text-gray-800">{{ fmt(cn.amount) }}</td>
+                        <td class="py-2 text-right text-gray-400 text-xs">
+                            {{ cn.issued_at ? new Date(cn.issued_at).toLocaleDateString() : '—' }}
+                        </td>
+                        <td class="py-2 text-right">
+                            <button v-if="cn.status !== 'voided'" @click="voidCreditNote(cn.id)"
+                                class="text-xs text-red-500 hover:text-red-700">Void</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p v-else-if="!showCNForm" class="text-sm text-gray-400 mb-3">No credit notes on this invoice.</p>
+
+            <!-- Issue credit note form -->
+            <form v-if="showCNForm" @submit.prevent="submitCreditNote"
+                class="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50 mt-2">
+                <p class="text-xs font-semibold text-gray-600 uppercase tracking-wider">New Credit Note</p>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Amount</label>
+                        <input v-model="cnForm.amount" type="number" step="0.01" min="0.01"
+                            :max="invoice.total"
+                            placeholder="0.00"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                        <p v-if="cnForm.errors.amount" class="mt-1 text-xs text-red-600">{{ cnForm.errors.amount }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Apply To</label>
+                        <select v-model="cnForm.disposition" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            <option value="balance">Client Account Balance</option>
+                            <option value="invoice">This Invoice (reduce amount due)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Reason <span class="text-red-500">*</span></label>
+                    <input v-model="cnForm.reason" type="text" maxlength="500"
+                        placeholder="e.g. Service outage compensation, billing error correction…"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                    <p v-if="cnForm.errors.reason" class="mt-1 text-xs text-red-600">{{ cnForm.errors.reason }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Internal Notes</label>
+                    <textarea v-model="cnForm.notes" rows="2"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none" />
+                </div>
+
+                <div class="flex gap-3 justify-end pt-1">
+                    <button type="button" @click="showCNForm = false; cnForm.reset()"
+                        class="text-sm text-gray-500 px-4 py-2">Cancel</button>
+                    <button type="submit" :disabled="cnForm.processing"
+                        class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg">
+                        Issue Credit Note
+                    </button>
+                </div>
+            </form>
         </div>
 
         <!-- Payment history -->
