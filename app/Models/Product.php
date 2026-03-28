@@ -13,7 +13,7 @@ class Product extends Model
 
     protected $fillable = [
         'name', 'category', 'short_description', 'description', 'type', 'price', 'setup_fee',
-        'billing_cycle', 'module', 'autosetup', 'module_config', 'configurable_options', 'stock',
+        'billing_cycle', 'module', 'autosetup', 'trial_days', 'module_config', 'configurable_options', 'stock',
         'hidden', 'taxable', 'sort_order',
     ];
 

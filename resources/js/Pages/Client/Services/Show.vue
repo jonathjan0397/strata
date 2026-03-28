@@ -2,17 +2,22 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
 import { Link, useForm } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
-const props = defineProps({ service: Object })
+const props = defineProps({
+    service:            Object,
+    upgradableProducts: { type: Array, default: () => [] },
+})
 
-const showCancelForm = ref(false)
+const showCancelForm  = ref(false)
+const showUpgradeForm = ref(false)
 const cancelForm = useForm({
     reason:            '',
     cancellation_type: 'end_of_period',
 })
+const upgradeForm = useForm({ product_id: '' })
 
 function submitCancellation() {
     cancelForm.post(route('client.services.cancel', props.service.id), {
@@ -20,9 +25,23 @@ function submitCancellation() {
     })
 }
 
+function submitUpgrade() {
+    upgradeForm.post(route('client.services.upgrade', props.service.id), {
+        onSuccess: () => {
+            showUpgradeForm.value = false
+            upgradeForm.reset()
+        },
+    })
+}
+
 const cancelRequested   = props.service.status === 'cancellation_requested'
 const scheduledCancel   = !!props.service.scheduled_cancel_at
 const isClosed          = ['cancelled', 'terminated'].includes(props.service.status)
+const isInTrial         = props.service.trial_ends_at && new Date(props.service.trial_ends_at) > new Date()
+
+const selectedProduct = computed(() =>
+    props.upgradableProducts.find(p => p.id === upgradeForm.product_id)
+)
 </script>
 
 <template>
@@ -40,7 +59,13 @@ const isClosed          = ['cancelled', 'terminated'].includes(props.service.sta
         <span class="text-gray-500">Domain</span>        <span>{{ service.domain ?? '—' }}</span>
         <span class="text-gray-500">Amount</span>        <span>${{ service.amount }} / {{ service.billing_cycle?.replace(/_/g,' ') }}</span>
         <span class="text-gray-500">Registration</span>  <span>{{ service.registration_date ?? '—' }}</span>
-        <span class="text-gray-500">Next Due</span>      <span>{{ service.next_due_date ?? '—' }}</span>
+        <template v-if="isInTrial">
+          <span class="text-gray-500">Trial Ends</span>
+          <span class="text-indigo-700 font-medium">{{ new Date(service.trial_ends_at).toLocaleDateString() }}</span>
+        </template>
+        <template v-else>
+          <span class="text-gray-500">Next Due</span>    <span>{{ service.next_due_date ?? '—' }}</span>
+        </template>
         <template v-if="service.server_hostname">
           <span class="text-gray-500">Server</span>      <span class="font-mono">{{ service.server_hostname }}</span>
         </template>
@@ -50,8 +75,17 @@ const isClosed          = ['cancelled', 'terminated'].includes(props.service.sta
       </div>
     </div>
 
+    <!-- Active trial notice -->
+    <div v-if="isInTrial" class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm text-indigo-800 mb-4">
+      <p class="font-medium">Free Trial Active</p>
+      <p class="text-indigo-700 mt-1">
+        Your trial ends on <strong>{{ new Date(service.trial_ends_at).toLocaleDateString() }}</strong>.
+        Payment will be required to continue service beyond that date.
+      </p>
+    </div>
+
     <!-- Scheduled end-of-period cancellation notice -->
-    <div v-if="scheduledCancel" class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 mb-4">
+    <div v-else-if="scheduledCancel" class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 mb-4">
       <p class="font-medium">Cancellation scheduled</p>
       <p class="text-amber-700 mt-1">
         This service will be cancelled on
@@ -68,6 +102,56 @@ const isClosed          = ['cancelled', 'terminated'].includes(props.service.sta
         Type: <strong class="capitalize">{{ service.cancellation_type?.replace('_', ' ') ?? 'immediate' }}</strong> —
         submitted {{ new Date(service.cancellation_requested_at).toLocaleDateString() }}
       </p>
+    </div>
+
+    <!-- Upgrade / Downgrade plan -->
+    <div v-if="service.status === 'active' && upgradableProducts.length && !cancelRequested && !scheduledCancel"
+        class="bg-white rounded-xl border border-gray-200 p-5 text-sm mb-4">
+      <h2 class="font-semibold text-gray-900 mb-3">Change Plan</h2>
+
+      <div v-if="!showUpgradeForm">
+        <p class="text-gray-500 mb-3">Switch to a different plan within the same product category. A prorated invoice or credit will be applied automatically.</p>
+        <button @click="showUpgradeForm = true"
+            class="px-4 py-2 text-sm text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">
+          View Available Plans
+        </button>
+      </div>
+
+      <div v-else class="space-y-4">
+        <div class="space-y-2">
+          <label v-for="p in upgradableProducts" :key="p.id"
+            class="flex items-center justify-between gap-3 cursor-pointer p-3 rounded-lg border transition-colors"
+            :class="upgradeForm.product_id === p.id
+              ? (p.price > service.amount ? 'border-indigo-400 bg-indigo-50' : 'border-green-400 bg-green-50')
+              : 'border-gray-200 hover:border-gray-300'">
+            <div class="flex items-center gap-3">
+              <input v-model="upgradeForm.product_id" type="radio" :value="p.id" class="text-indigo-600" />
+              <div>
+                <p class="font-medium text-gray-800">{{ p.name }}</p>
+                <p v-if="p.short_description" class="text-xs text-gray-500 mt-0.5">{{ p.short_description }}</p>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="font-semibold text-gray-900">${{ p.price }}</p>
+              <p class="text-xs text-gray-400 capitalize">{{ p.billing_cycle?.replace(/_/g, ' ') }}</p>
+              <p v-if="p.price > service.amount" class="text-xs text-indigo-600 mt-0.5">Upgrade</p>
+              <p v-else class="text-xs text-green-600 mt-0.5">Downgrade</p>
+            </div>
+          </label>
+        </div>
+
+        <p v-if="upgradeForm.errors.product_id" class="text-red-500 text-xs">{{ upgradeForm.errors.product_id }}</p>
+
+        <div class="flex gap-3">
+          <button type="button" @click="showUpgradeForm = false; upgradeForm.reset()"
+            class="text-sm text-gray-500 px-4 py-2">Nevermind</button>
+          <button type="button" @click="submitUpgrade"
+            :disabled="!upgradeForm.product_id || upgradeForm.processing"
+            class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+            {{ upgradeForm.processing ? 'Processing…' : 'Confirm Plan Change' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Cancel service -->

@@ -18,7 +18,7 @@ class Service extends Model
         'registration_date', 'next_due_date', 'termination_date',
         'username', 'password_enc', 'server_hostname', 'server_port',
         'module_data', 'notes', 'cancellation_reason', 'cancellation_requested_at',
-        'cancellation_type', 'scheduled_cancel_at',
+        'cancellation_type', 'scheduled_cancel_at', 'trial_ends_at',
     ];
 
     protected function casts(): array
@@ -30,6 +30,7 @@ class Service extends Model
             'termination_date'            => 'date',
             'cancellation_requested_at'   => 'datetime',
             'scheduled_cancel_at'         => 'date',
+            'trial_ends_at'               => 'date',
             'module_data'                 => 'array',
         ];
     }

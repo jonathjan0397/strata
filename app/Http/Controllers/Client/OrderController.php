@@ -135,16 +135,23 @@ class OrderController extends Controller
                     'order_number' => 'ORD-' . now()->format('Ymd') . '-' . str_pad($order->id, 4, '0', STR_PAD_LEFT),
                 ]);
 
-                // 2. Service record (pending provisioning)
+                // 2. Service record — trial products activate immediately
+                $isTrial      = $product->trial_days > 0;
+                $trialEndsAt  = $isTrial ? now()->addDays((int) $product->trial_days)->toDateString() : null;
+                $nextDue      = $isTrial
+                    ? now()->addDays((int) $product->trial_days)
+                    : $this->nextDueDate($request->billing_cycle);
+
                 $service = Service::create([
                     'user_id'           => $user->id,
                     'product_id'        => $product->id,
                     'domain'            => $request->domain,
-                    'status'            => 'pending',
+                    'status'            => $isTrial ? 'active' : 'pending',
                     'amount'            => $price,
                     'billing_cycle'     => $request->billing_cycle,
                     'registration_date' => now(),
-                    'next_due_date'     => $this->nextDueDate($request->billing_cycle),
+                    'next_due_date'     => $nextDue,
+                    'trial_ends_at'     => $trialEndsAt,
                 ]);
 
                 // 3. Order item — linked to the service
@@ -159,6 +166,11 @@ class OrderController extends Controller
                 ]);
 
                 // 4. Invoice
+                // Trial orders: invoice is due when the trial expires
+                $invoiceDueDate = $isTrial
+                    ? now()->addDays((int) $product->trial_days)
+                    : now()->addDays((int) Setting::get('invoice_due_days', 7));
+
                 $invoice = Invoice::create([
                     'user_id'    => $user->id,
                     'status'     => 'unpaid',
@@ -168,7 +180,7 @@ class OrderController extends Controller
                     'total'      => $total,
                     'amount_due' => $total,
                     'date'       => now(),
-                    'due_date'   => now()->addDays((int) Setting::get('invoice_due_days', 7)),
+                    'due_date'   => $invoiceDueDate,
                 ]);
 
                 // 5. Invoice line items
@@ -262,7 +274,7 @@ class OrderController extends Controller
 
                 session(['last_order_invoice_id'     => $invoice->id]);
                 session(['last_order_invoice_amount' => $total]);
-                session(['last_order_invoice_due'    => now()->addDays((int) Setting::get('invoice_due_days', 7))->format('M d, Y')]);
+                session(['last_order_invoice_due'    => $invoiceDueDate->format('M d, Y')]);
 
                 $createdService = $service;
                 $createdOrder   = $order;
@@ -276,8 +288,13 @@ class OrderController extends Controller
         $amount    = session()->pull('last_order_invoice_amount');
         $due       = session()->pull('last_order_invoice_due');
 
-        // Trigger immediate provisioning for on_order products
-        if ($createdService && $product->autosetup === 'on_order') {
+        // Trial products provision immediately (service is already active)
+        $triggerProvision = $createdService && (
+            $product->autosetup === 'on_order' ||
+            ($product->trial_days > 0 && in_array($product->autosetup, ['on_order', 'on_payment', 'manual']))
+        );
+
+        if ($triggerProvision) {
             try {
                 $createdService->refresh();
                 OrderProvisioner::provision($createdService);

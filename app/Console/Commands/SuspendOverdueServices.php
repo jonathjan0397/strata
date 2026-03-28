@@ -23,6 +23,8 @@ class SuspendOverdueServices extends Command
 
         $services = Service::with(['user', 'product'])
             ->where('status', 'active')
+            ->where(fn ($q) => $q->whereNull('trial_ends_at')
+                ->orWhere('trial_ends_at', '<=', now()->toDateString()))  // never suspend active trial services
             ->whereHas('invoiceItems.invoice', fn ($q) =>
                 $q->where('status', 'overdue')
                   ->where('due_date', '<=', $cutoff)

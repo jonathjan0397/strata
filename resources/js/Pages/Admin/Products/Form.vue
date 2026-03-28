@@ -19,6 +19,7 @@ const form = useForm({
   stock:                props.product?.stock                ?? '',
   module:               props.product?.module               ?? '',
   autosetup:            props.product?.autosetup            ?? 'manual',
+  trial_days:           props.product?.trial_days           ?? '',
   hidden:               props.product?.hidden               ?? false,
   taxable:              props.product?.taxable              ?? true,
   sort_order:           props.product?.sort_order           ?? 0,
@@ -222,10 +223,22 @@ const CATEGORIES     = ['Shared Hosting','VPS Hosting','Dedicated Servers','Rese
             <p class="text-xs text-slate-400 mt-1">Controls when the hosting account is created</p>
           </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>
-          <input v-model="form.sort_order" type="number"
-            class="w-32 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Trial Period (days)
+              <span class="text-slate-400 font-normal text-xs">(blank = no trial)</span>
+            </label>
+            <input v-model="form.trial_days" type="number" min="1" max="365" placeholder="e.g. 14"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <p v-if="form.errors.trial_days" class="text-red-500 text-xs mt-0.5">{{ form.errors.trial_days }}</p>
+            <p class="text-xs text-slate-400 mt-1">Service activates immediately; invoice due when trial ends</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>
+            <input v-model="form.sort_order" type="number"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
         </div>
       </div>
 

@@ -302,6 +302,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('services',                            [Client\ServiceController::class, 'index'])->name('services.index');
         Route::get('services/{service}',                  [Client\ServiceController::class, 'show'])->name('services.show');
         Route::post('services/{service}/cancel',          [Client\ServiceController::class, 'requestCancellation'])->name('services.cancel');
+        Route::post('services/{service}/upgrade',         [Client\ServiceController::class, 'upgrade'])->name('services.upgrade');
         Route::get('invoices',                       [Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
         Route::get('invoices/{invoice}/download',    [Client\InvoiceController::class, 'download'])->name('invoices.download');

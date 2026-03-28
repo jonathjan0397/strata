@@ -55,6 +55,10 @@ function fmt(val) {
         <div><span class="text-gray-500">Amount:</span> ${{ service.amount }}</div>
         <div><span class="text-gray-500">Registered:</span> {{ fmt(service.registration_date) }}</div>
         <div><span class="text-gray-500">Next due:</span> {{ fmt(service.next_due_date) }}</div>
+        <div v-if="service.trial_ends_at">
+          <span class="text-gray-500">Trial ends:</span>
+          <span class="text-indigo-700 font-medium">{{ fmt(service.trial_ends_at) }}</span>
+        </div>
         <div v-if="service.termination_date"><span class="text-gray-500">Terminated:</span> {{ fmt(service.termination_date) }}</div>
       </div>
 

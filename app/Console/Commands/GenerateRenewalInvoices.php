@@ -24,6 +24,8 @@ class GenerateRenewalInvoices extends Command
             ->whereNotNull('next_due_date')
             ->where('next_due_date', '<=', now()->addDays($days)->toDateString())
             ->whereNull('scheduled_cancel_at')   // skip end-of-period cancellations
+            ->where(fn ($q) => $q->whereNull('trial_ends_at')
+                ->orWhere('trial_ends_at', '<=', now()->toDateString()))  // skip active trials
             ->whereDoesntHave('invoiceItems', fn ($q) =>
                 $q->whereHas('invoice', fn ($inv) =>
                     $inv->whereIn('status', ['unpaid', 'draft'])
