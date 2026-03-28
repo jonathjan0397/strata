@@ -51,7 +51,7 @@ class SampleDataSeeder extends Seeder
         $starter = Product::firstOrCreate(['name' => 'Starter Hosting'], [
             'category'          => 'Web Hosting',
             'short_description' => '1 website · 5 GB SSD · 50 GB bandwidth',
-            'type'              => 'hosting',
+            'type'              => 'shared',
             'price'             => 4.99,
             'setup_fee'         => 0.00,
             'billing_cycle'     => 'monthly',
@@ -63,7 +63,7 @@ class SampleDataSeeder extends Seeder
         $business = Product::firstOrCreate(['name' => 'Business Hosting'], [
             'category'          => 'Web Hosting',
             'short_description' => '5 websites · 25 GB SSD · unlimited bandwidth',
-            'type'              => 'hosting',
+            'type'              => 'shared',
             'price'             => 9.99,
             'setup_fee'         => 0.00,
             'billing_cycle'     => 'monthly',
@@ -75,7 +75,7 @@ class SampleDataSeeder extends Seeder
         $pro = Product::firstOrCreate(['name' => 'Professional Hosting'], [
             'category'          => 'Web Hosting',
             'short_description' => 'Unlimited websites · 100 GB NVMe · unlimited bandwidth',
-            'type'              => 'hosting',
+            'type'              => 'shared',
             'price'             => 19.99,
             'setup_fee'         => 5.00,
             'billing_cycle'     => 'monthly',
