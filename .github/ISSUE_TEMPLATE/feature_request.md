@@ -16,7 +16,7 @@ What problem or friction does this address? Who is affected?
 Describe what you'd like to see. Be as specific as you can.
 
 ## Alternatives considered
-Have you seen this done well in another platform (WHMCS, Blesta, etc.)? Link or describe.
+Have you seen this done well in another platform? Link or describe.
 
 ## Additional context
 Screenshots, mockups, or anything else that helps illustrate the request.

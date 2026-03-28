@@ -264,8 +264,8 @@ Both tracks share the same browser-based installer wizard at `/install`. The wiz
 - [ ] Churn rate, cohort analysis, projected revenue ⏳
 - [ ] Exportable reports (CSV, PDF) ⏳
 
-### v2.7 — WHMCS Migration Wizard ⭐ ⏳
-- [ ] Import clients, services, products, invoices, tickets from WHMCS DB dump
+### v2.7 — Migration Import Wizard ⭐ ⏳
+- [ ] Import clients, services, products, invoices, and tickets from an external billing platform DB dump
 - [ ] Dry-run mode + conflict resolution
 - [ ] Post-import validation report
 

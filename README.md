@@ -5,7 +5,7 @@
 
 **Strata** is a self-hosted billing and client management platform built for web hosting providers. Manage client accounts, automate recurring invoices, process payments, provision cPanel hosting accounts, register domains, and handle support tickets — all through a clean, modern browser-based interface.
 
-Built as a developer-friendly, self-hostable alternative to WHMCS and Blesta.
+A developer-friendly, self-hostable hosting billing and client management platform.
 
 ---
 
