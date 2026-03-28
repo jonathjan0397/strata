@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
+import TiptapEditor from '@/Components/TiptapEditor.vue'
 import { Link, useForm } from '@inertiajs/vue3'
 
 defineOptions({ layout: AppLayout })
@@ -65,10 +66,7 @@ function save() {
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Body</label>
-                    <textarea v-model="form.body" rows="20" required
-                        placeholder="Write article content here. Markdown is supported."
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
-                        :class="{ 'border-red-400': form.errors.body }" />
+                    <TiptapEditor v-model="form.body" :class="{ 'ring-1 ring-red-400 rounded-lg': form.errors.body }" />
                     <p v-if="form.errors.body" class="text-red-500 text-xs mt-1">{{ form.errors.body }}</p>
                 </div>
 

@@ -47,6 +47,8 @@ class InvoiceController extends Controller
         return Inertia::render('Client/Invoices/Show', [
             'invoice'       => $invoice,
             'creditBalance' => (float) $request->user()->credit_balance,
+            'hasStripe'     => (bool) config('services.stripe.secret'),
+            'hasPayPal'     => (bool) config('services.paypal.client_id'),
             'authNet'       => ($authNetLoginId && $authNetClientKey) ? [
                 'loginId'   => $authNetLoginId,
                 'clientKey' => $authNetClientKey,
@@ -102,7 +104,14 @@ class InvoiceController extends Controller
 
         $invoice->load(['user', 'items', 'payments']);
 
-        $pdf = Pdf::loadView('pdf.invoice', compact('invoice'))
+        $settings = [
+            'company_name'    => \App\Models\Setting::get('company_name', config('app.name')),
+            'company_address' => \App\Models\Setting::get('company_address', ''),
+            'currency_symbol' => \App\Models\Setting::get('currency_symbol', '$'),
+            'logo_path'       => \App\Models\Setting::get('logo_path'),
+        ];
+
+        $pdf = Pdf::loadView('pdf.invoice', compact('invoice', 'settings'))
             ->setPaper('a4', 'portrait');
 
         return $pdf->download("invoice-{$invoice->id}.pdf");

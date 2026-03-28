@@ -50,13 +50,17 @@ class AuthorizeNetPaymentController extends Controller
                 'amount_due' => 0,
             ]);
 
-            Mail::to($request->user()->email)->queue(new TemplateMailable('invoice.paid', [
-                'name'        => $request->user()->name,
-                'app_name'    => config('app.name'),
-                'invoice_id'  => $invoice->id,
-                'amount'      => number_format((float) $invoice->total, 2),
-                'invoice_url' => route('client.invoices.show', $invoice->id),
-            ]));
+            try {
+                Mail::to($request->user()->email)->send(new TemplateMailable('invoice.paid', [
+                    'name'        => $request->user()->name,
+                    'app_name'    => config('app.name'),
+                    'invoice_id'  => $invoice->id,
+                    'amount'      => number_format((float) $invoice->total, 2),
+                    'invoice_url' => route('client.invoices.show', $invoice->id),
+                ]));
+            } catch (\Throwable) {
+                // mail failure must not block payment confirmation
+            }
 
             return response()->json(['success' => true]);
 

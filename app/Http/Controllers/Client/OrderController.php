@@ -260,14 +260,18 @@ class OrderController extends Controller
         $amount     = session()->pull('last_order_invoice_amount');
         $due        = session()->pull('last_order_invoice_due');
 
-        Mail::to($request->user()->email)->queue(new TemplateMailable('invoice.created', [
-            'name'        => $request->user()->name,
-            'app_name'    => config('app.name'),
-            'invoice_id'  => $invoiceId,
-            'amount'      => number_format((float) $amount, 2),
-            'due_date'    => $due,
-            'invoice_url' => route('client.invoices.show', $invoiceId),
-        ]));
+        try {
+            Mail::to($request->user()->email)->send(new TemplateMailable('invoice.created', [
+                'name'        => $request->user()->name,
+                'app_name'    => config('app.name'),
+                'invoice_id'  => $invoiceId,
+                'amount'      => number_format((float) $amount, 2),
+                'due_date'    => $due,
+                'invoice_url' => route('client.invoices.show', $invoiceId),
+            ]));
+        } catch (\Throwable) {
+            // mail failure must not block order confirmation
+        }
 
         return redirect()->route('client.invoices.show', $invoiceId)
             ->with('success', 'Order placed! Pay your invoice below to activate your service.');

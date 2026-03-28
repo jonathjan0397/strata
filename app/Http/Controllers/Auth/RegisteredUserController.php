@@ -42,11 +42,15 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        Mail::to($user->email)->queue(new TemplateMailable('auth.welcome', [
-            'name'      => $user->name,
-            'app_name'  => config('app.name'),
-            'login_url' => route('login'),
-        ]));
+        try {
+            Mail::to($user->email)->send(new TemplateMailable('auth.welcome', [
+                'name'      => $user->name,
+                'app_name'  => config('app.name'),
+                'login_url' => route('login'),
+            ]));
+        } catch (\Throwable) {
+            // mail failure must not block registration
+        }
 
         AuditLogger::log('client.registered', $user, [], $user->id);
         WorkflowEngine::fire('client.registered', $user);

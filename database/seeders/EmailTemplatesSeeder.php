@@ -66,6 +66,27 @@ class EmailTemplatesSeeder extends Seeder
                 'body_html'  => '<p>Hi {{name}},</p><p>A reply has been added to your support ticket <strong>#{{ticket_id}}: {{ticket_subject}}</strong>.</p><blockquote style="border-left:3px solid #e5e7eb;margin:16px 0;padding:12px 16px;color:#6b7280">{{reply_body}}</blockquote><p><a href="{{ticket_url}}" class="btn">View Ticket</a></p><p>Thanks,<br>The {{app_name}} Team</p>',
                 'body_plain' => "Hi {{name}},\n\nNew reply on Ticket #{{ticket_id}}: {{ticket_subject}}\n\n{{reply_body}}\n\nView: {{ticket_url}}\n\nThanks,\nThe {{app_name}} Team",
             ],
+            [
+                'slug'       => 'support.opened',
+                'name'       => 'New Support Ticket (Admin Notification)',
+                'subject'    => '[{{priority}}] New Ticket #{{ticket_id}}: {{ticket_subject}}',
+                'body_html'  => '<p>A new support ticket has been submitted.</p><table style="width:100%;border-collapse:collapse;margin:16px 0"><tr><td style="padding:8px 0;color:#6b7280">Ticket #</td><td style="padding:8px 0;font-weight:600">{{ticket_id}}</td></tr><tr><td style="padding:8px 0;color:#6b7280">From</td><td style="padding:8px 0">{{name}}</td></tr><tr><td style="padding:8px 0;color:#6b7280">Subject</td><td style="padding:8px 0">{{ticket_subject}}</td></tr><tr><td style="padding:8px 0;color:#6b7280">Priority</td><td style="padding:8px 0">{{priority}}</td></tr><tr><td style="padding:8px 0;color:#6b7280">Department</td><td style="padding:8px 0">{{department}}</td></tr></table><p><a href="{{ticket_url}}" class="btn">View Ticket</a></p>',
+                'body_plain' => "New ticket submitted.\n\nTicket: #{{ticket_id}}\nFrom: {{name}}\nSubject: {{ticket_subject}}\nPriority: {{priority}}\nDepartment: {{department}}\n\nView: {{ticket_url}}",
+            ],
+            [
+                'slug'       => 'support.closed',
+                'name'       => 'Support Ticket Auto-Closed',
+                'subject'    => 'Your Ticket #{{ticket_id}} Has Been Closed',
+                'body_html'  => '<p>Hi {{name}},</p><p>Your support ticket <strong>#{{ticket_id}}: {{subject}}</strong> has been automatically closed due to inactivity.</p><p>If you still need help, please open a new ticket or reply to this email to reopen it.</p><p><a href="{{ticket_url}}" class="btn">View Ticket</a></p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nYour support ticket #{{ticket_id}}: {{subject}} has been automatically closed due to inactivity.\n\nIf you still need help, please open a new ticket.\n\nView: {{ticket_url}}\n\nThanks,\nThe {{app_name}} Team",
+            ],
+            [
+                'slug'       => 'support.assigned',
+                'name'       => 'Support Ticket Assigned to You',
+                'subject'    => 'Ticket #{{ticket_id}} Assigned to You: {{ticket_subject}}',
+                'body_html'  => '<p>Hi {{name}},</p><p>Support ticket <strong>#{{ticket_id}}: {{ticket_subject}}</strong> has been assigned to you.</p><p><a href="{{ticket_url}}" class="btn">View Ticket</a></p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nTicket #{{ticket_id}}: {{ticket_subject}} has been assigned to you.\n\nView: {{ticket_url}}\n\nThanks,\nThe {{app_name}} Team",
+            ],
         ];
 
         foreach ($templates as $data) {

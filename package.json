@@ -9,12 +9,20 @@
     },
     "dependencies": {
         "@inertiajs/vue3": "^2.0",
+        "@tiptap/extension-image": "^3.21.0",
+        "@tiptap/extension-link": "^3.21.0",
+        "@tiptap/extension-placeholder": "^3.21.0",
+        "@tiptap/extension-text-align": "^3.21.0",
+        "@tiptap/extension-underline": "^3.21.0",
+        "@tiptap/pm": "^3.21.0",
+        "@tiptap/starter-kit": "^3.21.0",
+        "@tiptap/vue-3": "^3.21.0",
         "@vueuse/core": "^11.0",
         "vue": "^3.5"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5",
-        "@tailwindcss/typography": "^0.5",
+        "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.0",
         "@vitejs/plugin-vue": "^5.1",
         "axios": "^1.7",

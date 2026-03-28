@@ -11,6 +11,8 @@ defineOptions({ layout: AppLayout })
 defineProps({
   invoice:       Object,
   creditBalance: Number,
+  hasStripe:     { type: Boolean, default: false },
+  hasPayPal:     { type: Boolean, default: false },
   authNet:       { type: Object, default: null }, // { loginId, clientKey, sandbox }
 })
 
@@ -166,7 +168,7 @@ async function payPayPal(invoiceId) {
         <div class="flex justify-end gap-3 flex-wrap">
 
           <!-- Stripe -->
-          <button
+          <button v-if="hasStripe"
             @click="payStripe(invoice.id)"
             :disabled="payingStripe || payingPayPal"
             class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
@@ -192,7 +194,7 @@ async function payPayPal(invoiceId) {
           </button>
 
           <!-- PayPal -->
-          <button
+          <button v-if="hasPayPal"
             @click="payPayPal(invoice.id)"
             :disabled="payingStripe || payingPayPal"
             class="flex items-center gap-2 bg-[#003087] hover:bg-[#002069] disabled:opacity-60 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"

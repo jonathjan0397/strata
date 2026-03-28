@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\KbArticle;
 use App\Models\KbCategory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -142,5 +144,16 @@ class KbController extends Controller
 
         return redirect()->route('admin.kb.index')
             ->with('flash', ['success' => 'Article deleted.']);
+    }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $path = $request->file('image')->store('kb-images', 'public');
+
+        return response()->json(['url' => Storage::disk('public')->url($path)]);
     }
 }

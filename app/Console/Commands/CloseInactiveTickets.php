@@ -36,16 +36,18 @@ class CloseInactiveTickets extends Command
             ->get();
 
         foreach ($tickets as $ticket) {
-            $ticket->update(['status' => 'closed']);
+            $ticket->update(['status' => 'closed', 'closed_at' => now()]);
 
             // Notify the client that their ticket was auto-closed
-            Mail::to($ticket->user->email)->queue(new TemplateMailable('support.closed', [
-                'name'       => $ticket->user->name,
-                'app_name'   => config('app.name'),
-                'ticket_id'  => $ticket->id,
-                'subject'    => $ticket->subject,
-                'ticket_url' => route('client.support.show', $ticket->id),
-            ]));
+            try {
+                Mail::to($ticket->user->email)->send(new TemplateMailable('support.closed', [
+                    'name'       => $ticket->user->name,
+                    'app_name'   => config('app.name'),
+                    'ticket_id'  => $ticket->id,
+                    'subject'    => $ticket->subject,
+                    'ticket_url' => route('client.support.show', $ticket->id),
+                ]));
+            } catch (\Throwable) {}
         }
 
         $this->info("Auto-closed {$tickets->count()} ticket(s) inactive for {$days}+ days.");

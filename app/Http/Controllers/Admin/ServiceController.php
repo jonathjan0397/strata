@@ -51,13 +51,17 @@ class ServiceController extends Controller
         AuditLogger::log('service.activated', $service);
         WorkflowEngine::fire('service.active', $service);
 
-        Mail::to($service->user->email)->queue(new TemplateMailable('service.active', [
-            'name'         => $service->user->name,
-            'app_name'     => config('app.name'),
-            'service_name' => $service->product->name ?? 'Service',
-            'domain'       => $service->domain ?? '—',
-            'portal_url'   => route('client.services.show', $service->id),
-        ]));
+        try {
+            Mail::to($service->user->email)->send(new TemplateMailable('service.active', [
+                'name'         => $service->user->name,
+                'app_name'     => config('app.name'),
+                'service_name' => $service->product->name ?? 'Service',
+                'domain'       => $service->domain ?? '—',
+                'portal_url'   => route('client.services.show', $service->id),
+            ]));
+        } catch (\Throwable) {
+            // mail failure must not block service activation
+        }
 
         return back()->with('success', 'Service approved and activated.');
     }

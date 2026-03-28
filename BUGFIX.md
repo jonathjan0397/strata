@@ -149,6 +149,31 @@
 **Root cause:** Middleware `handle()` had no return statement after removing the redirect.
 **Fix:** Added `return $next($request)` to always pass the request through. 2FA is now optional but a persistent amber banner prompts admins to enable it.
 
+## BF-019 — Mail::queue() hangs / 500 on CWP shared hosting (no queue worker)
+**Status:** FIXED
+**Files:** `RegisteredUserController.php`, `OrderController.php`, `ServiceController.php`, `Client/SupportController.php`, `StripeWebhookController.php`, `AuthorizeNetPaymentController.php`, `CloseInactiveTickets.php`
+**Symptom:** Any action that triggers an email (registration, order, service activation, support reply, payment confirmation, auto-close) hangs indefinitely or returns 500 on CWP shared hosting.
+**Root cause:** All mail calls used `Mail::to()->queue()` which pushes jobs to the database queue. CWP shared hosting has no `queue:work` daemon running, so jobs are never processed and the queue table fills up. In some cases Laravel throws a timeout or dispatch exception.
+**Fix:** Replaced every `queue()` call with `send()` wrapped in `try { } catch (\Throwable) {}` — mail failure is silently swallowed so it never blocks the user-facing action. Affected controllers: RegisteredUserController, OrderController, ServiceController, Client\SupportController, StripeWebhookController, AuthorizeNetPaymentController, and the CloseInactiveTickets command.
+
+---
+
+## BF-020 — Stripe / PayPal pay buttons visible when gateway not configured (500 on click)
+**Status:** FIXED
+**Files:** `app/Http/Controllers/Client/InvoiceController.php`, `resources/js/Pages/Client/Invoices/Show.vue`
+**Symptom:** Clicking the Stripe or PayPal pay button on an invoice returns 500 when the respective gateway credentials are absent from `.env`.
+**Root cause:** Pay buttons were always rendered regardless of whether the gateway was actually configured.
+**Fix:** Added `hasStripe` (`(bool) config('services.stripe.secret')`) and `hasPayPal` (`(bool) config('services.paypal.client_id')`) flags to the Invoice `show()` Inertia props. Applied `v-if="hasStripe"` and `v-if="hasPayPal"` to the respective payment buttons in `Client/Invoices/Show.vue`.
+
+---
+
+## BF-021 — Stripe webhook 400 when STRIPE_WEBHOOK_SECRET not configured
+**Status:** FIXED
+**File:** `app/Http/Controllers/StripeWebhookController.php`
+**Symptom:** Stripe webhooks return 400 "Invalid signature" when `STRIPE_WEBHOOK_SECRET` is absent from `.env`, breaking invoice reconciliation on installations that haven't set up webhook signing.
+**Root cause:** `Webhook::constructEvent()` was called unconditionally and always throws `SignatureVerificationException` when no secret is set.
+**Fix:** Added conditional: if `$secret` is set, verify signature normally; otherwise skip to `Event::constructFrom(json_decode($payload, true))` and log a warning. Webhook processing continues regardless of whether the secret is configured.
+
 ---
 
 *Last updated: 2026-03-28*

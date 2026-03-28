@@ -29,7 +29,7 @@ defineProps({
                 <span>{{ article.views }} views</span>
                 <span>Updated {{ new Date(article.updated_at).toLocaleDateString() }}</span>
             </div>
-            <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">{{ article.body }}</div>
+            <div class="prose prose-sm max-w-none text-gray-700 leading-relaxed" v-html="article.body"></div>
         </div>
 
         <!-- Related articles -->

@@ -11,9 +11,131 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Client billing history page (full invoice list with filters + PDF download)
 - Authorize.net Accept.js Vue component (client-side card entry)
 - Apply credit at checkout
-- Service welcome email template
-- HEXONET registrar driver already wired — confirm sandbox testing
+- HEXONET registrar driver — confirm sandbox testing
 - country/state fields on client profile for automatic tax resolution
+
+---
+
+## [1.8.0] — 2026-03-28 — Knowledge Base Rich Text Editor
+
+### Added
+
+#### Tiptap Rich Text Editor (Knowledge Base)
+- `resources/js/Components/TiptapEditor.vue` — full Tiptap v2 editor component
+  - Toolbar: bold, italic, underline, strikethrough, H1/H2/H3, text align (left/center), bullet list, ordered list, blockquote, code block, link (prompt dialog), image upload, undo, redo
+  - **Image upload** — file picker button triggers `POST /admin/kb/images`; drag-and-drop onto editor canvas; clipboard paste (Ctrl+V image) — all three paths upload and insert the image URL
+  - Placeholder text support
+  - Scoped CSS for editor content: headings, lists, blockquote, code/pre, image selection ring, link styling
+- `Admin/Kb/Edit.vue` — replaced plain `<textarea>` with `<TiptapEditor v-model="form.body" />`
+- `KbController::uploadImage()` — validates uploaded image (max 5 MB), stores to `public` disk under `kb-images/`, returns `{ url }` JSON
+- Route `POST admin/kb/images` → `admin.kb.images.upload`
+- `Client/Kb/Show.vue` — article body now rendered with `v-html` (was `{{ article.body }}` plain text); `whitespace-pre-wrap` removed
+- `Portal/KB/Show.vue` — same `v-html` switch for public portal article view; `style="white-space: pre-wrap"` wrapper removed
+- `@tailwindcss/typography` installed; `@plugin "@tailwindcss/typography"` added to `resources/css/app.css` — enables `prose` and `prose-invert` classes for rendered HTML content
+
+### Dependencies added
+- `@tiptap/vue-3`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-placeholder`, `@tiptap/extension-text-align`, `@tiptap/extension-underline`
+- `@tailwindcss/typography`
+
+---
+
+## [1.7.0] — 2026-03-28 — Full Support System Feature Set + Payment Gateway Fixes
+
+### Added
+
+#### Support — File Attachments
+- `ticket_attachments` table: `ticket_id`, `reply_id` (nullable), `user_id`, `filename`, `path`, `size`, `mime_type`
+- `TicketAttachment` model with `humanSize()` helper and `downloadUrl()` accessor
+- `TicketAttachmentController::download()` — role-aware access control (staff see all; client sees own tickets only); streams file from `storage/public` disk
+- Attachments stored under `ticket-attachments/{ticket_id}/`
+- File picker on `Client/Support/Create.vue` — dashed-border drop zone, removable pending files list, `forceFormData: true`
+- File picker on `Client/Support/Show.vue` (reply form) — same UX
+- File picker on `Admin/Support/Show.vue` (reply form) — same UX; `accept="*/*"`
+- Reply thread in client and admin views shows attachment chips with file icon, filename, size, and download link
+- Routes: `GET client/support/attachments/{attachment}/download` and `GET admin/support/attachments/{attachment}/download`
+
+#### Support — Ticket Ratings
+- `rating` (tinyint, nullable), `rating_note` (varchar 500, nullable) columns added to `support_tickets`
+- `Client/Support/Show.vue` — closed-ticket state shows 5-star hover rating with optional comment textarea and submit button
+- Already-rated state shows submitted stars + note
+- `Client\SupportController::rate()` — validates 1–5 star; one-time only (aborts if already rated)
+- Route: `POST client/support/{ticket}/rate`
+
+#### Support — Bulk Admin Actions
+- `Admin\SupportController::bulkAction()` — actions: `close`, `reopen`, `assign`, `delete`; accepts array of ticket IDs
+- `Admin/Support/Index.vue` — checkbox column with select-all toggle; animated bulk action bar (Transition); assign dropdown populated from staff list
+- Route: `POST admin/support/bulk`
+
+#### Support — Department Transfer
+- `Admin\SupportController::transferDepartment()` — PATCH; updates department; adds an internal note recording the change
+- `Admin/Support/Show.vue` — inline department `<select>` in meta bar triggers PATCH on `@change`
+- Route: `PATCH admin/support/{ticket}/department`
+
+#### Support — Ticket Merge
+- `Admin\SupportController::merge()` — moves all replies and attachments from source ticket to target; closes and saves merged note on source
+- `Admin/Support/Show.vue` — collapsible merge panel with ticket ID input and Merge button; validation error display
+- Route: `POST admin/support/{ticket}/merge`
+
+#### Support — SLA Indicators
+- SLA thresholds computed in Vue: urgent=4h, high=8h, medium=24h, low=72h
+- `Admin/Support/Index.vue` — colored dot per ticket: red (overdue), amber (within 75% of threshold), gray (ok); row background tinted for overdue/warning
+- SLA legend at bottom of ticket list
+
+#### Support — Tracking Fields
+- `first_replied_at` (timestamp, nullable) and `closed_at` (timestamp, nullable) added to `support_tickets`
+- `Admin\SupportController::reply()` — sets `first_replied_at` on first staff reply; updates ticket status to `answered`
+- `Admin\SupportController::close()` — sets `closed_at`
+- `CloseInactiveTickets` command — sets `closed_at` on auto-closed tickets
+- `Admin/Support/Show.vue` — first reply time displayed in meta bar (e.g. "1h 23m")
+
+#### Support — Staff Assignment Emails
+- `support.assigned` email template seeded: notifies assigned staff member with ticket link
+- `Admin\SupportController::assign()` — fires `support.assigned` email to new assignee; detects assignee change
+
+#### Support — Admin New-Ticket Notification
+- `support.opened` email template seeded: `[{{priority}}] New Ticket #{{ticket_id}}: {{ticket_subject}}`; sent to admin email on ticket creation
+- `Client\SupportController::store()` — fires `support.opened` email after ticket creation
+
+#### Support — Auto-Close Notification
+- `support.closed` email template seeded: notifies client when ticket is auto-closed
+- `CloseInactiveTickets` command — fires `support.closed` email (silent catch)
+
+#### Support — Client Search & Filter
+- `Client\SupportController::index()` — `search` (subject LIKE) and `status` filter parameters; `withQueryString()` pagination
+- `Client/Support/Index.vue` — search input + status dropdown; watch-driven `router.get` on change; priority dot column
+
+#### Support — Admin Agent Filter
+- `Admin/Support/Index.vue` — `assigned_to` filter: All / Me / Unassigned / individual agent; passed to backend query
+
+#### Email Templates (new)
+- Migration `2026_03_27_220002_seed_support_email_templates.php` seeds three templates via `EmailTemplate::updateOrCreate` (works via maintenance endpoint which only runs migrations, not seeders):
+  - `support.opened` — admin notification on new ticket
+  - `support.closed` — client notification on auto-close
+  - `support.assigned` — staff notification on assignment
+
+#### Payment Gateway Fixes
+- `hasStripe` and `hasPayPal` boolean flags added to `Client\InvoiceController::show()` Inertia props
+- `Client/Invoices/Show.vue` — Stripe pay button hidden via `v-if="hasStripe"`; PayPal button hidden via `v-if="hasPayPal"` — prevents 500 errors when gateway not configured
+- `StripeWebhookController::handle()` — graceful fallback when no `STRIPE_WEBHOOK_SECRET` configured: skips `Webhook::constructEvent` signature check, constructs event from raw JSON payload; logs warning
+
+### Fixed
+
+#### Mail — No Queue Worker (All controllers)
+All `Mail::to()->queue()` calls replaced with `Mail::to()->send()` wrapped in `try { } catch (\Throwable) {}` so mail failure never blocks the user action or causes a 500 error on CWP shared hosting (no queue worker):
+- `RegisteredUserController` — welcome email
+- `OrderController` — invoice created email
+- `ServiceController` — service activated email
+- `SupportController` (client) — support reply email
+- `StripeWebhookController` — invoice paid email
+- `AuthorizeNetPaymentController` — payment confirmation email
+- `CloseInactiveTickets` — auto-close notification email
+
+### Database Migrations (this release)
+| File | Purpose |
+|------|---------|
+| `2026_03_27_220000_create_ticket_attachments_table.php` | `ticket_attachments` table |
+| `2026_03_27_220001_add_fields_to_support_tickets.php` | `rating`, `rating_note`, `first_replied_at`, `closed_at` |
+| `2026_03_27_220002_seed_support_email_templates.php` | Seeds `support.opened`, `support.closed`, `support.assigned` |
 
 ---
 

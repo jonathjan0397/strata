@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Install\InstallerController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TicketAttachmentController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -132,6 +133,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('clients/{client}/notes',                [Admin\ClientController::class, 'storeNote'])->name('clients.notes.store');
         Route::delete('clients/{client}/notes/{note}',       [Admin\ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
         Route::post('clients/{client}/email',                [Admin\ClientController::class, 'sendEmail'])->name('clients.email');
+        Route::post('clients/{client}/tasks',                [Admin\ClientController::class, 'storeTask'])->name('clients.tasks.store');
+        Route::patch('clients/{client}/tasks/{task}/complete',[Admin\ClientController::class, 'completeTask'])->name('clients.tasks.complete');
+        Route::delete('clients/{client}/tasks/{task}',       [Admin\ClientController::class, 'destroyTask'])->name('clients.tasks.destroy');
 
         Route::get('client-groups',                          [Admin\ClientGroupController::class, 'index'])->name('client-groups.index');
         Route::post('client-groups',                         [Admin\ClientGroupController::class, 'store'])->name('client-groups.store');
@@ -175,20 +179,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('invoices/{invoice}/cancel',    [Admin\InvoiceController::class, 'cancel'])->name('invoices.cancel');
 
         // Support
-        Route::get('support',              [Admin\SupportController::class, 'index'])->name('support.index');
-        Route::get('support/{ticket}',     [Admin\SupportController::class, 'show'])->name('support.show');
-        Route::post('support/{ticket}/reply',  [Admin\SupportController::class, 'reply'])->name('support.reply');
-        Route::post('support/{ticket}/assign', [Admin\SupportController::class, 'assign'])->name('support.assign');
-        Route::post('support/{ticket}/close',    [Admin\SupportController::class, 'close'])->name('support.close');
-        Route::post('support/{ticket}/reopen',   [Admin\SupportController::class, 'reopen'])->name('support.reopen');
-        Route::patch('support/{ticket}/priority',[Admin\SupportController::class, 'setPriority'])->name('support.priority');
+        Route::get('support',                            [Admin\SupportController::class, 'index'])->name('support.index');
+        Route::post('support/bulk',                      [Admin\SupportController::class, 'bulkAction'])->name('support.bulk');
+        Route::get('support/attachments/{attachment}/download', [TicketAttachmentController::class, 'download'])->name('support.attachments.download');
+        Route::get('support/{ticket}',                   [Admin\SupportController::class, 'show'])->name('support.show');
+        Route::post('support/{ticket}/reply',            [Admin\SupportController::class, 'reply'])->name('support.reply');
+        Route::post('support/{ticket}/assign',           [Admin\SupportController::class, 'assign'])->name('support.assign');
+        Route::post('support/{ticket}/close',            [Admin\SupportController::class, 'close'])->name('support.close');
+        Route::post('support/{ticket}/reopen',           [Admin\SupportController::class, 'reopen'])->name('support.reopen');
+        Route::patch('support/{ticket}/priority',        [Admin\SupportController::class, 'setPriority'])->name('support.priority');
+        Route::patch('support/{ticket}/department',      [Admin\SupportController::class, 'transferDepartment'])->name('support.transfer');
+        Route::post('support/{ticket}/merge',            [Admin\SupportController::class, 'merge'])->name('support.merge');
 
         // Settings
-        Route::get('settings',            [Admin\SettingController::class, 'index'])->name('settings.index');
-        Route::patch('settings',          [Admin\SettingController::class, 'update'])->name('settings.update');
-        Route::patch('settings/mail',     [Admin\SettingController::class, 'updateMail'])->name('settings.mail');
-        Route::post('settings/mail/test', [Admin\SettingController::class, 'testMail'])->name('settings.mail.test');
-        Route::post('settings/logo',      [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
+        Route::get('settings',                    [Admin\SettingController::class, 'index'])->name('settings.index');
+        Route::patch('settings',                  [Admin\SettingController::class, 'update'])->name('settings.update');
+        Route::patch('settings/mail',             [Admin\SettingController::class, 'updateMail'])->name('settings.mail');
+        Route::post('settings/mail/test',         [Admin\SettingController::class, 'testMail'])->name('settings.mail.test');
+        Route::post('settings/logo',              [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
+        Route::patch('settings/integrations',     [Admin\SettingController::class, 'updateIntegrations'])->name('settings.integrations');
+
+        // Maintenance — run pending database migrations (super-admin only)
+        Route::post('maintenance/migrate', function () {
+            abort_unless(auth()->user()?->hasRole('super-admin'), 403);
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $output = trim(\Illuminate\Support\Facades\Artisan::output()) ?: 'Nothing to migrate.';
+            return response()->json(['success' => true, 'output' => $output]);
+        })->name('maintenance.migrate');
 
         // Departments
         Route::get('settings/departments',                [Admin\DepartmentController::class, 'index'])->name('departments.index');
@@ -213,6 +230,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('kb/{kbArticle}/edit',                     [Admin\KbController::class, 'edit'])->name('kb.edit');
         Route::patch('kb/{kbArticle}',                        [Admin\KbController::class, 'update'])->name('kb.update');
         Route::delete('kb/{kbArticle}',                       [Admin\KbController::class, 'destroy'])->name('kb.destroy');
+        Route::post('kb/images',                              [Admin\KbController::class, 'uploadImage'])->name('kb.images.upload');
 
         // Domains
         Route::get('domains',                           [Admin\DomainController::class, 'index'])->name('domains.index');
@@ -243,10 +261,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('announcements/{announcement}',   [Admin\AnnouncementController::class, 'update'])->name('announcements.update');
         Route::delete('announcements/{announcement}',  [Admin\AnnouncementController::class, 'destroy'])->name('announcements.destroy');
 
-        // Staff permission groups
+        // Team (admin + staff) management
         Route::get('staff',                    [Admin\StaffController::class, 'index'])->name('staff.index');
+        Route::get('staff/create',             [Admin\StaffController::class, 'create'])->name('staff.create');
+        Route::post('staff',                   [Admin\StaffController::class, 'store'])->name('staff.store');
         Route::get('staff/{staff}/edit',       [Admin\StaffController::class, 'edit'])->name('staff.edit');
         Route::patch('staff/{staff}',          [Admin\StaffController::class, 'update'])->name('staff.update');
+        Route::delete('staff/{staff}',         [Admin\StaffController::class, 'destroy'])->name('staff.destroy');
 
         // Audit Log
         Route::get('audit-log',                [Admin\AuditLogController::class, 'index'])->name('audit-log.index');
@@ -292,8 +313,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('support',                    [Client\SupportController::class, 'index'])->name('support.index');
         Route::get('support/create',             [Client\SupportController::class, 'create'])->name('support.create');
         Route::post('support',                   [Client\SupportController::class, 'store'])->name('support.store');
+        Route::get('support/attachments/{attachment}/download', [TicketAttachmentController::class, 'download'])->name('support.attachments.download');
         Route::get('support/{ticket}',           [Client\SupportController::class, 'show'])->name('support.show');
         Route::post('support/{ticket}/reply',    [Client\SupportController::class, 'reply'])->name('support.reply');
+        Route::post('support/{ticket}/rate',     [Client\SupportController::class, 'rate'])->name('support.rate');
         Route::get('announcements',              Client\AnnouncementController::class)->name('announcements');
         Route::get('kb',                         [Client\KbController::class, 'index'])->name('kb.index');
         Route::get('kb/{kbArticle:slug}',        [Client\KbController::class, 'show'])->name('kb.show');

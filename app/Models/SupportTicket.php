@@ -14,13 +14,16 @@ class SupportTicket extends Model
 
     protected $fillable = [
         'user_id', 'assigned_to', 'department_id', 'subject', 'status',
-        'priority', 'department', 'last_reply_at',
+        'priority', 'department', 'last_reply_at', 'rating', 'rating_note',
+        'first_replied_at', 'closed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'last_reply_at' => 'datetime',
+            'last_reply_at'    => 'datetime',
+            'first_replied_at' => 'datetime',
+            'closed_at'        => 'datetime',
         ];
     }
 
@@ -42,6 +45,11 @@ class SupportTicket extends Model
     public function latestReply(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(SupportReply::class, 'ticket_id')->latestOfMany();
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TicketAttachment::class, 'ticket_id');
     }
 
     public function department(): BelongsTo

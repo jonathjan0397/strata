@@ -53,8 +53,8 @@ defineProps({
               --tw-prose-code: #38bdf8;
               --tw-prose-pre-bg: rgba(0,0,0,0.3);
               --tw-prose-hr: rgba(255,255,255,0.1);
-            ">
-            <div style="white-space: pre-wrap; color: rgba(255,255,255,0.78); line-height: 1.75; font-size: 0.9375rem;">{{ article.body }}</div>
+            "
+            v-html="article.body">
           </div>
         </div>
 
