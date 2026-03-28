@@ -19,13 +19,19 @@ class AppServiceProvider extends ServiceProvider
     {
         Event::listen(MessageSent::class, LogSentEmail::class);
 
-        // Pre-install: APP_URL is still the default 'http://localhost'.
-        // Detect the real base URL from the incoming request so that route()
-        // and Ziggy generate correct absolute URLs regardless of which
-        // subdirectory the app is installed in.
-        if (! app()->runningInConsole() && config('app.url') === 'http://localhost') {
-            $detected = request()->getSchemeAndHttpHost() . request()->getBaseUrl();
-            URL::forceRootUrl($detected);
+        if (! file_exists(storage_path('installed.lock'))) {
+            // Pre-install: switch cache to array so nothing tries to hit the
+            // database before credentials have been configured.
+            config(['cache.default' => 'array']);
+
+            // Pre-install: APP_URL is still the default 'http://localhost'.
+            // Detect the real base URL from the incoming request so that route()
+            // and Ziggy generate correct absolute URLs regardless of which
+            // subdirectory the app is installed in.
+            if (! app()->runningInConsole()) {
+                $detected = request()->getSchemeAndHttpHost() . request()->getBaseUrl();
+                URL::forceRootUrl($detected);
+            }
         }
     }
 }

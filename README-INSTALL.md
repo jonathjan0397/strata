@@ -127,9 +127,48 @@ Use **Supervisor** to keep it running. Shared hosting users on **Sync** mode do 
 |---------|----------|
 | Blank page / 500 error after upload | Check `storage/logs/laravel.log` for the error message |
 | Installer not accessible | Verify `.htaccess` is uploaded and `mod_rewrite` is enabled |
+| "Access denied for user root" in logs | The `storage/framework/sessions/` or other `storage/` subdirectories are missing — create them manually and set to chmod 755 |
 | "storage is not writable" | Set `storage/` and `bootstrap/cache/` to chmod 755 |
 | Emails not sending | Configure SMTP in **Settings → Email** after installation |
 | Cron not running | Verify the full path to `php` and `artisan` in your cron command |
+
+### 403 Forbidden on the installer
+
+If you see **"You don't have permission to access this resource"** when visiting `/install`, the cause depends on how Strata is installed.
+
+**Scenario A — Strata is in a subdirectory (e.g. `public_html/billing/`)**
+
+Apache processes `.htaccess` files top-down, starting from the domain root. If your hosting does not grant `AllowOverride` access to subdirectories, the `billing/.htaccess` that routes requests through Laravel is silently ignored, and Apache returns 403.
+
+The recommended fix is to **use a subdomain instead**:
+
+- In **CWP**: Domains → Subdomains → create `billing.yourdomain.com` with document root set to `public_html/billing/public`
+- In **cPanel**: Domains → Subdomains → same approach
+
+Then visit `https://billing.yourdomain.com/install`.
+
+If you must keep a subdirectory URL, add the following to your **main** `public_html/.htaccess` (not the one inside `billing/`):
+
+```apache
+RewriteEngine On
+
+# Route /billing/* through Strata's front controller
+RewriteCond %{REQUEST_URI} ^/billing
+RewriteCond %{DOCUMENT_ROOT}/billing/public/%{REQUEST_URI} !-f
+RewriteRule ^billing(/.*)?$ /billing/public/index.php [L,QSA]
+```
+
+Replace `billing` with your actual subdirectory name. Be careful not to break any existing rules if your main domain already has a `.htaccess`.
+
+**Scenario B — Strata is the only app at the domain root**
+
+If files are uploaded to `public_html/` (or equivalent) but you did **not** point the document root to `public/`, Apache may deny access to PHP files or return 403 on directory requests.
+
+Fix: in your control panel, set the document root for the domain to `public_html/public` (or wherever the `public/` subdirectory lives).
+
+**Scenario C — `mod_rewrite` is disabled**
+
+Without `mod_rewrite`, the `.htaccess` rewrite rules are ignored. Contact your host to confirm `mod_rewrite` is enabled, or check **CWP → Apache Manager** / **cPanel → MultiPHP Manager**.
 
 ---
 

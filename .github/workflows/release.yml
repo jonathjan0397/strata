@@ -85,6 +85,16 @@ jobs:
             --exclude "HANDOFF.md" \
             --exclude "BUGFIX.md"
 
+          # Re-add .gitkeep files — the wildcard excludes above strip them,
+          # but ZIP drops empty directories so these files must be present.
+          zip "${ZIP}" \
+            storage/app/public/.gitkeep \
+            storage/framework/cache/data/.gitkeep \
+            storage/framework/sessions/.gitkeep \
+            storage/framework/views/.gitkeep \
+            storage/logs/.gitkeep \
+            bootstrap/cache/.gitkeep
+
           echo "ZIP=${ZIP}" >> "$GITHUB_ENV"
 
       # ── Detect pre-release (any tag containing beta, alpha, or rc) ───────────
