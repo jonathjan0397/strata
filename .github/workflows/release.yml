@@ -104,6 +104,7 @@ jobs:
         with:
           name: "Strata Billing ${{ github.ref_name }}"
           prerelease: ${{ steps.prerelease.outputs.IS_PRERELEASE }}
+          overwrite: true
           files: ${{ env.ZIP }}
           body: |
             ## Strata Billing ${{ github.ref_name }}
