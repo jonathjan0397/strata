@@ -1,11 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
-import { Link, router } from '@inertiajs/vue3'
+import { Link, router, useForm } from '@inertiajs/vue3'
+import { ref } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
-const props = defineProps({ service: Object })
+const props = defineProps({ service: Object, availableAddons: Array })
 
 function suspend()   { router.post(route('admin.services.suspend',   props.service.id)) }
 function unsuspend() { router.post(route('admin.services.unsuspend', props.service.id)) }
@@ -31,6 +32,16 @@ function rejectCancellation() {
 function fmt(val) {
   if (!val) return '—'
   return new Date(val).toLocaleDateString()
+}
+
+const addonForm = useForm({ addon_id: '' })
+function addAddon() {
+  addonForm.post(route('admin.services.addons.store', props.service.id), { onSuccess: () => { addonForm.reset() } })
+}
+function removeAddon(saId) {
+  if (confirm('Cancel this addon?')) {
+    router.delete(route('admin.services.addons.destroy', { service: props.service.id, serviceAddon: saId }))
+  }
 }
 </script>
 
@@ -153,6 +164,58 @@ function fmt(val) {
       <div v-if="service.notes" class="bg-white rounded-xl border border-gray-200 p-5 text-sm">
         <h2 class="font-semibold text-gray-900 mb-3">Notes</h2>
         <p class="text-gray-600 whitespace-pre-wrap">{{ service.notes }}</p>
+      </div>
+
+      <!-- Addons -->
+      <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-5">
+        <h2 class="font-semibold text-gray-900 mb-3 text-sm">Addons</h2>
+
+        <!-- Active addons -->
+        <table class="min-w-full text-sm mb-4" v-if="service.service_addons?.length">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+              <th class="pb-2">Addon</th>
+              <th class="pb-2">Cycle</th>
+              <th class="pb-2 text-right">Amount</th>
+              <th class="pb-2 text-right">Next Due</th>
+              <th class="pb-2 text-center">Status</th>
+              <th class="pb-2"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-for="sa in service.service_addons" :key="sa.id">
+              <td class="py-2 font-medium">{{ sa.addon?.name }}</td>
+              <td class="py-2 text-gray-500 capitalize">{{ sa.billing_cycle?.replace(/_/g,' ') }}</td>
+              <td class="py-2 text-right">${{ sa.amount }}</td>
+              <td class="py-2 text-right text-gray-500">{{ fmt(sa.next_due_date) }}</td>
+              <td class="py-2 text-center">
+                <span :class="{
+                  'bg-green-100 text-green-700': sa.status === 'active',
+                  'bg-yellow-100 text-yellow-700': sa.status === 'pending',
+                  'bg-gray-100 text-gray-500': ['suspended','cancelled'].includes(sa.status),
+                }" class="text-xs font-medium px-2 py-0.5 rounded-full capitalize">{{ sa.status }}</span>
+              </td>
+              <td class="py-2 text-right">
+                <button v-if="sa.status !== 'cancelled'" @click="removeAddon(sa.id)" class="text-xs text-red-500 hover:text-red-700">Cancel</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="text-sm text-gray-400 mb-4">No addons on this service.</p>
+
+        <!-- Add addon -->
+        <form v-if="availableAddons?.length" @submit.prevent="addAddon" class="flex items-center gap-3">
+          <select v-model="addonForm.addon_id" class="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1">
+            <option value="">— Select an addon —</option>
+            <option v-for="a in availableAddons" :key="a.id" :value="a.id">
+              {{ a.name }} — ${{ a.price }}/{{ a.billing_cycle?.replace(/_/g,' ') }}
+            </option>
+          </select>
+          <button type="submit" :disabled="!addonForm.addon_id || addonForm.processing"
+            class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg">
+            Add Addon
+          </button>
+        </form>
       </div>
 
       <!-- Invoice history -->

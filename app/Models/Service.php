@@ -61,4 +61,9 @@ class Service extends Model
     {
         return $this->hasOne(OrderItem::class);
     }
+
+    public function serviceAddons(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ServiceAddon::class);
+    }
 }

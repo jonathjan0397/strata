@@ -168,6 +168,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('services/{service}/terminate',           [Admin\ServiceController::class, 'terminate'])->name('services.terminate');
         Route::post('services/{service}/approve-cancellation',[Admin\ServiceController::class, 'approveCancellation'])->name('services.approve-cancellation');
         Route::post('services/{service}/reject-cancellation', [Admin\ServiceController::class, 'rejectCancellation'])->name('services.reject-cancellation');
+        Route::post('services/{service}/addons',              [Admin\ServiceController::class, 'addAddon'])->name('services.addons.store');
+        Route::delete('services/{service}/addons/{serviceAddon}', [Admin\ServiceController::class, 'removeAddon'])->name('services.addons.destroy');
 
         // Invoices
         Route::get('invoices',             [Admin\InvoiceController::class, 'index'])->name('invoices.index');
@@ -302,6 +304,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('quotes/{quote}',        [Admin\QuoteController::class, 'destroy'])->name('quotes.destroy');
         Route::post('quotes/{quote}/send',     [Admin\QuoteController::class, 'send'])->name('quotes.send');
         Route::post('quotes/{quote}/convert',  [Admin\QuoteController::class, 'convert'])->name('quotes.convert');
+
+        // Addons catalog
+        Route::get('addons',                   [Admin\AddonController::class, 'index'])->name('addons.index');
+        Route::get('addons/create',            [Admin\AddonController::class, 'create'])->name('addons.create');
+        Route::post('addons',                  [Admin\AddonController::class, 'store'])->name('addons.store');
+        Route::get('addons/{addon}/edit',      [Admin\AddonController::class, 'edit'])->name('addons.edit');
+        Route::patch('addons/{addon}',         [Admin\AddonController::class, 'update'])->name('addons.update');
+        Route::delete('addons/{addon}',        [Admin\AddonController::class, 'destroy'])->name('addons.destroy');
+
+        // Affiliates
+        Route::get('affiliates',                              [Admin\AffiliateController::class, 'index'])->name('affiliates.index');
+        Route::get('affiliates/{affiliate}',                  [Admin\AffiliateController::class, 'show'])->name('affiliates.show');
+        Route::patch('affiliates/{affiliate}',                [Admin\AffiliateController::class, 'update'])->name('affiliates.update');
+        Route::post('affiliates/{affiliate}/approve',              [Admin\AffiliateController::class, 'approve'])->name('affiliates.approve');
+        Route::post('affiliates/{affiliate}/deactivate',           [Admin\AffiliateController::class, 'deactivate'])->name('affiliates.deactivate');
+        Route::post('affiliates/payouts/{payout}/approve',         [Admin\AffiliateController::class, 'approvePayout'])->name('affiliates.payouts.approve');
+        Route::post('affiliates/referrals/{referral}/approve',     [Admin\AffiliateController::class, 'approveReferral'])->name('affiliates.referrals.approve');
     });
 
     // ── Client portal ─────────────────────────────────────────────────────────
@@ -314,6 +333,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('services/{service}',                  [Client\ServiceController::class, 'show'])->name('services.show');
         Route::post('services/{service}/cancel',          [Client\ServiceController::class, 'requestCancellation'])->name('services.cancel');
         Route::post('services/{service}/upgrade',         [Client\ServiceController::class, 'upgrade'])->name('services.upgrade');
+        Route::post('services/{service}/addons',          [Client\ServiceController::class, 'addAddon'])->name('services.addons.store');
         Route::get('invoices',                       [Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}',             [Client\InvoiceController::class, 'show'])->name('invoices.show');
         Route::get('invoices/{invoice}/download',    [Client\InvoiceController::class, 'download'])->name('invoices.download');
@@ -343,6 +363,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('quotes/{quote}',             [Client\QuoteController::class, 'show'])->name('quotes.show');
         Route::post('quotes/{quote}/accept',     [Client\QuoteController::class, 'accept'])->name('quotes.accept');
         Route::post('quotes/{quote}/decline',    [Client\QuoteController::class, 'decline'])->name('quotes.decline');
+
+        // Affiliate
+        Route::get('affiliate',                  [Client\AffiliateController::class, 'dashboard'])->name('affiliate.dashboard');
+        Route::post('affiliate/register',        [Client\AffiliateController::class, 'register'])->name('affiliate.register');
+        Route::post('affiliate/payout',          [Client\AffiliateController::class, 'requestPayout'])->name('affiliate.payout');
 
         // Payment Methods
         Route::get('payment-methods',                              [Client\PaymentMethodController::class, 'index'])->name('payment-methods.index');

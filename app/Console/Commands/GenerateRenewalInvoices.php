@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ServiceAddon;
 use App\Models\TaxRate;
 use App\Services\AuditLogger;
 use App\Services\WorkflowEngine;
@@ -87,6 +88,59 @@ class GenerateRenewalInvoices extends Command
         }
 
         $this->info("Done. {$created} invoice(s) created.");
+
+        // ── Addon Renewals ─────────────────────────────────────────────────────
+        $addons = ServiceAddon::with(['service.user', 'addon'])
+            ->where('status', 'active')
+            ->whereNotNull('next_due_date')
+            ->where('next_due_date', '<=', now()->addDays($days)->toDateString())
+            ->whereDoesntHave('invoiceItems', fn ($q) =>
+                $q->whereHas('invoice', fn ($inv) =>
+                    $inv->whereIn('status', ['unpaid', 'draft'])
+                )
+            )
+            ->get();
+
+        if ($addons->isNotEmpty()) {
+            $this->info("Generating addon renewal invoices for {$addons->count()} addon(s)...");
+            $addonCreated = 0;
+
+            foreach ($addons as $sa) {
+                try {
+                    DB::transaction(function () use ($sa, &$addonCreated) {
+                        $invoice = Invoice::create([
+                            'user_id'    => $sa->service->user_id,
+                            'status'     => 'unpaid',
+                            'subtotal'   => $sa->amount,
+                            'tax_rate'   => 0,
+                            'tax'        => 0,
+                            'total'      => $sa->amount,
+                            'amount_due' => $sa->amount,
+                            'date'       => now()->toDateString(),
+                            'due_date'   => $sa->next_due_date,
+                            'notes'      => 'Auto-generated addon renewal.',
+                        ]);
+
+                        $invoice->items()->create([
+                            'service_id'       => $sa->service_id,
+                            'service_addon_id' => $sa->id,
+                            'description'      => "Addon Renewal: {$sa->addon->name}",
+                            'quantity'         => 1,
+                            'unit_price'       => $sa->amount,
+                            'total'            => $sa->amount,
+                        ]);
+
+                        $addonCreated++;
+                        $this->line("  Created Invoice #{$invoice->id} for addon \"{$sa->addon->name}\" (due {$sa->next_due_date})");
+                    });
+                } catch (\Throwable $e) {
+                    $this->error("  ServiceAddon #{$sa->id} failed: {$e->getMessage()}");
+                }
+            }
+
+            $this->info("Done. {$addonCreated} addon invoice(s) created.");
+        }
+
         return self::SUCCESS;
     }
 }

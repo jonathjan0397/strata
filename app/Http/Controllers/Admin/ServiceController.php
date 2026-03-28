@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Addon;
+use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ServiceAddon;
 use App\Services\AuditLogger;
 use App\Services\OrderProvisioner;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,9 +39,77 @@ class ServiceController extends Controller
 
     public function show(Service $service): Response
     {
-        $service->load(['user', 'product', 'invoiceItems.invoice', 'orderItem.order']);
+        $service->load(['user', 'product', 'invoiceItems.invoice', 'orderItem.order', 'serviceAddons.addon']);
 
-        return Inertia::render('Admin/Services/Show', ['service' => $service]);
+        return Inertia::render('Admin/Services/Show', [
+            'service'          => $service,
+            'availableAddons'  => Addon::where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'price', 'billing_cycle']),
+        ]);
+    }
+
+    public function addAddon(Request $request, Service $service): RedirectResponse
+    {
+        $request->validate(['addon_id' => ['required', 'exists:addons,id']]);
+
+        $addon = Addon::findOrFail($request->addon_id);
+
+        DB::transaction(function () use ($service, $addon) {
+            $sa = ServiceAddon::create([
+                'service_id'    => $service->id,
+                'addon_id'      => $addon->id,
+                'status'        => 'active',
+                'amount'        => $addon->price,
+                'billing_cycle' => $addon->billing_cycle,
+                'next_due_date' => $this->nextDueDate($addon->billing_cycle),
+            ]);
+
+            $lineTotal = (float) $addon->price + (float) $addon->setup_fee;
+            if ($lineTotal > 0) {
+                $inv = Invoice::create([
+                    'user_id'    => $service->user_id,
+                    'status'     => 'unpaid',
+                    'subtotal'   => $lineTotal,
+                    'tax_rate'   => 0,
+                    'tax'        => 0,
+                    'total'      => $lineTotal,
+                    'amount_due' => $lineTotal,
+                    'date'       => now()->toDateString(),
+                    'due_date'   => now()->addDays(7)->toDateString(),
+                    'notes'      => "Addon: {$addon->name} on service #{$service->id}",
+                ]);
+
+                if ((float) $addon->setup_fee > 0) {
+                    $inv->items()->create([
+                        'service_id'      => $service->id,
+                        'service_addon_id'=> $sa->id,
+                        'description'     => "Setup Fee — {$addon->name}",
+                        'quantity'        => 1,
+                        'unit_price'      => $addon->setup_fee,
+                        'total'           => $addon->setup_fee,
+                    ]);
+                }
+
+                $inv->items()->create([
+                    'service_id'      => $service->id,
+                    'service_addon_id'=> $sa->id,
+                    'description'     => $addon->name,
+                    'quantity'        => 1,
+                    'unit_price'      => $addon->price,
+                    'total'           => $addon->price,
+                ]);
+            }
+        });
+
+        return back()->with('success', "Addon \"{$addon->name}\" added to service.");
+    }
+
+    public function removeAddon(Service $service, ServiceAddon $serviceAddon): RedirectResponse
+    {
+        abort_unless($serviceAddon->service_id === $service->id, 404);
+
+        $serviceAddon->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'Addon cancelled.');
     }
 
     /**
@@ -108,6 +180,21 @@ class ServiceController extends Controller
         WorkflowEngine::fire('service.cancelled', $service);
 
         return back()->with('success', 'Cancellation approved — service cancelled.');
+    }
+
+    private function nextDueDate(string $cycle): string
+    {
+        $days = match ($cycle) {
+            'monthly'     => 30,
+            'quarterly'   => 91,
+            'semi_annual' => 182,
+            'annual'      => 365,
+            'biennial'    => 730,
+            'triennial'   => 1095,
+            default       => 30,
+        };
+
+        return now()->addDays($days)->toDateString();
     }
 
     public function rejectCancellation(Service $service): RedirectResponse

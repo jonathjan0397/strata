@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
+use App\Models\Affiliate;
+use App\Models\AffiliateReferral;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\WorkflowEngine;
@@ -50,6 +52,24 @@ class RegisteredUserController extends Controller
             ]));
         } catch (\Throwable) {
             // mail failure must not block registration
+        }
+
+        // Track affiliate referral from cookie
+        $refCode = $request->cookie('strata_ref');
+        if ($refCode) {
+            $affiliate = Affiliate::where('code', strtoupper($refCode))
+                ->where('status', 'active')
+                ->first();
+
+            if ($affiliate) {
+                AffiliateReferral::create([
+                    'affiliate_id'     => $affiliate->id,
+                    'referred_user_id' => $user->id,
+                    'amount'           => 0,
+                    'commission'       => 0,
+                    'status'           => 'pending',
+                ]);
+            }
         }
 
         AuditLogger::log('client.registered', $user, [], $user->id);

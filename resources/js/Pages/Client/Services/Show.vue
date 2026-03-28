@@ -9,6 +9,7 @@ defineOptions({ layout: AppLayout })
 const props = defineProps({
     service:            Object,
     upgradableProducts: { type: Array, default: () => [] },
+    availableAddons:    { type: Array, default: () => [] },
 })
 
 const showCancelForm  = ref(false)
@@ -32,6 +33,13 @@ function submitUpgrade() {
             upgradeForm.reset()
         },
     })
+}
+
+const addonForm = useForm({ addon_id: '' })
+function submitAddon() {
+  addonForm.post(route('client.services.addons.store', props.service.id), {
+    onSuccess: () => addonForm.reset(),
+  })
 }
 
 const cancelRequested   = props.service.status === 'cancellation_requested'
@@ -151,6 +159,44 @@ const selectedProduct = computed(() =>
             {{ upgradeForm.processing ? 'Processing…' : 'Confirm Plan Change' }}
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Addons -->
+    <div v-if="service.status === 'active'" class="bg-white rounded-xl border border-gray-200 p-5 text-sm mb-4">
+      <h2 class="font-semibold text-gray-900 mb-3">Addons</h2>
+
+      <div v-if="service.service_addons?.filter(sa => sa.status !== 'cancelled').length" class="mb-4 space-y-2">
+        <div v-for="sa in service.service_addons.filter(sa => sa.status !== 'cancelled')" :key="sa.id"
+            class="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50">
+          <div>
+            <p class="font-medium text-gray-800">{{ sa.addon?.name }}</p>
+            <p class="text-xs text-gray-500 mt-0.5 capitalize">${{ sa.amount }} / {{ sa.billing_cycle?.replace(/_/g,' ') }}</p>
+          </div>
+          <span :class="{
+            'bg-green-100 text-green-700': sa.status === 'active',
+            'bg-yellow-100 text-yellow-700': sa.status === 'pending',
+          }" class="text-xs font-medium px-2 py-0.5 rounded-full capitalize">{{ sa.status }}</span>
+        </div>
+      </div>
+      <p v-else class="text-gray-400 mb-4">No addons on this service.</p>
+
+      <div v-if="availableAddons.length" class="space-y-3">
+        <p class="text-gray-500">Add an optional addon to your service:</p>
+        <div class="flex gap-3">
+          <select v-model="addonForm.addon_id" class="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1">
+            <option value="">— Select addon —</option>
+            <option v-for="a in availableAddons" :key="a.id" :value="a.id">
+              {{ a.name }} — ${{ a.price }}/{{ a.billing_cycle?.replace(/_/g,' ') }}
+              <template v-if="Number(a.setup_fee) > 0"> (+ ${{ a.setup_fee }} setup)</template>
+            </option>
+          </select>
+          <button type="button" @click="submitAddon" :disabled="!addonForm.addon_id || addonForm.processing"
+            class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg">
+            Add
+          </button>
+        </div>
+        <p v-if="addonForm.errors.addon_id" class="text-xs text-red-600">{{ addonForm.errors.addon_id }}</p>
       </div>
     </div>
 

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Addon;
 use App\Models\ClientCredit;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Service;
+use App\Models\ServiceAddon;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,7 +34,7 @@ class ServiceController extends Controller
     {
         abort_unless($service->user_id === $request->user()->id, 403);
 
-        $service->load(['product', 'invoiceItems.invoice']);
+        $service->load(['product', 'invoiceItems.invoice', 'serviceAddons.addon']);
 
         // Products the client can upgrade/downgrade to: same type, not hidden, not current product
         $upgradableProducts = [];
@@ -44,9 +46,14 @@ class ServiceController extends Controller
                 ->get(['id', 'name', 'price', 'billing_cycle', 'short_description']);
         }
 
+        $availableAddons = $service->status === 'active'
+            ? Addon::where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'price', 'setup_fee', 'billing_cycle', 'description'])
+            : collect();
+
         return Inertia::render('Client/Services/Show', [
             'service'            => $service,
             'upgradableProducts' => $upgradableProducts,
+            'availableAddons'    => $availableAddons,
         ]);
     }
 
@@ -154,6 +161,65 @@ class ServiceController extends Controller
         ));
     }
 
+    public function addAddon(Request $request, Service $service): RedirectResponse
+    {
+        abort_unless($service->user_id === $request->user()->id, 403);
+        abort_unless($service->status === 'active', 422);
+
+        $request->validate(['addon_id' => ['required', 'exists:addons,id']]);
+
+        $addon = Addon::findOrFail($request->addon_id);
+
+        DB::transaction(function () use ($service, $addon) {
+            $sa = ServiceAddon::create([
+                'service_id'    => $service->id,
+                'addon_id'      => $addon->id,
+                'status'        => 'pending',
+                'amount'        => $addon->price,
+                'billing_cycle' => $addon->billing_cycle,
+                'next_due_date' => $this->nextDueDate($addon->billing_cycle),
+            ]);
+
+            $lineTotal = (float) $addon->price + (float) $addon->setup_fee;
+            if ($lineTotal > 0) {
+                $inv = Invoice::create([
+                    'user_id'    => $service->user_id,
+                    'status'     => 'unpaid',
+                    'subtotal'   => $lineTotal,
+                    'tax_rate'   => 0,
+                    'tax'        => 0,
+                    'total'      => $lineTotal,
+                    'amount_due' => $lineTotal,
+                    'date'       => now()->toDateString(),
+                    'due_date'   => now()->addDays(7)->toDateString(),
+                    'notes'      => "Addon: {$addon->name} on service #{$service->id}",
+                ]);
+
+                if ((float) $addon->setup_fee > 0) {
+                    $inv->items()->create([
+                        'service_id'       => $service->id,
+                        'service_addon_id' => $sa->id,
+                        'description'      => "Setup Fee — {$addon->name}",
+                        'quantity'         => 1,
+                        'unit_price'       => $addon->setup_fee,
+                        'total'            => $addon->setup_fee,
+                    ]);
+                }
+
+                $inv->items()->create([
+                    'service_id'       => $service->id,
+                    'service_addon_id' => $sa->id,
+                    'description'      => $addon->name,
+                    'quantity'         => 1,
+                    'unit_price'       => $addon->price,
+                    'total'            => $addon->price,
+                ]);
+            }
+        });
+
+        return back()->with('success', "Addon \"{$addon->name}\" added. An invoice has been generated.");
+    }
+
     /** Returns the number of days in a billing cycle for proration. */
     private function cycleDays(string $cycle): int
     {
@@ -166,5 +232,10 @@ class ServiceController extends Controller
             'triennial'   => 1095,
             default       => 30,
         };
+    }
+
+    private function nextDueDate(string $cycle): string
+    {
+        return now()->addDays($this->cycleDays($cycle))->toDateString();
     }
 }

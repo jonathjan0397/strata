@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -27,6 +28,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'country',
         'state',
         'tax_exempt',
+        // CRM fields
+        'company',
+        'phone',
+        'website',
+        'lead_source',
+        'client_status',
     ];
 
     protected $hidden = [
@@ -45,6 +52,11 @@ class User extends Authenticatable implements MustVerifyEmail
             'credit_balance'          => 'decimal:2',
             'tax_exempt'              => 'boolean',
         ];
+    }
+
+    public function tasks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ClientTask::class)->orderByRaw('completed_at IS NULL DESC, due_at ASC');
     }
 
     public function services(): HasMany
@@ -90,6 +102,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function notes(): HasMany
     {
         return $this->hasMany(ClientNote::class)->latest('created_at');
+    }
+
+    public function affiliate(): HasOne
+    {
+        return $this->hasOne(Affiliate::class);
     }
 
     public function group(): BelongsTo

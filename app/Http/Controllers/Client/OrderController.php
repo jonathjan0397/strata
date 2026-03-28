@@ -13,6 +13,7 @@ use App\Models\PromoCode;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Models\TaxRate;
+use App\Models\AffiliateReferral;
 use App\Services\DomainRegistrarService;
 use App\Services\OrderProvisioner;
 use Illuminate\Http\RedirectResponse;
@@ -283,6 +284,24 @@ class OrderController extends Controller
                         'status'         => $newAmountDue <= 0 ? 'paid' : 'unpaid',
                         'paid_at'        => $newAmountDue <= 0 ? now() : null,
                     ]);
+                }
+
+                // Record affiliate commission on first order
+                $pendingReferral = AffiliateReferral::where('referred_user_id', $user->id)
+                    ->where('status', 'pending')
+                    ->whereNull('order_id')
+                    ->with('affiliate')
+                    ->first();
+
+                if ($pendingReferral) {
+                    $commission = $pendingReferral->affiliate->calculateCommission($total);
+                    $pendingReferral->update([
+                        'order_id'   => $order->id,
+                        'amount'     => $total,
+                        'commission' => $commission,
+                        'status'     => 'pending', // admin approves before payout
+                    ]);
+                    // Increment balance only when admin approves — kept pending for now
                 }
 
                 session(['last_order_invoice_id'     => $invoice->id]);
