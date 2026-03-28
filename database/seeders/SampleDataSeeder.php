@@ -41,9 +41,9 @@ class SampleDataSeeder extends Seeder
             'value'            => 20.00,
             'max_uses'         => 100,
             'uses_count'       => 0,
-            'valid_from'       => now()->toDateString(),
-            'valid_until'      => now()->addYear()->toDateString(),
-            'active'           => true,
+            'starts_at'        => now(),
+            'expires_at'       => now()->addYear(),
+            'is_active'        => true,
             'applies_once'     => false,
         ]);
 
