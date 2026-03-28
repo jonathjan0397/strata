@@ -98,50 +98,39 @@ jobs:
             echo "IS_PRERELEASE=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # ── Delete any existing release for this tag so the action can recreate it ──
-      - name: Delete existing release (if any)
+      # ── Publish GitHub Release with ZIP attached ──────────────────────────────
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          RELEASE_ID=$(curl -s \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}" \
-            | grep -m1 '"id":' | head -1 | sed 's/[^0-9]//g')
-          if [ -n "$RELEASE_ID" ]; then
-            curl -s -X DELETE \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}"
-            echo "Deleted release ${RELEASE_ID} for tag ${TAG}"
-          else
-            echo "No existing release found for ${TAG}"
-          fi
+          PRERELEASE="${{ steps.prerelease.outputs.IS_PRERELEASE }}"
+          PRERELEASE_FLAG=""
+          [ "$PRERELEASE" = "true" ] && PRERELEASE_FLAG="--prerelease"
 
-      # ── Publish GitHub Release with ZIP attached ──────────────────────────────
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "Strata Billing ${{ github.ref_name }}"
-          prerelease: ${{ steps.prerelease.outputs.IS_PRERELEASE }}
-          files: ${{ env.ZIP }}
-          body: |
-            ## Strata Billing ${{ github.ref_name }}
+          BODY="## Strata Billing ${TAG}
 
-            > **${{ steps.prerelease.outputs.IS_PRERELEASE == 'true' && 'Beta Release — test in a non-production environment' || 'Stable Release' }}**
-            > Report issues at: https://github.com/${{ github.repository }}/issues
+$([ "$PRERELEASE" = "true" ] && echo "> **Beta Release — test in a non-production environment**" || echo "> **Stable Release**")
+> Report issues at: https://github.com/${{ github.repository }}/issues
 
-            ### Quick Install (Shared Hosting)
+### Quick Install (Shared Hosting)
 
-            1. Download `${{ env.ZIP }}` below
-            2. Extract and upload all files to your server **above** `public_html`
-            3. Point your domain's document root to the `public/` subdirectory
-            4. Visit `https://yourdomain.com/install` to run the setup wizard
-            5. Set up the cron job shown at the end of the wizard
+1. Download \`${ZIP}\` below
+2. Extract and upload all files to your server **above** \`public_html\`
+3. Point your domain's document root to the \`public/\` subdirectory
+4. Visit \`https://yourdomain.com/install\` to run the setup wizard
+5. Set up the cron job shown at the end of the wizard
 
-            Full installation instructions are included in `README-INSTALL.md` inside the ZIP.
+Full installation instructions are included in \`README-INSTALL.md\` inside the ZIP.
 
-            ---
+---
 
-            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md) for what changed in this release.
+See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${TAG}/CHANGELOG.md) for what changed in this release."
+
+          # Delete existing release for this tag if one exists
+          gh release delete "${TAG}" --yes 2>/dev/null || true
+
+          gh release create "${TAG}" "${ZIP}" \
+            --title "Strata Billing ${TAG}" \
+            --notes "${BODY}" \
+            ${PRERELEASE_FLAG}
