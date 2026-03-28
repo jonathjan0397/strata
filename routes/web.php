@@ -43,7 +43,7 @@ Route::prefix('install')->name('install.')->withoutMiddleware([
     \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-    \App\Http\Middleware\VerifyCsrfToken::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
 ])->group(function () {
     Route::get('/',              [InstallerController::class, 'index'])->name('index');
     Route::get('/requirements',  [InstallerController::class, 'requirements'])->name('requirements');
