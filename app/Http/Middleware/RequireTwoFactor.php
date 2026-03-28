@@ -22,5 +22,6 @@ class RequireTwoFactor
 
         // 2FA is optional but strongly recommended — always let the user through.
         // A warning banner is shown in the UI via the twoFactorWarning shared prop.
+        return $next($request);
     }
 }
