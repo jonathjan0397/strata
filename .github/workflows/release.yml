@@ -98,13 +98,33 @@ jobs:
             echo "IS_PRERELEASE=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # ── Delete any existing release for this tag so the action can recreate it ──
+      - name: Delete existing release (if any)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}" \
+            | grep -m1 '"id":' | head -1 | sed 's/[^0-9]//g')
+          if [ -n "$RELEASE_ID" ]; then
+            curl -s -X DELETE \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}"
+            echo "Deleted release ${RELEASE_ID} for tag ${TAG}"
+          else
+            echo "No existing release found for ${TAG}"
+          fi
+
       # ── Publish GitHub Release with ZIP attached ──────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: "Strata Billing ${{ github.ref_name }}"
           prerelease: ${{ steps.prerelease.outputs.IS_PRERELEASE }}
-          overwrite: true
           files: ${{ env.ZIP }}
           body: |
             ## Strata Billing ${{ github.ref_name }}
