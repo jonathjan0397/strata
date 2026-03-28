@@ -134,7 +134,7 @@ jobs:
           2. Upload the extracted folder to your server (e.g. \`public_html/strata/\`)
           3. In your control panel create a **subdomain** (e.g. \`billing.yourdomain.com\`) and set its document root to the \`public/\` subfolder inside the uploaded directory (e.g. \`public_html/strata/public\`)
           4. Set \`storage/\` and \`bootstrap/cache/\` to **chmod 755**
-          5. Visit \`https://billing.yourdomain.com/install\` to run the setup wizard
+          5. Visit your subdomain — the setup wizard launches automatically
           6. Set up the cron job shown at the end of the wizard
 
           > **Root domain install:** point the domain document root directly to the \`public/\` subfolder instead of creating a subdomain.
