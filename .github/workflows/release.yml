@@ -105,32 +105,39 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
           PRERELEASE="${{ steps.prerelease.outputs.IS_PRERELEASE }}"
-          PRERELEASE_FLAG=""
-          [ "$PRERELEASE" = "true" ] && PRERELEASE_FLAG="--prerelease"
 
-          BODY="## Strata Billing ${TAG}
+          if [ "$PRERELEASE" = "true" ]; then
+            STATUS_LINE="> **Beta Release — test in a non-production environment**"
+          else
+            STATUS_LINE="> **Stable Release**"
+          fi
 
-$([ "$PRERELEASE" = "true" ] && echo "> **Beta Release — test in a non-production environment**" || echo "> **Stable Release**")
-> Report issues at: https://github.com/${{ github.repository }}/issues
+          cat > release_notes.md << NOTES_EOF
+          ## Strata Billing ${TAG}
 
-### Quick Install (Shared Hosting)
+          ${STATUS_LINE}
+          > Report issues at: https://github.com/${{ github.repository }}/issues
 
-1. Download \`${ZIP}\` below
-2. Extract and upload all files to your server **above** \`public_html\`
-3. Point your domain's document root to the \`public/\` subdirectory
-4. Visit \`https://yourdomain.com/install\` to run the setup wizard
-5. Set up the cron job shown at the end of the wizard
+          ### Quick Install (Shared Hosting)
 
-Full installation instructions are included in \`README-INSTALL.md\` inside the ZIP.
+          1. Download \`${ZIP}\` below
+          2. Extract and upload all files to your server **above** \`public_html\`
+          3. Point your domain document root to the \`public/\` subdirectory
+          4. Visit your domain \`/install\` to run the setup wizard
+          5. Set up the cron job shown at the end of the wizard
 
----
+          Full installation instructions are in \`README-INSTALL.md\` inside the ZIP.
+          NOTES_EOF
 
-See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${TAG}/CHANGELOG.md) for what changed in this release."
-
-          # Delete existing release for this tag if one exists
           gh release delete "${TAG}" --yes 2>/dev/null || true
 
-          gh release create "${TAG}" "${ZIP}" \
-            --title "Strata Billing ${TAG}" \
-            --notes "${BODY}" \
-            ${PRERELEASE_FLAG}
+          if [ "$PRERELEASE" = "true" ]; then
+            gh release create "${TAG}" "${ZIP}" \
+              --title "Strata Billing ${TAG}" \
+              --notes-file release_notes.md \
+              --prerelease
+          else
+            gh release create "${TAG}" "${ZIP}" \
+              --title "Strata Billing ${TAG}" \
+              --notes-file release_notes.md
+          fi
