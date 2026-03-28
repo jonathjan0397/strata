@@ -19,6 +19,7 @@ class SettingController extends Controller
     {
         return Inertia::render('Admin/Settings/Index', [
             'settings' => Setting::allKeyed(),
+            'appUrl'   => rtrim(config('app.url'), '/'),
         ]);
     }
 
@@ -61,7 +62,7 @@ class SettingController extends Controller
             'mail_port'          => ['nullable', 'integer', 'min:1', 'max:65535'],
             'mail_username'      => ['nullable', 'string', 'max:255'],
             'mail_password'      => ['nullable', 'string', 'max:255'],
-            'mail_encryption'    => ['nullable', 'in:tls,ssl,'],
+            'mail_encryption'    => ['nullable', 'in:auto,tls,ssl,'],
             'mail_sendmail_path' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -128,6 +129,38 @@ class SettingController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
+    }
+
+    public function updateIntegrations(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            // Google OAuth
+            'integration_google_client_id'            => ['nullable', 'string', 'max:255'],
+            'integration_google_client_secret'        => ['nullable', 'string', 'max:500'],
+            // Microsoft OAuth
+            'integration_microsoft_client_id'         => ['nullable', 'string', 'max:255'],
+            'integration_microsoft_client_secret'     => ['nullable', 'string', 'max:500'],
+            'integration_microsoft_tenant'            => ['nullable', 'string', 'max:100'],
+            // Stripe
+            'integration_stripe_key'                  => ['nullable', 'string', 'max:255'],
+            'integration_stripe_secret'               => ['nullable', 'string', 'max:255'],
+            'integration_stripe_webhook_secret'       => ['nullable', 'string', 'max:255'],
+            // PayPal
+            'integration_paypal_client_id'            => ['nullable', 'string', 'max:255'],
+            'integration_paypal_client_secret'        => ['nullable', 'string', 'max:255'],
+            'integration_paypal_mode'                 => ['nullable', 'in:sandbox,live'],
+            // Authorize.Net
+            'integration_authorizenet_login_id'       => ['nullable', 'string', 'max:100'],
+            'integration_authorizenet_transaction_key'=> ['nullable', 'string', 'max:100'],
+            'integration_authorizenet_client_key'     => ['nullable', 'string', 'max:255'],
+            'integration_authorizenet_sandbox'        => ['nullable', 'boolean'],
+        ]);
+
+        Setting::setMany($data);
+
+        AuditLogger::log('settings.integrations_updated');
+
+        return back()->with('flash', ['success' => 'Integration settings saved.']);
     }
 
     public function uploadLogo(Request $request): RedirectResponse
