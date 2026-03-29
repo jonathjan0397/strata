@@ -214,4 +214,79 @@
 
 ---
 
+## BF-026 — Fresh install 500: session store not set on install routes
+**Status:** FIXED
+**File:** `app/Http/Middleware/HandleInertiaRequests.php`
+**Symptom:** Visiting `/install` on a fresh server returns HTTP 500 — "Session store not set on request"
+**Root cause:** Install routes strip `StartSession` middleware to prevent ModSecurity false positives (BF-005). However, `HandleInertiaRequests::share()` evaluated `$request->session()->get()` in its flash closures unconditionally. With no session bound to the request, Laravel throws `RuntimeException`.
+**Fix:** Guarded both flash closures with `$request->hasSession() ? ... : null`.
+
+---
+
+## BF-027 — Fresh install redirects to wrong URL in subdirectory installs
+**Status:** FIXED
+**File:** `app/Http/Middleware/CheckInstalled.php`
+**Symptom:** Visiting a subdirectory install (e.g. `domain.com/billing`) redirects to `domain.com/install` instead of `domain.com/billing/install`
+**Root cause:** `CheckInstalled` issued `redirect('/install')` — an absolute path that ignores any subdirectory prefix.
+**Fix:** Replaced with `redirect($request->getSchemeAndHttpHost() . $request->getBaseUrl() . '/install')` to construct the correct full URL from the incoming request.
+
+---
+
+## BF-028 — Pre-install URL detection: Ziggy and asset() helpers use wrong base URL
+**Status:** FIXED
+**File:** `app/Providers/AppServiceProvider.php`
+**Symptom:** On fresh installs `APP_URL` defaults to `http://localhost`; Ziggy-generated route URLs and asset paths are wrong, causing JS routing failures before the installer runs.
+**Root cause:** Without a `.env`, `APP_URL` is `http://localhost`. Ziggy and `URL::to()` use this value when generating URLs server-side.
+**Fix:** In `AppServiceProvider::boot()`, if `installed.lock` is absent, detect the real base URL from the incoming HTTP request (`getSchemeAndHttpHost() . getBaseUrl()`) and call `URL::forceRootUrl()` to override it for the duration of the request.
+
+---
+
+## BF-029 — Pre-install database cache query causes 500 before credentials are configured
+**Status:** FIXED
+**File:** `app/Providers/AppServiceProvider.php`
+**Symptom:** Visiting the installer on a fresh server returns 500 — "Access denied for user 'root'@'localhost'" logged against the `cache` table
+**Root cause:** Laravel 12 defaults the cache driver to `database`. Before the installer runs there is no `.env`, so the cache driver attempts to query `root@localhost` with no password against a database named `laravel`.
+**Fix:** In `AppServiceProvider::boot()`, if `installed.lock` is absent, set `config(['cache.default' => 'array'])` so all cache operations use in-memory storage and no database connection is attempted.
+
+---
+
+## BF-030 — VerifyCsrfToken not excluded from install routes (wrong class name)
+**Status:** FIXED
+**File:** `routes/web.php`
+**Symptom:** Installer POST routes (test-database, run) throw "Session store not set on request" via `VerifyCsrfToken->addCookieToResponse()`
+**Root cause:** The `withoutMiddleware` call listed `App\Http\Middleware\VerifyCsrfToken::class` which does not exist in Laravel 12. The actual CSRF middleware registered via `bootstrap/app.php` `validateCsrfTokens()` is `Illuminate\Foundation\Http\Middleware\VerifyCsrfToken`. The exclusion was a no-op and CSRF ran on every install route.
+**Fix:** Changed to `\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class`.
+
+---
+
+## BF-031 — Release ZIP missing storage subdirectories
+**Status:** FIXED
+**File:** `.github/workflows/release.yml`
+**Symptom:** Fresh installs from the GitHub release ZIP fail with "directory does not exist" errors for `storage/framework/sessions`, `storage/framework/views`, `storage/framework/cache/data`
+**Root cause:** The workflow creates `.gitkeep` files in each storage subdirectory before building the ZIP, but the `zip --exclude "storage/framework/sessions/*"` wildcard also matched `.gitkeep`. ZIP archives do not store empty directories, so all excluded directories vanished from the package.
+**Fix:** After the main `zip` command, explicitly re-add each `.gitkeep` file with a second `zip` invocation.
+
+---
+
+## BF-032 — Sample data seeder column/enum mismatches (multiple)
+**Status:** FIXED
+**File:** `database/seeders/SampleDataSeeder.php`
+**Symptom:** Installer fails during sample data seeding with a series of `SQLSTATE` column-not-found or data-truncation errors
+**Root cause:** Seeder was written against an out-of-date schema. Multiple column names and enum values did not match the actual migrations.
+**Fix:** Corrected all mismatches in one audit pass:
+
+| Table | Field | Was | Correct |
+|-------|-------|-----|---------|
+| `promo_codes` | usage counter | `uses` | `uses_count` |
+| `promo_codes` | validity start | `valid_from` | `starts_at` |
+| `promo_codes` | validity end | `valid_until` | `expires_at` |
+| `promo_codes` | active flag | `active` | `is_active` |
+| `products` | type enum | `hosting` | `shared` |
+| `announcements` | body column | `content` | `body` |
+| `announcements` | non-existent | `pinned` | removed |
+| `payments` | status enum | `paid` | `completed` |
+| `quotes` | status enum | `pending` | `sent` |
+
+---
+
 *Last updated: 2026-03-28*
