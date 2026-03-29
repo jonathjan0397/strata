@@ -43,6 +43,9 @@ class SettingController extends Controller
             'grace_period_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'tax_rate'          => ['nullable', 'numeric', 'min:0', 'max:100'],
             'tax_name'          => ['nullable', 'string', 'max:50'],
+            'tagline'            => ['nullable', 'string', 'max:255'],
+            'portal_theme'       => ['nullable', 'in:blue,red,green,lightblue'],
+            'domain_search_tlds' => ['nullable', 'string', 'max:500'],
         ]);
 
         Setting::setMany($data);

@@ -31,9 +31,12 @@ function uploadLogo() {
 
 const form = useForm({
     // General
-    company_name:      s.company_name      ?? '',
-    timezone:          s.timezone          ?? 'UTC',
-    date_format:       s.date_format       ?? 'M d, Y',
+    company_name:       s.company_name       ?? '',
+    tagline:            s.tagline            ?? '',
+    portal_theme:       s.portal_theme       ?? 'blue',
+    domain_search_tlds: s.domain_search_tlds ?? '.com,.net,.org,.io',
+    timezone:           s.timezone           ?? 'UTC',
+    date_format:        s.date_format        ?? 'M d, Y',
     // Company
     company_email:     s.company_email     ?? '',
     company_phone:     s.company_phone     ?? '',
@@ -853,6 +856,41 @@ const timezones = [
                         <option value="m/d/Y">01/01/2026 (US)</option>
                         <option value="Y-m-d">2026-01-01</option>
                     </select>
+                </div>
+
+                <!-- Tagline -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Portal Tagline</label>
+                    <input v-model="form.tagline" type="text" placeholder="Professional hosting &amp; services"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <p class="text-xs text-gray-400 mt-1">Shown below the hero title on the public portal home page.</p>
+                </div>
+
+                <!-- Portal Theme -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Portal Color Theme</label>
+                    <div class="grid grid-cols-4 gap-3">
+                        <label v-for="th in [
+                            { value:'blue',      label:'Ocean Blue',   bg:'linear-gradient(135deg,#0c1445,#0891b2)' },
+                            { value:'red',       label:'Ruby Red',     bg:'linear-gradient(135deg,#2d0a0a,#dc2626)' },
+                            { value:'green',     label:'Forest Green', bg:'linear-gradient(135deg,#042f1a,#059669)' },
+                            { value:'lightblue', label:'Sky Blue',     bg:'linear-gradient(135deg,#0a1628,#3b82f6)' },
+                        ]" :key="th.value"
+                            class="cursor-pointer rounded-xl overflow-hidden border-2 transition-all"
+                            :class="form.portal_theme === th.value ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-gray-300'">
+                            <input type="radio" class="sr-only" :value="th.value" v-model="form.portal_theme" />
+                            <div class="h-10 w-full" :style="`background: ${th.bg};`"></div>
+                            <div class="bg-white px-2 py-1.5 text-xs font-medium text-gray-600 text-center">{{ th.label }}</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Domain Search TLDs -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Domain Search TLDs</label>
+                    <input v-model="form.domain_search_tlds" type="text" placeholder=".com,.net,.org,.io"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p class="text-xs text-gray-400 mt-1">Comma-separated TLDs shown in the domain search widget. Requires a domain registrar configured in Integrations.</p>
                 </div>
             </div>
 

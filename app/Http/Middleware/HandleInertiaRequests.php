@@ -42,7 +42,10 @@ class HandleInertiaRequests extends Middleware
             ],
             'twoFactorWarning' => fn () => $request->user()?->hasAnyRole(['super-admin', 'admin', 'staff'])
                 && ! ($request->user()->two_factor_enabled && $request->user()->two_factor_confirmed_at),
-            'stripeKey' => config('services.stripe.key'),
+            'stripeKey'    => config('services.stripe.key'),
+            'siteName'    => fn () => \App\Models\Setting::get('company_name', config('app.name')),
+            'logoUrl'     => fn () => ($p = \App\Models\Setting::get('logo_path')) ? \Illuminate\Support\Facades\Storage::disk('public')->url($p) : null,
+            'portalTheme' => fn () => \App\Models\Setting::get('portal_theme', 'blue'),
         ]);
     }
 }

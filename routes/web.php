@@ -58,6 +58,7 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::get('/kb',            [PortalController::class, 'kb'])->name('portal.kb');
     Route::get('/kb/{slug}',     [PortalController::class, 'kbArticle'])->name('portal.kb.show');
     Route::get('/announcements', [PortalController::class, 'announcements'])->name('portal.announcements');
+    Route::get('/domain-search', [\App\Http\Controllers\Portal\DomainSearchController::class, 'search'])->name('domain.search');
 });
 
 // ── Embeddable widget API (JSON, CORS-open, read-only) ────────────────────────
@@ -65,6 +66,7 @@ Route::middleware('throttle:60,1')->prefix('api/widget')->name('widget.')->group
     Route::get('products',      [WidgetController::class, 'products'])->name('products');
     Route::get('announcements', [WidgetController::class, 'announcements'])->name('announcements');
     Route::get('kb',            [WidgetController::class, 'kb'])->name('kb');
+    Route::get('domain-search', [WidgetController::class, 'domainSearch'])->name('domain-search');
 });
 
 Route::get('strata-widget.js', [WidgetController::class, 'widgetJs'])->name('widget.js');

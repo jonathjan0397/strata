@@ -1,15 +1,17 @@
 <script setup>
 import PortalLayout from '@/Layouts/PortalLayout.vue'
+import DomainSearch from '@/Components/DomainSearch.vue'
 import { Link } from '@inertiajs/vue3'
 
 defineOptions({ layout: PortalLayout })
 
 const props = defineProps({
-  products:      Array,
-  announcements: Array,
-  categories:    Array,
-  siteName:      String,
-  tagline:       String,
+  products:             Array,
+  announcements:        Array,
+  categories:           Array,
+  siteName:             String,
+  tagline:              String,
+  registrarConfigured:  Boolean,
 })
 
 const cycleLabel = {
@@ -70,6 +72,16 @@ const typeColor = {
         <div class="text-2xl font-bold text-white">{{ s.n }}</div>
         <div class="text-xs text-white/50 mt-1">{{ s.l }}</div>
       </div>
+    </div>
+  </section>
+
+  <!-- Domain Search -->
+  <section v-if="registrarConfigured" class="max-w-3xl mx-auto px-4 sm:px-6 pb-16">
+    <div class="rounded-2xl p-8 text-center"
+      style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(12px);">
+      <h2 class="text-xl font-bold text-white mb-2">Find Your Domain</h2>
+      <p class="text-sm text-white/55 mb-6">Search for the perfect domain name for your website.</p>
+      <DomainSearch />
     </div>
   </section>
 

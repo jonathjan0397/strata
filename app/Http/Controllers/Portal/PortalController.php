@@ -39,11 +39,12 @@ class PortalController extends Controller
             ->get(['id', 'name', 'slug', 'description']);
 
         return Inertia::render('Portal/Home', [
-            'products'      => $products,
-            'announcements' => $announcements,
-            'categories'    => $categories,
-            'siteName'      => Setting::get('company_name', config('app.name')),
-            'tagline'       => Setting::get('tagline', 'Professional hosting & services'),
+            'products'            => $products,
+            'announcements'       => $announcements,
+            'categories'          => $categories,
+            'siteName'            => Setting::get('company_name', config('app.name')),
+            'tagline'             => Setting::get('tagline', 'Professional hosting & services'),
+            'registrarConfigured' => (bool) Setting::get('integration_registrar_driver'),
         ]);
     }
 

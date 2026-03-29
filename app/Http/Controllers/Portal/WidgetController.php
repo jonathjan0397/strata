@@ -62,6 +62,36 @@ class WidgetController extends Controller
         return response()->json(['data' => $categories], 200, $this->corsHeaders());
     }
 
+    public function domainSearch(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'domain' => ['required', 'string', 'max:63'],
+        ]);
+
+        $driver = \App\Models\Setting::get('integration_registrar_driver');
+        if (! $driver) {
+            return response()->json(['error' => 'Domain search not configured.'], 503, $this->corsHeaders());
+        }
+
+        $sld = strtolower(trim(explode('.', $request->input('domain'))[0]));
+        $tldString = \App\Models\Setting::get('domain_search_tlds', '.com,.net,.org,.io');
+        $tlds = array_filter(array_map(fn($t) => trim($t), explode(',', $tldString)));
+
+        $results = [];
+        foreach ($tlds as $tld) {
+            $tld = '.' . ltrim($tld, '.');
+            $domain = $sld . $tld;
+            try {
+                $check = \App\Services\DomainRegistrarService::checkAvailability($domain);
+                $results[] = ['domain' => $domain, 'available' => $check['available'] ?? false, 'price' => $check['price'] ?? null, 'currency' => $check['currency'] ?? 'USD'];
+            } catch (\Throwable) {
+                $results[] = ['domain' => $domain, 'available' => null];
+            }
+        }
+
+        return response()->json(['results' => $results], 200, $this->corsHeaders());
+    }
+
     /** Serves the embeddable widget JavaScript file */
     public function widgetJs(): Response
     {
@@ -159,6 +189,19 @@ class WidgetController extends Controller
       '.strata-loading { text-align: center; padding: 20px; color: rgba(255,255,255,0.5); font-size: 0.8rem; }',
       '.strata-light .strata-loading { color: #94a3b8; }',
       '.strata-err { text-align: center; padding: 20px; color: #fca5a5; font-size: 0.8rem; }',
+      /* Domain search */
+      '.strata-ds-form { display: flex; gap: 8px; margin-bottom: 12px; }',
+      '.strata-ds-input { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff; font-size: 0.82rem; outline: none; }',
+      '.strata-light .strata-ds-input { background: #fff; border-color: #d1d5db; color: #0c4a6e; }',
+      '.strata-ds-input::placeholder { color: rgba(255,255,255,0.4); }',
+      '.strata-light .strata-ds-input::placeholder { color: #9ca3af; }',
+      '.strata-ds-result { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; }',
+      '.strata-ds-avail { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); }',
+      '.strata-ds-taken { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); }',
+      '.strata-ds-domain { font-size: 0.85rem; font-weight: 600; color: #fff; }',
+      '.strata-light .strata-ds-domain { color: #0c4a6e; }',
+      '.strata-ds-price { font-size: 0.7rem; color: #6ee7b7; margin-top: 2px; }',
+      '.strata-ds-status-taken { font-size: 0.75rem; color: #fca5a5; }',
     ].join('\\n');
     document.head.appendChild(s);
   }
@@ -263,6 +306,35 @@ class WidgetController extends Controller
     '</div>';
   }
 
+  function renderDomainSearch(el, base, theme) {
+    var formId = 'strata-ds-' + Math.random().toString(36).slice(2);
+    el.innerHTML = '<div class="strata-w ' + theme + ' strata-glass">' +
+      '<div class="strata-hdr">Find Your Domain</div>' +
+      '<div class="strata-ds-form">' +
+        '<input id="' + formId + '" class="strata-ds-input" type="text" placeholder="yourdomain" />' +
+        '<button class="strata-btn" style="width:auto;padding:8px 16px;margin:0" onclick="(function(b,id){' +
+          'var v=document.getElementById(id).value.trim().split(\'.\')[0];' +
+          'if(!v)return;' +
+          'var res=document.getElementById(id+\'-res\');res.innerHTML=\'<div style=\\\"padding:8px;opacity:.6;font-size:.8rem\\\">Searching\u2026</div>\';' +
+          'var x=new XMLHttpRequest();x.open(\'GET\',b+\'/api/widget/domain-search?domain=\'+encodeURIComponent(v));' +
+          'x.onreadystatechange=function(){if(x.readyState!==4)return;' +
+            'if(x.status===200){var j=JSON.parse(x.responseText);var h=\'\';' +
+              '(j.results||[]).forEach(function(r){' +
+                'var cls=r.available===true?\'strata-ds-avail\':r.available===false?\'strata-ds-taken\':\'\';' +
+                'var right=r.available===true?\'<a href=\\\"\'+b+\'/register\\\" class=\\\"strata-btn\\\" style=\\\"display:inline-block;width:auto;padding:5px 12px;margin:0;font-size:.72rem\\\">Register</a>\':' +
+                  'r.available===false?\'<span class=\\\"strata-ds-status-taken\\\">Taken</span>\':\'\';' +
+                'var price=r.available&&r.price?\'<div class=\\\"strata-ds-price\\\">$\'+r.price+\'/yr</div>\':\'\';' +
+                'h+=\'<div class=\\\"strata-ds-result \'+cls+\'\\\">\'+' +
+                  '\'<div><div class=\\\"strata-ds-domain\\\">\'+r.domain+\'</div>\'+price+\'</div>\'+right+\'</div>\';}' +
+              ');res.innerHTML=h||\'<div style=\\\"padding:8px;opacity:.6;font-size:.8rem\\\">No results.</div>\';}' +
+            'else{res.innerHTML=\'<div class=\\\"strata-err\\\">Error checking domains.</div>\';}' +
+          '};x.send();' +
+        '})(\''+base+'\',\''+formId+'\')">Search</button>' +
+      '</div>' +
+      '<div id="' + formId + '-res"></div>' +
+    '</div>';
+  }
+
   /* ── Init ─────────────────────────────────────────────────────────────── */
   function init() {
     injectStyles();
@@ -279,6 +351,10 @@ class WidgetController extends Controller
 
         if (type === 'support') {
           renderSupport(el, base, theme);
+          return;
+        }
+        if (type === 'domain-search') {
+          renderDomainSearch(el, base, theme);
           return;
         }
 
