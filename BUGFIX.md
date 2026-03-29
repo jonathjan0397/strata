@@ -1,7 +1,7 @@
 # Strata — Bug Fix Log
 
-> Tracks bugs discovered during installer testing and early development on stratadev.hosted-tech.net.
-> Status: OPEN | FIXED | WONTFIX
+> Tracks bugs discovered and resolved through 1.0-Beta development, including installer testing on stratadev.hosted-tech.net.
+> Status: OPEN | FIXED | WONTFIX | DEFERRED
 
 ---
 
@@ -289,4 +289,4 @@
 
 ---
 
-*Last updated: 2026-03-28*
+*Last updated: 2026-03-29*

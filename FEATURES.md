@@ -1,6 +1,6 @@
 # Strata — Current Features
 
-> Complete feature inventory as of v2.0.0 (2026-03-28).
+> Complete feature inventory as of 1.0-Beta (2026-03-29).
 > Updated after each release. See [CHANGELOG.md](CHANGELOG.md) for history.
 
 ---
@@ -12,8 +12,9 @@
 | Email + password login | Standard Laravel auth with hashed passwords |
 | Self-registration | Client account creation with email verification |
 | TOTP two-factor authentication | QR code setup, challenge page, confirmation flow |
+| 2FA admin-configurable | Enable/disable enforcement, session lifetime, keep-alive toggle via Settings → General |
 | 2FA optional enforcement | Persistent amber banner nudge for admin/staff; non-blocking |
-| OAuth2 social login | Laravel Socialite — Google, GitHub, and any configured provider |
+| OAuth2 social login | Laravel Socialite — Google and Microsoft |
 | Email verification | Verified on registration; resend available |
 | Password reset | Signed email link; standard Laravel flow |
 | Active session management | View and revoke sessions per device/IP |
@@ -26,12 +27,16 @@
 
 | Feature | Detail |
 |---------|--------|
-| No-CLI setup wizard | Multi-step wizard at `/install` — works on shared hosting |
-| PHP requirements check | Pass/fail indicators for all required extensions |
+| No-CLI setup wizard | Multi-step wizard at `/install` — works on shared hosting (cPanel, CWP, Plesk, DirectAdmin) |
+| PHP requirements check | Pass/fail indicators for all required extensions and settings |
 | Database connection test | Live test before committing credentials |
 | Scoped `.env` write | Written with mode `0600`; safe handling of special characters (base64 transport) |
 | Auto-run migrations + seeders | Runs in-browser via `Artisan::call` |
+| Queue mode selector | Sync (shared hosting) or Database (VPS); installer writes `QUEUE_CONNECTION` to `.env` |
+| Optional sample data | 5 demo clients, products, services, invoices, tickets, quotes, domains, affiliate, promo codes, and credit note |
 | Lock file | `storage/installed.lock` prevents re-running |
+| Pre-install URL detection | Detects real base URL from HTTP request when `APP_URL` is `http://localhost`; supports subdirectory installs |
+| Pre-install cache fix | Switches cache driver to `array` before `.env` exists to prevent database connection errors |
 
 ---
 
@@ -44,10 +49,11 @@
 - Assign client to group; apply group discount
 - `country`, `state`, `tax_exempt` fields for automatic tax resolution
 - Internal notes (admin-only, timestamped, deletable)
+- **Verify email button** — marks client email address as verified without requiring the client to click the verification link
 
 ### Products
 - Full CRUD — name, type, billing cycle, price, setup fee, stock, sort order
-- Product types: hosting, domain, VPS, dedicated, email, SSL, other
+- Product types: shared, domain, VPS, dedicated, email, SSL, other
 - Billing cycles: monthly, quarterly, semi-annual, annual, biennial, triennial, one-time
 - **Auto-setup trigger** — `on_order`, `on_payment`, `manual`, `never`
 - **Trial period** — `trial_days` field; service activates immediately; invoice due at trial end
@@ -81,10 +87,11 @@
 - Create invoices manually with line items
 - Mark paid, cancel, apply credit
 - Download A4 PDF (branded header, line items, tax, payment history)
+- **Credit notes** — flat amount, reason, disposition (account balance or invoice deduction); numbered `CN-YYYYMMDD-NNNN`; voidable with full reversal
 - Automated generation, overdue flagging, late fee application
 
 ### Support Tickets
-- Ticket queue with search, status filter, and agent filter
+- Ticket queue with status filter and agent filter
 - Inline priority and department editing
 - Assign to staff agent
 - Department transfer (with internal note)
@@ -97,6 +104,7 @@
 - Bulk actions: close, reopen, assign, delete (with select-all toggle)
 - First reply time tracking and display
 - Client satisfaction ratings view (stars + note)
+- **Staff can manually create tickets** — new Create Ticket form in admin; staff select a client, department, priority, and compose the initial message on behalf of the client
 
 ### Knowledge Base
 - Category management (CRUD, sort order, active toggle)
@@ -112,6 +120,11 @@
 - Publish / draft toggle
 - Sort order control
 - Admin: full-text article search
+
+### Announcements
+- Create, edit, delete
+- Publish / draft toggle
+- **Rich text editor (Tiptap)** — full formatting toolbar with inline image uploads; stored as HTML; rendered in client portal and public portal with `prose` classes
 
 ### Servers
 - cPanel/WHM, Plesk, DirectAdmin, HestiaCP server CRUD
@@ -135,11 +148,6 @@
 - Priority: country+state > country-only > default
 - `tax_exempt` flag per client
 - Applied automatically at checkout
-
-### Announcements
-- Create, edit, delete
-- Publish / draft toggle
-- Displayed in client portal
 
 ### Email Templates
 - Inline editor for all system templates
@@ -189,12 +197,47 @@
 - Run history log
 
 ### Settings
-- General: app name, URL, logo upload, timezone, language
-- Email: mailer driver (SMTP / sendmail / log), from address, SMTP credentials, sendmail path
-- Send Test button for verifying mail delivery
-- Billing: currency, invoice prefix, grace period, dunning config, late fee config, payment reminder days
-- Payments: Stripe, PayPal, Authorize.net key entry
-- **Fraud Check**: MaxMind account ID/license key, score threshold, action (flag or reject)
+
+#### General
+- Company name, logo upload, portal tagline
+- **Portal Color Theme** — 4 options: Ocean Blue, Ruby Red, Forest Green, Sky Blue (admin-selectable; applied across public portal and auth pages)
+- **Domain Search TLDs** — comma-separated list of TLDs to check on domain availability searches
+- Timezone and date format
+- **2FA Settings** — enable/disable 2FA enforcement; session lifetime (minutes); keep-alive ping toggle
+
+#### Company
+- Company address, phone number, email
+
+#### Billing
+- Currency, invoice prefix, grace period, dunning config, late fee config, payment reminder days
+
+#### Email
+- Mailer driver (SMTP / sendmail / log)
+- From address and display name
+- SMTP credentials and host/port settings
+- Sendmail path and flags
+- Send Test button with inline result
+
+#### Integrations (4 collapsible categories)
+
+**Payment Gateways**
+- Stripe — API key, secret, webhook secret, currency
+- PayPal — client ID, client secret, mode (sandbox/live), currency
+- Authorize.Net — API login ID, transaction key, sandbox toggle
+
+**Domain Registrars**
+- Driver selector (Namecheap / eNom / OpenSRS / HEXONET)
+- Namecheap — API user, API key, client IP, sandbox toggle
+- eNom — UID, password, sandbox toggle
+- OpenSRS — API key, reseller username, sandbox toggle
+- HEXONET — login, password, sandbox toggle
+
+**Fraud Prevention**
+- MaxMind minFraud — account ID, license key, score threshold, action (flag or reject)
+
+**OAuth / Social Login**
+- Google — client ID and client secret
+- Microsoft — client ID and client secret
 
 ### Maintenance
 - In-browser migration runner — runs `artisan migrate --force`
@@ -230,7 +273,7 @@
 
 ### Invoices
 - List and detail view
-- Pay via Stripe, PayPal, or Authorize.net (gateways shown only if configured)
+- Pay via Stripe, PayPal, or Authorize.Net (gateways shown only if configured)
 - Apply credit balance toward invoice
 - Download PDF
 
@@ -283,17 +326,33 @@
 
 ## Public Portal
 
-- Glassmorphism UI at `/portal`
-- Home page with product catalog
+- Glassmorphism UI at the portal root
+- Home page: hero, product catalog teaser, announcements teaser, KB teaser, CTA
+- Full product/services catalog page
 - Knowledge Base browse and article view (HTML content with `prose-invert` styling)
 - Announcements listing
+- **4 color themes** (admin-selectable from Settings → General): Ocean Blue, Ruby Red, Forest Green, Sky Blue; theme token applied globally
+- **Company logo display** — shows uploaded logo in navigation and auth pages; falls back to a gradient letter icon if no logo is configured
+- **"Powered by Strata Service Billing and Support Platform"** displayed on login and register pages
+- **Domain search bar** — live availability check when a registrar is configured; shows available/taken status + price per TLD + register button
+- Responsive navigation: Sign In and Get Started buttons; mobile hamburger menu
 
 ---
 
-## Embeddable Widget
+## Embeddable Widget (`strata-widget.js`)
 
-- `/widget` endpoint returns lightweight JSON for embedding in external sites
-- Products widget, announcements widget, KB widget
+Embed on any external website via `<div data-strata-widget="[type]"></div>`.
+
+| Widget Type | Description |
+|-------------|-------------|
+| `catalog` | Product grid with pricing and order links |
+| `announcements` | Latest published announcements |
+| `kb` | Knowledge Base article listing |
+| `support` | Support CTA with link to open a ticket |
+| `domain-search` | Live domain availability search form |
+
+- Themes: `glass` (dark, glassmorphism) and `light`
+- CORS-open API endpoints at `/api/widget/*`
 
 ---
 
@@ -303,12 +362,12 @@
 |---------|--------|
 | **Stripe** | Checkout session; off-session auto-charge; stored cards via SetupIntent; webhook reconciliation |
 | **PayPal** | Orders v2 — create → redirect → capture |
-| **Authorize.net** | AIM API; Accept.js opaque data or stored Customer Profile |
+| **Authorize.Net** | AIM API |
 
-- Graceful webhook fallback — Stripe webhooks work without a `STRIPE_WEBHOOK_SECRET` configured (skips signature verification, logs warning)
+- Graceful webhook fallback — Stripe webhooks work without `STRIPE_WEBHOOK_SECRET` (skips signature verification, logs warning)
 - `PaymentGateway` contract + `GatewayService` factory — extensible driver pattern
 - Both Stripe and PayPal create a pending `Payment` record on initiation — double-payment guard on paid invoices
-- Payment gateways hidden from UI if not configured (`hasStripe`, `hasPayPal` flags)
+- Payment gateway buttons hidden from UI when not configured
 
 ---
 
@@ -339,7 +398,7 @@
 | DirectAdmin | HTTP API — full lifecycle |
 | HestiaCP | HestiaCP API — full lifecycle |
 
-- `ProvisionerDriver` contract + `ProvisionerService` factory
+- `ProvisionerDriver` contract + `ProvisionerService` factory; extensible driver pattern
 - Server selection by capacity
 - Service updated with credentials and `module_data` on provision
 
@@ -357,6 +416,7 @@
 - `RegistrarDriver` contract — `checkAvailability`, `registerDomain`, `renewDomain`, `transferDomain`, `getNameservers`, `setNameservers`, `getInfo`, `setLock`, `setPrivacy`
 - `DomainRegistrarService` factory — `driver(?string)`, `available()`, `checkAvailability(string)`
 - Live availability check in checkout (debounced 600ms)
+- Active driver and credentials configurable from Settings → Integrations → Domain Registrars
 
 ---
 
@@ -364,12 +424,12 @@
 
 All of the following work on CWP/shared hosting without a queue worker:
 
-- All emails sent via `Mail::send()` with silent `try/catch` — mail failure never blocks the user action
-- No queue worker required — no `queue:work` daemon needed
+- All emails sent via `Mail::send()` with silent `try/catch` — mail failure never blocks user actions
+- No queue worker required — all mail and billing actions run inline
 - PATCH/PUT/DELETE method-spoofed via POST (`_method` field) — compatible with restrictive ModSecurity WAF
 - Installer bypasses CSRF and session middleware to avoid WAF false positives
 - `sendmail` default flags `-t -i` (pipe mode) — compatible with CWP sendmail
-- Bootstrap cache cleared on every deploy
+- Pre-install cache driver auto-switched to `array`; base URL auto-detected from HTTP request
 
 ---
 
@@ -382,9 +442,13 @@ All of the following work on CWP/shared hosting without a queue worker:
 | Rich Text Editor | Tiptap v2 (`@tiptap/vue-3`) |
 | Typography | `@tailwindcss/typography` — `prose` classes for HTML content |
 | Build | Vite 8 |
-| Database | MySQL / MariaDB |
-| Auth | spatie/laravel-permission |
+| Database | MySQL / MariaDB 8.0+ |
+| Auth / Permissions | spatie/laravel-permission |
+| OAuth | Laravel Socialite |
 | Payments | Stripe PHP SDK v20, srmklive/paypal v3, authorize.net SDK |
 | PDF | barryvdh/laravel-dompdf v3 |
-| OAuth | Laravel Socialite |
 | HTTP | Laravel Http facade |
+
+---
+
+*Last updated: 2026-03-29*
