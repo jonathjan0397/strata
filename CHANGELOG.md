@@ -7,6 +7,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Install telemetry** — `app/Services/StrataLicense.php` static service; `app/Console/Commands/StrataSync.php` daily cron (`strata:sync` at 04:15); `config/strata.php` (`STRATA_LICENSE_SERVER_URL`, `STRATA_LICENSE_SECRET`); `install_token` UUID written to `installed.lock` at install time (backfilled on upgrade); HMAC-SHA256 response verification; 25-hour cache with graceful all-pass degradation on any failure.
+
 ---
 
 ## [1.0-RC1] — 2026-03-29 — Release Candidate 1

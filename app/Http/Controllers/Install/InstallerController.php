@@ -269,6 +269,8 @@ class InstallerController extends Controller
                     'queue'          => $request->queue_connection,
                     'storage_mode'   => $storageMode,
                     'sample_data'    => $request->boolean('sample_data'),
+                    'install_token'  => \Illuminate\Support\Str::uuid()->toString(),
+                    'install_secret' => bin2hex(random_bytes(32)),
                 ])
             );
 

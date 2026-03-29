@@ -79,3 +79,9 @@ Schedule::command('billing:process-cancellations')
     ->dailyAt('00:30')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Platform telemetry sync — daily at 04:15
+Schedule::command('strata:sync')
+    ->dailyAt('04:15')
+    ->withoutOverlapping()
+    ->runInBackground();

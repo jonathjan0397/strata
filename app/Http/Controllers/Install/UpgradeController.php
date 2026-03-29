@@ -235,6 +235,14 @@ class UpgradeController extends Controller
             $lock['version']     = $newVersion;
             $lock['upgraded_at'] = now()->toIso8601String();
 
+            // Backfill install_token and install_secret for installs that pre-date their introduction
+            if (empty($lock['install_token'])) {
+                $lock['install_token'] = \Illuminate\Support\Str::uuid()->toString();
+            }
+            if (empty($lock['install_secret'])) {
+                $lock['install_secret'] = bin2hex(random_bytes(32));
+            }
+
             file_put_contents($lockPath, json_encode($lock, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
             $log[] = "Lock file updated → {$newVersion}.";
 
