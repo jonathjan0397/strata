@@ -173,15 +173,6 @@ class InstallerController extends Controller
 
             return response()->json(['success' => true, 'version' => $version]);
         } catch (PDOException $e) {
-            \Illuminate\Support\Facades\Log::debug('INSTALL_DB_TEST', [
-                'host'    => $request->db_host,
-                'port'    => $request->db_port,
-                'db'      => $request->db_name,
-                'user'    => $request->db_username,
-                'b64'     => $rawB64,
-                'dec_hex' => bin2hex($decoded),
-                'error'   => $e->getMessage(),
-            ]);
             return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
         }
     }

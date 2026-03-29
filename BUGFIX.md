@@ -121,10 +121,10 @@
 ---
 
 ## BF-015 — Remove debug logging from InstallerController
-**Status:** DEFERRED — must fix before v1.0 stable release
+**Status:** FIXED
 **File:** `app/Http/Controllers/Install/InstallerController.php`
 **Symptom:** `INSTALL_DB_TEST` debug entries with password hex dumps written to laravel.log during database connection test.
-**Fix needed:** Remove or gate behind `APP_DEBUG` the `Log::debug('INSTALL_DB_TEST', ...)` block in `testDatabase()`.
+**Fix:** Removed the `Log::debug('INSTALL_DB_TEST', ...)` block from the `testDatabase()` catch handler entirely.
 
 ---
 

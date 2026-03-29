@@ -7,15 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **BF-015** — Removed `Log::debug('INSTALL_DB_TEST', ...)` from `InstallerController::testDatabase()` — was writing DB credentials and password hex dumps to laravel.log
+- **Ticket search extended** — admin search now also scans reply message bodies (previously subject + client name only)
+- **Client billing history** — invoice index now shows summary cards (total billed, total paid, outstanding) and date range filter (from/to) in addition to existing status tabs
+- **Suggested KB articles on ticket create** — as client types a subject, matching published KB articles are fetched and displayed as a "before you submit" panel with links
+
 ### Planned (next priorities)
-- Client billing history page — dedicated full invoice list with filters and PDF download
 - Authorize.Net Accept.js Vue component for client-side card entry without redirect
 - Bank transfer / manual payment gateway
 - Installer upgrade wizard — browser-based; replace files and run `artisan migrate` without CLI
-- Ticket search — admin-side full-text search across ticket subjects and messages
 - Client satisfaction ratings analytics — aggregate view and per-staff performance stats
-- HTML reply editor on tickets — rich text composer + file attachments on ticket replies
-- Suggested KB articles on ticket creation — surface related articles before client submits
+- HTML reply editor on tickets — rich text composer
 
 ---
 

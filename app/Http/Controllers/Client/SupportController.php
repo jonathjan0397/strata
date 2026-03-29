@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
 use App\Models\Department;
+use App\Models\KbArticle;
 use App\Models\Setting;
 use App\Models\SupportTicket;
 use App\Services\WorkflowEngine;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -39,6 +41,25 @@ class SupportController extends Controller
         return Inertia::render('Client/Support/Create', [
             'departments' => Department::active()->get(['id', 'name']),
         ]);
+    }
+
+    public function kbSuggest(Request $request): JsonResponse
+    {
+        $q = trim($request->query('q', ''));
+
+        if (strlen($q) < 3) {
+            return response()->json([]);
+        }
+
+        $articles = KbArticle::where('published', true)
+            ->where(function ($query) use ($q) {
+                $query->where('title', 'like', "%{$q}%")
+                      ->orWhere('content', 'like', "%{$q}%");
+            })
+            ->limit(5)
+            ->get(['id', 'title', 'slug']);
+
+        return response()->json($articles);
     }
 
     public function store(Request $request): RedirectResponse

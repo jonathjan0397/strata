@@ -360,6 +360,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('invoices/{invoice}/paypal/cancel',    [Client\PayPalPaymentController::class,  'cancel'])->name('invoices.paypal.cancel');
         Route::get('support',                    [Client\SupportController::class, 'index'])->name('support.index');
         Route::get('support/create',             [Client\SupportController::class, 'create'])->name('support.create');
+        Route::get('support/kb-suggest',         [Client\SupportController::class, 'kbSuggest'])->name('support.kb-suggest');
         Route::post('support',                   [Client\SupportController::class, 'store'])->name('support.store');
         Route::get('support/attachments/{attachment}/download', [TicketAttachmentController::class, 'download'])->name('support.attachments.download');
         Route::get('support/{ticket}',           [Client\SupportController::class, 'show'])->name('support.show');

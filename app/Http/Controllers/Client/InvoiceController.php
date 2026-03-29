@@ -19,6 +19,8 @@ class InvoiceController extends Controller
     public function index(Request $request): Response
     {
         $status = $request->query('status');
+        $from   = $request->query('from');
+        $to     = $request->query('to');
 
         $query = $request->user()->invoices()->latest();
 
@@ -30,9 +32,30 @@ class InvoiceController extends Controller
             $query->where('status', 'paid');
         }
 
+        if ($from) {
+            $query->where('date', '>=', $from);
+        }
+        if ($to) {
+            $query->where('date', '<=', $to);
+        }
+
+        // Summary totals for the current filtered set (clone before paginating)
+        $summary = (clone $query)->selectRaw('
+            SUM(total) as total_billed,
+            SUM(CASE WHEN status = \'paid\' THEN total ELSE 0 END) as total_paid,
+            SUM(CASE WHEN status != \'paid\' THEN amount_due ELSE 0 END) as total_outstanding
+        ')->first();
+
         return Inertia::render('Client/Invoices/Index', [
             'invoices'     => $query->paginate(20)->withQueryString(),
             'activeFilter' => $status ?? 'all',
+            'from'         => $from ?? '',
+            'to'           => $to ?? '',
+            'summary'      => [
+                'total_billed'      => (float) ($summary->total_billed ?? 0),
+                'total_paid'        => (float) ($summary->total_paid ?? 0),
+                'total_outstanding' => (float) ($summary->total_outstanding ?? 0),
+            ],
         ]);
     }
 

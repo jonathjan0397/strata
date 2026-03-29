@@ -32,7 +32,8 @@ class SupportController extends Controller
             ->when($request->search, fn ($q, $s) =>
                 $q->where(function ($sub) use ($s) {
                     $sub->where('subject', 'like', "%{$s}%")
-                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"));
+                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('replies', fn ($r) => $r->where('message', 'like', "%{$s}%"));
                 })
             )
             ->orderByRaw("FIELD(status, 'open', 'customer_reply', 'answered', 'on_hold', 'closed')")

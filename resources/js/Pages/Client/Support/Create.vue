@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { useForm, Link } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
@@ -15,6 +15,23 @@ const form = useForm({
     priority:      'medium',
     message:       '',
     attachments:   [],
+})
+
+// KB suggestions
+const kbSuggestions = ref([])
+let kbDebounce = null
+
+watch(() => form.subject, (val) => {
+    clearTimeout(kbDebounce)
+    if (val.trim().length < 3) { kbSuggestions.value = []; return }
+    kbDebounce = setTimeout(async () => {
+        try {
+            const res = await fetch(route('client.support.kb-suggest') + '?q=' + encodeURIComponent(val.trim()), {
+                headers: { Accept: 'application/json' },
+            })
+            kbSuggestions.value = await res.json()
+        } catch { kbSuggestions.value = [] }
+    }, 400)
 })
 
 const fileInput    = ref(null)
@@ -59,6 +76,27 @@ function submit() {
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         :class="{ 'border-red-400': form.errors.subject }" />
                     <p v-if="form.errors.subject" class="text-red-500 text-xs mt-1">{{ form.errors.subject }}</p>
+
+                    <!-- KB suggestions -->
+                    <div v-if="kbSuggestions.length" class="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+                        <p class="text-xs font-medium text-blue-700 mb-2">
+                            <svg class="inline h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                            Before you submit — these articles may answer your question:
+                        </p>
+                        <ul class="space-y-1">
+                            <li v-for="a in kbSuggestions" :key="a.id">
+                                <a :href="route('client.kb.show', a.slug)" target="_blank"
+                                    class="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
+                                    <svg class="h-3 w-3 shrink-0 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {{ a.title }}
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">

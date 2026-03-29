@@ -2,12 +2,16 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
 import { Link, router } from '@inertiajs/vue3'
+import { ref } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
 const props = defineProps({
   invoices:     Object,
   activeFilter: { type: String, default: 'all' },
+  from:         { type: String, default: '' },
+  to:           { type: String, default: '' },
+  summary:      Object,
 })
 
 const filters = [
@@ -17,29 +21,69 @@ const filters = [
   { key: 'paid',    label: 'Paid' },
 ]
 
-function setFilter(key) {
-  router.get(route('client.invoices.index'), key === 'all' ? {} : { status: key }, {
-    preserveState: true, replace: true,
-  })
+const fromDate = ref(props.from)
+const toDate   = ref(props.to)
+
+function applyFilters(status) {
+  const params = {}
+  if (status && status !== 'all') params.status = status
+  if (fromDate.value) params.from = fromDate.value
+  if (toDate.value)   params.to   = toDate.value
+  router.get(route('client.invoices.index'), params, { preserveState: true, replace: true })
 }
+
+function setFilter(key) { applyFilters(key) }
+
+function fmt(n) { return '$' + Number(n ?? 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',') }
 </script>
 
 <template>
   <div>
-    <h1 class="text-xl font-bold text-gray-900 mb-6">My Invoices</h1>
+    <h1 class="text-xl font-bold text-gray-900 mb-6">Billing History</h1>
 
-    <!-- Filter tabs -->
-    <div class="flex gap-1 mb-4 border-b border-gray-200">
-      <button
-        v-for="f in filters" :key="f.key"
-        @click="setFilter(f.key)"
-        class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
-        :class="activeFilter === f.key
-          ? 'border-indigo-600 text-indigo-600'
-          : 'border-transparent text-gray-500 hover:text-gray-700'"
-      >
-        {{ f.label }}
-      </button>
+    <!-- Summary cards -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-gray-200 px-4 py-3">
+        <p class="text-xs text-gray-400 mb-1">Total Billed</p>
+        <p class="text-lg font-bold text-gray-900">{{ fmt(summary?.total_billed) }}</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 px-4 py-3">
+        <p class="text-xs text-gray-400 mb-1">Total Paid</p>
+        <p class="text-lg font-bold text-green-600">{{ fmt(summary?.total_paid) }}</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 px-4 py-3">
+        <p class="text-xs text-gray-400 mb-1">Outstanding</p>
+        <p class="text-lg font-bold" :class="Number(summary?.total_outstanding) > 0 ? 'text-red-600' : 'text-gray-400'">
+          {{ fmt(summary?.total_outstanding) }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="flex flex-wrap items-center gap-3 mb-4">
+      <!-- Status tabs -->
+      <div class="flex gap-1 border-b border-gray-200 flex-1">
+        <button
+          v-for="f in filters" :key="f.key"
+          @click="setFilter(f.key)"
+          class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
+          :class="activeFilter === f.key
+            ? 'border-indigo-600 text-indigo-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'"
+        >
+          {{ f.label }}
+        </button>
+      </div>
+      <!-- Date range -->
+      <div class="flex items-center gap-2 text-sm">
+        <input v-model="fromDate" type="date" @change="applyFilters(activeFilter)"
+          class="border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <span class="text-gray-400">–</span>
+        <input v-model="toDate" type="date" @change="applyFilters(activeFilter)"
+          class="border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <button v-if="fromDate || toDate" @click="fromDate=''; toDate=''; applyFilters(activeFilter)"
+          class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+      </div>
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
