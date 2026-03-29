@@ -1,4 +1,4 @@
-# Strata Billing — Installation Guide
+# Strata Service Billing and Support Platform — Installation Guide
 
 > **Beta-1** — Test in a non-production environment.
 > Report bugs and issues at: https://github.com/jonathjan0397/strata/issues
@@ -196,4 +196,5 @@ If you installed sample data, the following demo client accounts are available:
 
 ---
 
-*Strata is licensed under FSL-1.1-Apache-2.0. See `LICENSE.md` for details.*
+*Strata Service Billing and Support Platform is licensed under FSL-1.1-Apache-2.0. See `LICENSE.md` for details.*
+*&copy; 2026 Jonathan R. Covington. All rights reserved.*

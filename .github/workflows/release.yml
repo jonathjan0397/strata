@@ -58,7 +58,7 @@ jobs:
       - name: Build shared-hosting ZIP
         run: |
           TAG="${GITHUB_REF_NAME}"
-          ZIP="Strata-Billing-${TAG}.zip"
+          ZIP="Strata-${TAG}.zip"
 
           zip -r "${ZIP}" . \
             --exclude "*.git*" \
@@ -123,7 +123,7 @@ jobs:
           fi
 
           cat > release_notes.md << NOTES_EOF
-          ## Strata Billing ${TAG}
+          ## Strata Service Billing and Support Platform ${TAG}
 
           ${STATUS_LINE}
           > Report issues at: https://github.com/${{ github.repository }}/issues
@@ -146,11 +146,11 @@ jobs:
 
           if [ "$PRERELEASE" = "true" ]; then
             gh release create "${TAG}" "${ZIP}" \
-              --title "Strata Billing ${TAG}" \
+              --title "Strata Service Billing and Support Platform ${TAG}" \
               --notes-file release_notes.md \
               --prerelease
           else
             gh release create "${TAG}" "${ZIP}" \
-              --title "Strata Billing ${TAG}" \
+              --title "Strata Service Billing and Support Platform ${TAG}" \
               --notes-file release_notes.md
           fi

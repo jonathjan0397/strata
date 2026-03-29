@@ -5,7 +5,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 const page   = usePage()
 const user   = computed(() => page.props.auth?.user)
 const flash  = computed(() => page.props.flash)
-const siteName = computed(() => page.props.siteName ?? 'Strata')
+const siteName = computed(() => page.props.siteName ?? 'Strata Service Billing and Support Platform')
 
 const mobileOpen = ref(false)
 
@@ -142,7 +142,10 @@ const nav = computed(() => [
             <a :href="route('portal.announcements')" class="hover:text-white/80 transition-colors">News</a>
             <a :href="route('login')"                class="hover:text-white/80 transition-colors">Client Login</a>
           </nav>
-          <p class="text-white/30 text-xs">&copy; {{ new Date().getFullYear() }} {{ siteName }}. All rights reserved.</p>
+          <div class="text-right">
+            <p class="text-white/30 text-xs">&copy; {{ new Date().getFullYear() }} {{ siteName }}. All rights reserved.</p>
+            <p class="text-white/20 text-xs mt-0.5">Strata Service Billing and Support Platform &copy; 2026 Jonathan R. Covington</p>
+          </div>
         </div>
       </div>
     </footer>

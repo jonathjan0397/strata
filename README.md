@@ -1,4 +1,4 @@
-# Strata
+# Strata Service Billing and Support Platform
 
 > ## ⚠️ Beta-1 — Test in a Non-Production Environment
 >
