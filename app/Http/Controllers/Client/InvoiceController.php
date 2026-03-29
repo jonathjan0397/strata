@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ClientCredit;
 use App\Models\Invoice;
+use App\Models\Setting;
 use App\Services\OrderProvisioner;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -68,16 +69,19 @@ class InvoiceController extends Controller
         $authNetLoginId  = config('services.authorizenet.login_id');
         $authNetClientKey = config('services.authorizenet.client_key');
 
+        $bankInstructions = Setting::get('bank_transfer_instructions');
+
         return Inertia::render('Client/Invoices/Show', [
-            'invoice'       => $invoice,
-            'creditBalance' => (float) $request->user()->credit_balance,
-            'hasStripe'     => (bool) config('services.stripe.secret'),
-            'hasPayPal'     => (bool) config('services.paypal.client_id'),
-            'authNet'       => ($authNetLoginId && $authNetClientKey) ? [
+            'invoice'                    => $invoice,
+            'creditBalance'              => (float) $request->user()->credit_balance,
+            'hasStripe'                  => (bool) config('services.stripe.secret'),
+            'hasPayPal'                  => (bool) config('services.paypal.client_id'),
+            'authNet'                    => ($authNetLoginId && $authNetClientKey) ? [
                 'loginId'   => $authNetLoginId,
                 'clientKey' => $authNetClientKey,
                 'sandbox'   => (bool) config('services.authorizenet.sandbox', true),
             ] : null,
+            'bankTransferInstructions'   => $bankInstructions ?: null,
         ]);
     }
 

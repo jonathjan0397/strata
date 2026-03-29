@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
+import TiptapEditor from '@/Components/TiptapEditor.vue'
 import { useForm, Link, usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 
@@ -82,7 +83,7 @@ function fileIcon(mime) {
                     </span>
                     <span class="text-xs text-gray-400">{{ new Date(reply.created_at).toLocaleString() }}</span>
                 </div>
-                <p class="text-gray-700 whitespace-pre-wrap">{{ reply.message }}</p>
+                <div class="prose prose-sm max-w-none text-gray-700" v-html="reply.message"></div>
 
                 <!-- Attachments -->
                 <div v-if="reply.attachments?.length" class="mt-2 flex flex-wrap gap-2">
@@ -104,8 +105,11 @@ function fileIcon(mime) {
         <!-- Reply form -->
         <div v-if="ticket.status !== 'closed'" class="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
             <form @submit.prevent="send">
-                <textarea v-model="form.message" rows="4" placeholder="Write a reply…" required
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                <TiptapEditor
+                    v-model="form.message"
+                    placeholder="Write a reply…"
+                    min-height="140px"
+                    :show-images="false"
                 />
 
                 <!-- File picker -->

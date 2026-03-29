@@ -7,18 +7,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.0-RC1] — 2026-03-29 — Release Candidate 1
+
 ### Added
 - **BF-015** — Removed `Log::debug('INSTALL_DB_TEST', ...)` from `InstallerController::testDatabase()` — was writing DB credentials and password hex dumps to laravel.log
 - **Ticket search extended** — admin search now also scans reply message bodies (previously subject + client name only)
 - **Client billing history** — invoice index now shows summary cards (total billed, total paid, outstanding) and date range filter (from/to) in addition to existing status tabs
 - **Suggested KB articles on ticket create** — as client types a subject, matching published KB articles are fetched and displayed as a "before you submit" panel with links
+- **Admin dark mode** — sun/moon toggle in top bar; persisted via localStorage; `html.dark` class drives Tailwind `dark:` variants on the layout chrome plus global CSS overrides for card/table/input patterns across all admin pages
+- **HTML reply editor on tickets** — Tiptap rich-text composer replaces plain textarea in both admin and client ticket reply forms; bold/italic/underline/lists/links toolbar; reply thread renders with `prose` classes
+- **Client satisfaction ratings analytics** — Reports page now shows overall average rating with star graphic, 1–5 star distribution bar chart (rated count per star), and per-staff breakdown table (avg rating + ticket count); backed by new queries in `ReportController`
+- **Bank transfer / manual payment** — admin configures payment instructions in Settings → Billing; client invoice page shows "Bank Transfer" button (only when configured) that reveals the formatted instructions panel; admin marks paid manually via existing mark-paid flow
+- **Browser-based upgrade wizard** — `/upgrade` route guides resellers through upgrading without CLI; detects installed vs code version from `installed.lock` + `composer.json`; accepts ZIP upload (PHP ext-zip path) or "files already uploaded via FTP" path; re-extracts files while preserving `.env`, uploaded files, and sessions; runs `artisan migrate --force`; clears and rebuilds caches; updates `installed.lock` version; credential-verified via super-admin email + password without requiring a session
 
-### Planned (next priorities)
-- Authorize.Net Accept.js Vue component for client-side card entry without redirect
-- Bank transfer / manual payment gateway
-- Installer upgrade wizard — browser-based; replace files and run `artisan migrate` without CLI
-- Client satisfaction ratings analytics — aggregate view and per-staff performance stats
-- HTML reply editor on tickets — rich text composer
+### Changed
+- `composer.json` version field added: `1.0-RC1`; installer fallback version corrected to match
 
 ---
 
@@ -113,4 +118,4 @@ All emails use `Mail::send()` with silent `try/catch`. PATCH/PUT/DELETE method-s
 
 ---
 
-*Last updated: 2026-03-29*
+*Last updated: 2026-03-29 — 1.0-RC1 tagged*

@@ -140,6 +140,15 @@ jobs:
           > **Root domain install:** point the domain document root directly to the \`public/\` subfolder instead of creating a subdomain.
 
           > **Troubleshooting:** see \`README-INSTALL.md\` inside the ZIP for common errors (403 Forbidden, missing storage directories, etc.).
+
+          ### Upgrading from a Previous Version
+
+          1. Download \`${ZIP}\` below
+          2. Visit **yourdomain.com/upgrade** in your browser — the upgrade wizard will guide you through the rest
+          3. The wizard can accept the ZIP directly (if your server has ext-zip) **or** you can upload the files via FTP first and use "files already uploaded" mode
+          4. Credentials, uploaded files, and your \`.env\` are never touched by the upgrade
+
+          > The upgrade wizard requires your super-admin email and password to authorize. It runs database migrations, clears caches, and updates the version lock file automatically.
           NOTES_EOF
 
           gh release delete "${TAG}" --yes 2>/dev/null || true

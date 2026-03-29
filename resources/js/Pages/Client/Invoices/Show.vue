@@ -8,24 +8,26 @@ import axios from 'axios'
 
 defineOptions({ layout: AppLayout })
 
-defineProps({
-  invoice:       Object,
-  creditBalance: Number,
-  hasStripe:     { type: Boolean, default: false },
-  hasPayPal:     { type: Boolean, default: false },
-  authNet:       { type: Object, default: null }, // { loginId, clientKey, sandbox }
+const props = defineProps({
+  invoice:                   Object,
+  creditBalance:             Number,
+  hasStripe:                 { type: Boolean, default: false },
+  hasPayPal:                 { type: Boolean, default: false },
+  authNet:                   { type: Object, default: null }, // { loginId, clientKey, sandbox }
+  bankTransferInstructions:  { type: String, default: null },
 })
 
 const page = usePage()
 const flash = computed(() => page.props.flash)
 
-const payingStripe    = ref(false)
-const payingPayPal    = ref(false)
-const payingAuthNet   = ref(false)
-const showAuthNetForm = ref(false)
-const authNetCardRef  = ref(null)
-const payError        = ref(null)
-const applyingCredit  = ref(false)
+const payingStripe        = ref(false)
+const payingPayPal        = ref(false)
+const payingAuthNet       = ref(false)
+const showAuthNetForm     = ref(false)
+const showBankTransfer    = ref(false)
+const authNetCardRef      = ref(null)
+const payError            = ref(null)
+const applyingCredit      = ref(false)
 
 function applyCredit(invoiceId) {
   applyingCredit.value = true
@@ -185,7 +187,7 @@ async function payPayPal(invoiceId) {
 
           <!-- Authorize.Net -->
           <button v-if="authNet"
-            @click="showAuthNetForm = !showAuthNetForm"
+            @click="showAuthNetForm = !showAuthNetForm; showBankTransfer = false"
             :disabled="payingStripe || payingPayPal || payingAuthNet"
             class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
           >
@@ -208,7 +210,31 @@ async function payPayPal(invoiceId) {
             {{ payingPayPal ? 'Redirecting…' : '— $' + invoice.amount_due }}
           </button>
 
+          <!-- Bank Transfer -->
+          <button v-if="bankTransferInstructions"
+            @click="showBankTransfer = !showBankTransfer; showAuthNetForm = false"
+            class="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+            </svg>
+            Bank Transfer
+          </button>
+
         </div>
+      </div>
+
+      <!-- Bank Transfer instructions panel -->
+      <div v-if="bankTransferInstructions && showBankTransfer"
+          class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+        <div class="flex items-start justify-between mb-3">
+          <p class="text-sm font-semibold text-emerald-800">Bank Transfer Instructions</p>
+          <button @click="showBankTransfer = false" class="text-emerald-500 hover:text-emerald-700 text-lg leading-none ml-3">&times;</button>
+        </div>
+        <pre class="text-sm text-emerald-900 whitespace-pre-wrap font-mono leading-relaxed">{{ bankTransferInstructions }}</pre>
+        <p class="text-xs text-emerald-600 mt-3 border-t border-emerald-200 pt-3">
+          Please use your invoice number as the payment reference. Your invoice will be marked paid once we confirm receipt.
+        </p>
       </div>
 
       <!-- Authorize.Net card form -->

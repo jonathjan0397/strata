@@ -20,6 +20,10 @@ const props = defineProps({
     serviceStats: Object,
     openTickets: Number,
     avgResolutionHours: Number,
+    avgRating: Number,
+    ratingDist: Object,
+    totalRated: Number,
+    ratingsByStaff: Array,
 });
 
 const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n ?? 0);
@@ -183,6 +187,59 @@ function barWidth(value, arr, key) {
                             </dd>
                         </div>
                     </dl>
+                </div>
+            </div>
+
+            <!-- ── Satisfaction Ratings ── -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <!-- Overall rating + distribution -->
+                <div class="rounded-lg border border-gray-200 bg-white p-6">
+                    <h2 class="mb-4 text-sm font-semibold text-gray-900">Client Satisfaction</h2>
+                    <div v-if="totalRated > 0">
+                        <!-- Average score -->
+                        <div class="flex items-baseline gap-3 mb-4">
+                            <span class="text-4xl font-bold text-gray-900">{{ avgRating?.toFixed(1) }}</span>
+                            <div>
+                                <div class="flex gap-0.5 text-amber-400 text-lg leading-none">
+                                    <span v-for="i in 5" :key="i">{{ i <= Math.round(avgRating) ? '★' : '☆' }}</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-0.5">{{ fmtNum(totalRated) }} rated tickets</p>
+                            </div>
+                        </div>
+                        <!-- Star distribution bars -->
+                        <div class="space-y-1.5">
+                            <div v-for="star in [5,4,3,2,1]" :key="star" class="flex items-center gap-2 text-xs">
+                                <span class="w-3 text-gray-500 text-right">{{ star }}</span>
+                                <span class="text-amber-400 text-xs">★</span>
+                                <div class="flex-1 bg-gray-100 rounded-full h-2">
+                                    <div class="bg-amber-400 h-2 rounded-full transition-all"
+                                        :style="{ width: totalRated > 0 ? ((ratingDist[star] ?? 0) / totalRated * 100).toFixed(1) + '%' : '0%' }">
+                                    </div>
+                                </div>
+                                <span class="w-6 text-gray-500 text-right">{{ ratingDist[star] ?? 0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-else class="text-sm text-gray-400">No ratings yet.</p>
+                </div>
+
+                <!-- Per-staff breakdown -->
+                <div class="rounded-lg border border-gray-200 bg-white p-6">
+                    <h2 class="mb-4 text-sm font-semibold text-gray-900">Ratings by Staff</h2>
+                    <div v-if="ratingsByStaff?.length" class="space-y-3">
+                        <div v-for="row in ratingsByStaff" :key="row.staff"
+                            class="flex items-center justify-between text-sm">
+                            <span class="text-gray-700 truncate flex-1">{{ row.staff }}</span>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <div class="flex gap-0.5 text-amber-400 text-xs">
+                                    <span v-for="i in 5" :key="i">{{ i <= Math.round(row.avg_rating) ? '★' : '☆' }}</span>
+                                </div>
+                                <span class="font-semibold text-gray-900 w-8 text-right">{{ row.avg_rating }}</span>
+                                <span class="text-xs text-gray-400 w-16 text-right">({{ row.ticket_count }})</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-else class="text-sm text-gray-400">No staff ratings data yet.</p>
                 </div>
             </div>
 

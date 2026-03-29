@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Install\InstallerController;
+use App\Http\Controllers\Install\UpgradeController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TicketAttachmentController;
@@ -49,6 +50,22 @@ Route::prefix('install')->name('install.')->withoutMiddleware([
     Route::get('/requirements',  [InstallerController::class, 'requirements'])->name('requirements');
     Route::post('/test-database',[InstallerController::class, 'testDatabase'])->name('test-database');
     Route::post('/run',          [InstallerController::class, 'install'])->name('run');
+});
+
+// ── Upgrade wizard (requires installed.lock; session/CSRF stripped like install) ─
+// Credential verification is done directly against the users table instead of
+// Laravel's session-based auth, so the same ModSecurity-safe rules apply.
+Route::prefix('upgrade')->name('upgrade.')->withoutMiddleware([
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+])->group(function () {
+    Route::get('/',        [UpgradeController::class, 'index'])->name('index');
+    Route::post('/verify', [UpgradeController::class, 'verify'])->name('verify');
+    Route::post('/peek',   [UpgradeController::class, 'peekZip'])->name('peek');
+    Route::post('/run',    [UpgradeController::class, 'run'])->name('run');
 });
 
 // ── Public portal (no auth required) ─────────────────────────────────────────

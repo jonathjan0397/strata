@@ -10,3 +10,44 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* ── Class-based dark mode (toggled via html.dark) ──────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Admin dark mode content overrides ─────────────────────────────────────── */
+/* These patch common card/table/form patterns on admin pages without touching  */
+/* every individual page component.                                             */
+html.dark .bg-white          { background-color: rgb(30 41 59); }
+html.dark .bg-gray-50        { background-color: rgb(22 32 50); }
+html.dark .bg-gray-100       { background-color: rgb(30 41 59); }
+html.dark .border-gray-100   { border-color: rgb(51 65 85); }
+html.dark .border-gray-200   { border-color: rgb(51 65 85); }
+html.dark .border-gray-300   { border-color: rgb(71 85 105); }
+html.dark .text-gray-900     { color: rgb(241 245 249); }
+html.dark .text-gray-800     { color: rgb(226 232 240); }
+html.dark .text-gray-700     { color: rgb(203 213 225); }
+html.dark .text-gray-600     { color: rgb(148 163 184); }
+html.dark .text-gray-500     { color: rgb(100 116 139); }
+html.dark .text-gray-400     { color: rgb(71 85 105); }
+html.dark input[type='text'],
+html.dark input[type='email'],
+html.dark input[type='password'],
+html.dark input[type='number'],
+html.dark input[type='url'],
+html.dark input[type='tel'],
+html.dark input[type='search'],
+html.dark input[type='date'],
+html.dark textarea,
+html.dark select {
+    background-color: rgb(15 23 42);
+    color: rgb(226 232 240);
+    border-color: rgb(71 85 105);
+}
+html.dark thead th,
+html.dark th {
+    background-color: rgb(15 23 42);
+    color: rgb(148 163 184);
+}
+html.dark tbody td  { border-color: rgb(51 65 85); color: rgb(203 213 225); }
+html.dark .divide-gray-100 > * + *,
+html.dark .divide-gray-200 > * + * { border-color: rgb(51 65 85); }

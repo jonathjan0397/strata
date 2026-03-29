@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
+import TiptapEditor from '@/Components/TiptapEditor.vue'
 import { useForm, router, Link } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 
@@ -201,7 +202,7 @@ const responseTime = computed(() => {
                     </div>
                     <span class="text-xs text-gray-400">{{ new Date(reply.created_at).toLocaleString() }}</span>
                 </div>
-                <p class="text-gray-700 whitespace-pre-wrap">{{ reply.message }}</p>
+                <div class="prose prose-sm max-w-none text-gray-700" v-html="reply.message"></div>
 
                 <!-- Reply attachments -->
                 <div v-if="reply.attachments?.length" class="mt-2 flex flex-wrap gap-2">
@@ -240,12 +241,14 @@ const responseTime = computed(() => {
                 </div>
             </div>
 
-            <textarea v-model="replyForm.message" rows="5" placeholder="Write a reply…" required
-                :class="['w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none',
-                    replyForm.internal
-                        ? 'border-amber-300 bg-amber-50 focus:ring-amber-400'
-                        : 'border-gray-300 focus:ring-indigo-500']"
-            />
+            <div :class="replyForm.internal ? 'ring-2 ring-amber-400 rounded-lg overflow-hidden' : ''">
+                <TiptapEditor
+                    v-model="replyForm.message"
+                    placeholder="Write a reply…"
+                    min-height="140px"
+                    :show-images="false"
+                />
+            </div>
 
             <!-- File picker -->
             <div>

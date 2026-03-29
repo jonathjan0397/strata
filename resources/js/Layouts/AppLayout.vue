@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -140,6 +140,20 @@ const settingsNav = [
     { name: 'Sessions', href: route('profile.sessions'), icon: 'M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3' },
 ];
 
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+const darkMode = ref(false)
+
+onMounted(() => {
+    darkMode.value = localStorage.getItem('adminDark') === '1'
+    document.documentElement.classList.toggle('dark', darkMode.value)
+})
+
+function toggleDark() {
+    darkMode.value = !darkMode.value
+    localStorage.setItem('adminDark', darkMode.value ? '1' : '0')
+    document.documentElement.classList.toggle('dark', darkMode.value)
+}
+
 // Icons
 const ICON_GEAR   = 'M9.594 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.11v1.093c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11v-1.094c0-.55.398-1.019.94-1.11l.894-.148c.424-.071.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z M15 12a3 3 0 11-6 0 3 3 0 016 0z';
 const ICON_HOME   = 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6';
@@ -147,7 +161,7 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
 </script>
 
 <template>
-    <div class="min-h-full bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
+    <div class="min-h-full bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
 
         <!-- Mobile sidebar overlay -->
         <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden" @click="sidebarOpen = false" />
@@ -310,8 +324,8 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
         <div class="lg:pl-64 flex flex-col min-h-screen">
 
             <!-- Top bar -->
-            <header class="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-blue-200/40 bg-white/75 backdrop-blur-md px-4 sm:px-6 shadow-sm">
-                <button class="lg:hidden -m-2 p-2 text-slate-600 hover:text-slate-900" @click="sidebarOpen = true">
+            <header class="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-blue-200/40 dark:border-slate-700/50 bg-white/75 dark:bg-slate-900/90 backdrop-blur-md px-4 sm:px-6 shadow-sm">
+                <button class="lg:hidden -m-2 p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200" @click="sidebarOpen = true">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
@@ -319,10 +333,26 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
                 <div class="flex-1">
                     <slot name="header" />
                 </div>
+                <!-- Dark mode toggle -->
+                <button
+                    type="button"
+                    @click="toggleDark"
+                    :title="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                    class="rounded-lg p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors"
+                >
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg v-if="darkMode" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                    </svg>
+                </button>
             </header>
 
             <!-- 2FA warning banner -->
-            <div v-if="twoFactorWarning" class="bg-amber-50/90 backdrop-blur-sm border-b border-amber-200/60 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
+            <div v-if="twoFactorWarning" class="bg-amber-50/90 dark:bg-amber-900/20 backdrop-blur-sm border-b border-amber-200/60 dark:border-amber-700/40 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
                 <p class="text-sm text-amber-800">
                     <strong>Recommended:</strong> Your account does not have two-factor authentication enabled.
                     Enabling 2FA protects the admin panel from unauthorized access.
@@ -334,10 +364,10 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
 
             <!-- Flash messages -->
             <div v-if="flash?.success || flash?.error" class="px-4 sm:px-6 pt-4">
-                <div v-if="flash.success" class="rounded-xl bg-green-50/80 backdrop-blur-sm border border-green-200/60 px-4 py-3 text-sm text-green-800 shadow-sm">
+                <div v-if="flash.success" class="rounded-xl bg-green-50/80 dark:bg-green-900/30 backdrop-blur-sm border border-green-200/60 dark:border-green-700/40 px-4 py-3 text-sm text-green-800 dark:text-green-300 shadow-sm">
                     {{ flash.success }}
                 </div>
-                <div v-if="flash.error" class="rounded-xl bg-red-50/80 backdrop-blur-sm border border-red-200/60 px-4 py-3 text-sm text-red-800 shadow-sm">
+                <div v-if="flash.error" class="rounded-xl bg-red-50/80 dark:bg-red-900/30 backdrop-blur-sm border border-red-200/60 dark:border-red-700/40 px-4 py-3 text-sm text-red-800 dark:text-red-300 shadow-sm">
                     {{ flash.error }}
                 </div>
             </div>

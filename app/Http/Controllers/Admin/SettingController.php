@@ -47,9 +47,11 @@ class SettingController extends Controller
             'portal_theme'       => ['nullable', 'in:blue,red,green,lightblue'],
             'domain_search_tlds' => ['nullable', 'string', 'max:500'],
             // Two-Factor Authentication
-            'otp_enabled'        => ['nullable', 'boolean'],
-            'otp_lifetime'       => ['nullable', 'integer', 'min:0', 'max:1440'],
-            'otp_keep_alive'     => ['nullable', 'boolean'],
+            'otp_enabled'                => ['nullable', 'boolean'],
+            'otp_lifetime'               => ['nullable', 'integer', 'min:0', 'max:1440'],
+            'otp_keep_alive'             => ['nullable', 'boolean'],
+            // Bank Transfer
+            'bank_transfer_instructions' => ['nullable', 'string', 'max:2000'],
         ]);
 
         Setting::setMany($data);

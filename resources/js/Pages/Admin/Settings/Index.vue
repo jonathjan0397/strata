@@ -50,13 +50,14 @@ const form = useForm({
     company_zip:       s.company_zip       ?? '',
     company_country:   s.company_country   ?? '',
     // Billing
-    currency:          s.currency          ?? 'USD',
-    currency_symbol:   s.currency_symbol   ?? '$',
-    invoice_prefix:    s.invoice_prefix    ?? 'INV-',
-    invoice_due_days:  s.invoice_due_days  ?? '7',
-    grace_period_days: s.grace_period_days ?? '3',
-    tax_rate:          s.tax_rate          ?? '0',
-    tax_name:          s.tax_name          ?? 'Tax',
+    currency:                    s.currency                    ?? 'USD',
+    currency_symbol:             s.currency_symbol             ?? '$',
+    invoice_prefix:              s.invoice_prefix              ?? 'INV-',
+    invoice_due_days:            s.invoice_due_days            ?? '7',
+    grace_period_days:           s.grace_period_days           ?? '3',
+    tax_rate:                    s.tax_rate                    ?? '0',
+    tax_name:                    s.tax_name                    ?? 'Tax',
+    bank_transfer_instructions:  s.bank_transfer_instructions  ?? '',
 })
 
 // Mail settings form
@@ -1019,6 +1020,19 @@ const timezones = [
                         <input v-model="form.tax_name" type="text" maxlength="50" placeholder="Tax"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                     </div>
+                </div>
+
+                <!-- Bank Transfer Instructions -->
+                <div class="border-t border-gray-100 pt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Bank Transfer / Manual Payment Instructions
+                        <span class="font-normal text-gray-400 ml-1">(leave blank to disable)</span>
+                    </label>
+                    <textarea v-model="form.bank_transfer_instructions" rows="5"
+                        placeholder="Bank: Example Bank&#10;Account Name: Your Company&#10;Account Number: 0000-0000&#10;Routing/Sort: 000000&#10;Reference: Your Invoice Number"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y font-mono">
+                    </textarea>
+                    <p class="text-xs text-gray-400 mt-1">Shown to clients when they select Bank Transfer on an unpaid invoice.</p>
                 </div>
             </div>
 

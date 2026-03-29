@@ -13,6 +13,8 @@ const props = defineProps({
     modelValue:  { type: String, default: '' },
     placeholder: { type: String, default: 'Write article content here…' },
     uploadUrl:   { type: String, default: '/admin/kb/images' },
+    minHeight:   { type: String, default: '400px' },
+    showImages:  { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -188,7 +190,7 @@ function setLink() {
                 :class="['toolbar-btn', editor?.isActive('link') ? 'active' : '']">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12c0-1.7 1.4-3.1 3.1-3.1h4V7H7C4.2 7 2 9.2 2 12s2.2 5 5 5h4v-1.9H7c-1.7 0-3.1-1.4-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.7 0 3.1 1.4 3.1 3.1s-1.4 3.1-3.1 3.1h-4V17h4c2.8 0 5-2.2 5-5s-2.2-5-5-5z"/></svg>
             </button>
-            <button type="button" title="Insert image" @click="triggerImageUpload" class="toolbar-btn">
+            <button v-if="showImages" type="button" title="Insert image" @click="triggerImageUpload" class="toolbar-btn">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
             </button>
 
@@ -204,13 +206,13 @@ function setLink() {
         </div>
 
         <!-- Editor area -->
-        <EditorContent :editor="editor" class="tiptap-content" />
+        <EditorContent :editor="editor" class="tiptap-content" :style="{ '--editor-min-height': minHeight }" />
     </div>
 </template>
 
 <style scoped>
 .tiptap-content :deep(.ProseMirror) {
-    min-height: 400px;
+    min-height: var(--editor-min-height, 400px);
     padding: 1rem;
     outline: none;
     font-size: 0.875rem;

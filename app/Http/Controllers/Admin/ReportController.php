@@ -139,6 +139,42 @@ class ReportController extends Controller
             ->select(DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))
             ->value('avg_hours');
 
+        // ── Satisfaction ratings ──────────────────────────────────────────────
+        $ratedTickets = SupportTicket::whereNotNull('rating');
+
+        $avgRating = $ratedTickets->clone()->avg('rating');
+
+        // Distribution: count per star 1-5
+        $ratingDistribution = $ratedTickets->clone()
+            ->select('rating', DB::raw('COUNT(*) as count'))
+            ->groupBy('rating')
+            ->orderBy('rating')
+            ->pluck('count', 'rating')
+            ->toArray();
+
+        // Fill in all 5 stars (including zeros)
+        $ratingDist = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $ratingDist[$i] = (int) ($ratingDistribution[$i] ?? 0);
+        }
+
+        // Per-staff breakdown (staff user → avg rating on tickets they replied to, that are now closed+rated)
+        $perStaff = SupportTicket::whereNotNull('rating')
+            ->whereNotNull('assigned_to')
+            ->select('assigned_to', DB::raw('AVG(rating) as avg_rating'), DB::raw('COUNT(*) as ticket_count'))
+            ->groupBy('assigned_to')
+            ->with('assignedTo:id,name')
+            ->get()
+            ->map(fn ($r) => [
+                'staff'        => $r->assignedTo?->name ?? 'Unassigned',
+                'avg_rating'   => round((float) $r->avg_rating, 1),
+                'ticket_count' => (int) $r->ticket_count,
+            ])
+            ->sortByDesc('avg_rating')
+            ->values();
+
+        $totalRated = $ratedTickets->clone()->count();
+
         return Inertia::render('Admin/Reports/Index', [
             'mrr'              => round($mrr, 2),
             'arr'              => round($arr, 2),
@@ -156,8 +192,12 @@ class ReportController extends Controller
             'clientsByMonth'   => $clientMonths,
             'topClients'       => $topClients,
             'serviceStats'     => $serviceStats,
-            'openTickets'      => $openTickets,
+            'openTickets'        => $openTickets,
             'avgResolutionHours' => $avgResolutionHours ? round($avgResolutionHours, 1) : null,
+            'avgRating'          => $avgRating ? round((float) $avgRating, 2) : null,
+            'ratingDist'         => $ratingDist,
+            'totalRated'         => $totalRated,
+            'ratingsByStaff'     => $perStaff,
         ]);
     }
 }
