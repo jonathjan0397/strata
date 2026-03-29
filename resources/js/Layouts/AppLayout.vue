@@ -2,9 +2,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 
-const page = usePage();
-const user = computed(() => page.props.auth.user);
-const flash = computed(() => page.props.flash);
+const page       = usePage();
+const user       = computed(() => page.props.auth.user);
+const flash      = computed(() => page.props.flash);
+const appVersion = computed(() => page.props.appVersion ?? null);
 
 const sidebarOpen = ref(false);
 
@@ -175,7 +176,7 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
             <div class="flex h-16 shrink-0 items-center gap-2.5 px-5 border-b border-blue-800/40">
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 shadow-lg shadow-blue-500/30 text-white font-bold text-sm">S</div>
                 <span class="text-white font-semibold text-lg tracking-tight">Strata</span>
-                <span class="ml-auto text-xs text-blue-400/60 font-mono">pre-release</span>
+                <span class="ml-auto text-xs text-blue-400/60 font-mono">{{ appVersion ?? '…' }}</span>
             </div>
 
             <!-- Nav -->

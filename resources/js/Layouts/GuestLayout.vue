@@ -2,9 +2,10 @@
 import { computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 
-const page     = usePage()
-const siteName = computed(() => page.props.siteName ?? 'Client Portal')
-const logoUrl  = computed(() => page.props.logoUrl  ?? null)
+const page       = usePage()
+const siteName   = computed(() => page.props.siteName  ?? 'Client Portal')
+const logoUrl    = computed(() => page.props.logoUrl   ?? null)
+const appVersion = computed(() => page.props.appVersion ?? null)
 </script>
 
 <template>
@@ -21,7 +22,9 @@ const logoUrl  = computed(() => page.props.logoUrl  ?? null)
         </div>
         <h1 class="text-xl font-bold text-white tracking-tight text-center">{{ siteName }}</h1>
       </template>
-      <p class="text-gray-600 text-xs mt-2">Powered by Strata Service Billing and Support Platform</p>
+      <p class="text-gray-600 text-xs mt-2">
+        Powered by Strata Service Billing and Support Platform<span v-if="appVersion" class="text-gray-700"> · {{ appVersion }}</span>
+      </p>
     </div>
 
     <!-- Card -->

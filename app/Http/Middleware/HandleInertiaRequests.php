@@ -26,6 +26,25 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
+    private function resolveVersion(): string
+    {
+        $lockPath = storage_path('installed.lock');
+        if (file_exists($lockPath)) {
+            $lock = json_decode(file_get_contents($lockPath), true);
+            if (! empty($lock['version'])) {
+                return $lock['version'];
+            }
+        }
+        $composerPath = base_path('composer.json');
+        if (file_exists($composerPath)) {
+            $composer = json_decode(file_get_contents($composerPath), true);
+            if (! empty($composer['version'])) {
+                return $composer['version'];
+            }
+        }
+        return '1.0-RC1';
+    }
+
     public function share(Request $request): array
     {
         return array_merge(parent::share($request), [
@@ -46,6 +65,7 @@ class HandleInertiaRequests extends Middleware
             'siteName'    => fn () => \App\Models\Setting::get('company_name', config('app.name')),
             'logoUrl'     => fn () => ($p = \App\Models\Setting::get('logo_path')) ? \Illuminate\Support\Facades\Storage::disk('public')->url($p) : null,
             'portalTheme' => fn () => \App\Models\Setting::get('portal_theme', 'blue'),
+            'appVersion'  => fn () => $this->resolveVersion(),
         ]);
     }
 }
