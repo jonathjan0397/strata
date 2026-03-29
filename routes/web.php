@@ -129,6 +129,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('clients/{client}',     [Admin\ClientController::class, 'show'])->name('clients.show');
         Route::patch('clients/{client}',   [Admin\ClientController::class, 'update'])->name('clients.update');
         Route::post('clients/{client}/suspend',              [Admin\ClientController::class, 'suspend'])->name('clients.suspend');
+        Route::post('clients/{client}/verify-email',         [Admin\ClientController::class, 'verifyEmail'])->name('clients.verify-email');
         Route::post('clients/{client}/credit',               [Admin\ClientController::class, 'addCredit'])->name('clients.credit');
         Route::post('clients/{client}/notes',                [Admin\ClientController::class, 'storeNote'])->name('clients.notes.store');
         Route::delete('clients/{client}/notes/{note}',       [Admin\ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
@@ -189,6 +190,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Support
         Route::get('support',                            [Admin\SupportController::class, 'index'])->name('support.index');
         Route::post('support/bulk',                      [Admin\SupportController::class, 'bulkAction'])->name('support.bulk');
+        Route::get('support/create',                     [Admin\SupportController::class, 'create'])->name('support.create');
+        Route::post('support',                           [Admin\SupportController::class, 'store'])->name('support.store');
         Route::get('support/attachments/{attachment}/download', [TicketAttachmentController::class, 'download'])->name('support.attachments.download');
         Route::get('support/{ticket}',                   [Admin\SupportController::class, 'show'])->name('support.show');
         Route::post('support/{ticket}/reply',            [Admin\SupportController::class, 'reply'])->name('support.reply');
@@ -268,6 +271,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Announcements
         Route::get('announcements',                    [Admin\AnnouncementController::class, 'index'])->name('announcements.index');
         Route::get('announcements/create',             [Admin\AnnouncementController::class, 'create'])->name('announcements.create');
+        Route::post('announcements/images',            [Admin\AnnouncementController::class, 'uploadImage'])->name('announcements.images.upload');
         Route::post('announcements',                   [Admin\AnnouncementController::class, 'store'])->name('announcements.store');
         Route::get('announcements/{announcement}/edit',[Admin\AnnouncementController::class, 'edit'])->name('announcements.edit');
         Route::patch('announcements/{announcement}',   [Admin\AnnouncementController::class, 'update'])->name('announcements.update');

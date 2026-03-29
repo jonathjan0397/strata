@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
 use App\Models\CannedResponse;
 use App\Models\Department;
+use App\Models\SupportReply;
 use App\Models\SupportTicket;
 use App\Models\TicketAttachment;
 use App\Models\User;
@@ -63,6 +64,56 @@ class SupportController extends Controller
                 ->orderBy('title')
                 ->get(['id', 'title', 'body', 'department_id']),
         ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Support/Create', [
+            'departments' => Department::active()->get(['id', 'name']),
+            'staff'       => User::whereHas('roles', fn ($q) =>
+                $q->whereIn('name', ['super-admin', 'admin', 'staff'])
+            )->get(['id', 'name']),
+            'clients'     => User::role('client')->orderBy('name')->get(['id', 'name', 'email']),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'user_id'       => ['required', 'exists:users,id'],
+            'subject'       => ['required', 'string', 'max:255'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'priority'      => ['required', 'in:low,medium,high,urgent'],
+            'message'       => ['required', 'string'],
+            'assigned_to'   => ['nullable', 'exists:users,id'],
+            'internal'      => ['boolean'],
+        ]);
+
+        $dept = $data['department_id']
+            ? Department::find($data['department_id'])
+            : null;
+
+        $ticket = SupportTicket::create([
+            'user_id'       => $data['user_id'],
+            'subject'       => $data['subject'],
+            'department_id' => $data['department_id'] ?? null,
+            'department'    => $dept?->name ?? 'General',
+            'priority'      => $data['priority'],
+            'assigned_to'   => $data['assigned_to'] ?? null,
+            'status'        => 'open',
+            'last_reply_at' => now(),
+        ]);
+
+        SupportReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id'   => $request->user()->id,
+            'message'   => $data['message'],
+            'is_staff'  => true,
+            'internal'  => $data['internal'] ?? false,
+        ]);
+
+        return redirect()->route('admin.support.show', $ticket)
+            ->with('success', 'Ticket created.');
     }
 
     public function reply(Request $request, SupportTicket $ticket): RedirectResponse

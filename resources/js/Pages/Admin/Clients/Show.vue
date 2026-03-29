@@ -174,6 +174,12 @@ function fmtMoney(v) {
           class="px-3 py-1.5 text-sm font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
           Suspend All
         </button>
+        <button
+          v-if="!client.email_verified_at"
+          @click="router.post(route('admin.clients.verify-email', client.id))"
+          class="px-3 py-1.5 text-sm font-medium text-green-600 border border-green-200 rounded-lg hover:bg-green-50 transition-colors">
+          ✓ Verify Email
+        </button>
       </div>
     </div>
 
@@ -217,6 +223,13 @@ function fmtMoney(v) {
               <div v-if="client.lead_source"><dt class="text-xs text-slate-400">Lead Source</dt><dd class="text-slate-700 capitalize">{{ client.lead_source }}</dd></div>
               <div><dt class="text-xs text-slate-400">Tax Exempt</dt><dd class="text-slate-700">{{ client.tax_exempt ? 'Yes' : 'No' }}</dd></div>
               <div><dt class="text-xs text-slate-400">Joined</dt><dd class="text-slate-700">{{ fmt(client.created_at) }}</dd></div>
+              <div>
+                <dt class="text-xs text-slate-400">Email Verified</dt>
+                <dd class="text-sm">
+                  <span v-if="client.email_verified_at" class="text-green-600">✓ Verified</span>
+                  <span v-else class="text-amber-500">Unverified</span>
+                </dd>
+              </div>
             </dl>
           </template>
 

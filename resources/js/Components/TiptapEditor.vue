@@ -10,8 +10,9 @@ import { watch } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
-    modelValue: { type: String, default: '' },
+    modelValue:  { type: String, default: '' },
     placeholder: { type: String, default: 'Write article content here…' },
+    uploadUrl:   { type: String, default: '/admin/kb/images' },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -72,7 +73,7 @@ async function uploadImage(file) {
     const fd = new FormData()
     fd.append('image', file)
     try {
-        const { data } = await axios.post('/admin/kb/images', fd)
+        const { data } = await axios.post(props.uploadUrl, fd)
         editor.value?.chain().focus().setImage({ src: data.url }).run()
     } catch {
         alert('Image upload failed.')

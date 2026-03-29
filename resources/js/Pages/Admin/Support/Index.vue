@@ -70,7 +70,12 @@ function slaStatus(ticket) {
 
 <template>
     <div>
-        <h1 class="text-xl font-bold text-gray-900 mb-6">Support Tickets</h1>
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-xl font-bold text-gray-900">Support Tickets</h1>
+            <Link :href="route('admin.support.create')" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                + New Ticket
+            </Link>
+        </div>
 
         <!-- Filters -->
         <div class="flex flex-wrap gap-3 mb-4">

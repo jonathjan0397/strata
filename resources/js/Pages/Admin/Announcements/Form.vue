@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
+import TiptapEditor from '@/Components/TiptapEditor.vue'
 import { Link, useForm } from '@inertiajs/vue3'
 
 defineOptions({ layout: AppLayout })
@@ -22,7 +23,7 @@ function submit() {
 </script>
 
 <template>
-  <div class="max-w-2xl">
+  <div class="max-w-4xl">
     <div class="flex items-center gap-3 mb-6">
       <Link :href="route('admin.announcements.index')" class="text-sm text-gray-500 hover:text-gray-700">← Announcements</Link>
       <span class="text-gray-300">/</span>
@@ -43,11 +44,11 @@ function submit() {
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Body</label>
-        <textarea
+        <TiptapEditor
           v-model="form.body"
-          rows="8"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-          :class="{ 'border-red-400': form.errors.body }"
+          placeholder="Write announcement content here…"
+          upload-url="/admin/announcements/images"
+          :class="{ 'ring-1 ring-red-400 rounded-lg': form.errors.body }"
         />
         <p v-if="form.errors.body" class="text-red-500 text-xs mt-1">{{ form.errors.body }}</p>
       </div>

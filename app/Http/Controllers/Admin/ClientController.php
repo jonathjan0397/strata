@@ -131,6 +131,15 @@ class ClientController extends Controller
         return back()->with('success', 'Client services suspended.');
     }
 
+    public function verifyEmail(User $client): RedirectResponse
+    {
+        if (! $client->email_verified_at) {
+            $client->forceFill(['email_verified_at' => now()])->save();
+            AuditLogger::log('client.email_verified', $client);
+        }
+        return back()->with('success', 'Email marked as verified.');
+    }
+
     /** Add credit to a client's balance. */
     public function addCredit(Request $request, User $client): RedirectResponse
     {
