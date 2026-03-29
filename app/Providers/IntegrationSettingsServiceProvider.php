@@ -40,5 +40,21 @@ class IntegrationSettingsServiceProvider extends ServiceProvider
         if ($v = $s['integration_authorizenet_transaction_key']?? null) Config::set('services.authorizenet.transaction_key', $v);
         if ($v = $s['integration_authorizenet_client_key']     ?? null) Config::set('services.authorizenet.client_key',      $v);
         if (isset($s['integration_authorizenet_sandbox']))               Config::set('services.authorizenet.sandbox',         (bool) $s['integration_authorizenet_sandbox']);
+
+        // Domain registrar
+        if ($v = $s['integration_registrar_driver']    ?? null) Config::set('registrars.default',                  $v);
+        if ($v = $s['integration_namecheap_api_user']  ?? null) Config::set('registrars.namecheap.api_user',        $v);
+        if ($v = $s['integration_namecheap_api_key']   ?? null) Config::set('registrars.namecheap.api_key',         $v);
+        if ($v = $s['integration_namecheap_client_ip'] ?? null) Config::set('registrars.namecheap.client_ip',       $v);
+        if (isset($s['integration_namecheap_sandbox']))          Config::set('registrars.namecheap.sandbox',         (bool) $s['integration_namecheap_sandbox']);
+        if ($v = $s['integration_enom_uid']            ?? null) Config::set('registrars.enom.uid',                  $v);
+        if ($v = $s['integration_enom_pw']             ?? null) Config::set('registrars.enom.pw',                   $v);
+        if (isset($s['integration_enom_sandbox']))               Config::set('registrars.enom.sandbox',              (bool) $s['integration_enom_sandbox']);
+        if ($v = $s['integration_opensrs_api_key']     ?? null) Config::set('registrars.opensrs.api_key',           $v);
+        if ($v = $s['integration_opensrs_reseller_username'] ?? null) Config::set('registrars.opensrs.reseller_username', $v);
+        if (isset($s['integration_opensrs_sandbox']))            Config::set('registrars.opensrs.sandbox',           (bool) $s['integration_opensrs_sandbox']);
+        if ($v = $s['integration_hexonet_login']       ?? null) Config::set('registrars.hexonet.login',             $v);
+        if ($v = $s['integration_hexonet_password']    ?? null) Config::set('registrars.hexonet.password',          $v);
+        if (isset($s['integration_hexonet_sandbox']))            Config::set('registrars.hexonet.sandbox',           (bool) $s['integration_hexonet_sandbox']);
     }
 }

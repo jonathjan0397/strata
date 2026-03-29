@@ -128,7 +128,31 @@ const intForm = useForm({
     fraud_maxmind_license_key:                s.fraud_maxmind_license_key                ?? '',
     fraud_score_threshold:                    s.fraud_score_threshold                    ?? 75,
     fraud_action:                             s.fraud_action                             ?? 'flag',
+    // Domain registrars
+    integration_registrar_driver:             s.integration_registrar_driver             ?? '',
+    integration_namecheap_api_user:           s.integration_namecheap_api_user           ?? '',
+    integration_namecheap_api_key:            s.integration_namecheap_api_key            ?? '',
+    integration_namecheap_client_ip:          s.integration_namecheap_client_ip          ?? '',
+    integration_namecheap_sandbox:            s.integration_namecheap_sandbox            ?? false,
+    integration_enom_uid:                     s.integration_enom_uid                     ?? '',
+    integration_enom_pw:                      s.integration_enom_pw                      ?? '',
+    integration_enom_sandbox:                 s.integration_enom_sandbox                 ?? false,
+    integration_opensrs_api_key:              s.integration_opensrs_api_key              ?? '',
+    integration_opensrs_reseller_username:    s.integration_opensrs_reseller_username    ?? '',
+    integration_opensrs_sandbox:              s.integration_opensrs_sandbox              ?? false,
+    integration_hexonet_login:                s.integration_hexonet_login                ?? '',
+    integration_hexonet_password:             s.integration_hexonet_password             ?? '',
+    integration_hexonet_sandbox:              s.integration_hexonet_sandbox              ?? false,
 })
+
+// Show/hide toggles for password fields
+const showSecrets = ref({})
+function toggleSecret(key) {
+    showSecrets.value[key] = !showSecrets.value[key]
+}
+
+// Collapsible integration sections — all open by default
+const openSections = ref(['payment', 'registrar', 'fraud', 'oauth'])
 
 // Masked display helpers — show last 4 chars of a secret, rest as •
 function mask(val) {
@@ -175,195 +199,479 @@ const timezones = [
         </div>
 
         <!-- Integrations (own form, own route) -->
-        <form v-if="tab === 'integrations'" @submit.prevent="intForm.patch(route('admin.settings.integrations'))" class="space-y-5">
+        <form v-if="tab === 'integrations'" @submit.prevent="intForm.patch(route('admin.settings.integrations'))" class="space-y-4">
 
-          <!-- Google OAuth -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <div class="flex items-start gap-3">
-              <svg class="h-7 w-7 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          <!-- ── PAYMENT GATEWAYS ──────────────────────────────────────── -->
+          <div class="rounded-xl border border-gray-200 overflow-hidden">
+            <button type="button" @click="openSections.includes('payment') ? openSections.splice(openSections.indexOf('payment'), 1) : openSections.push('payment')"
+              class="w-full flex items-center justify-between px-5 py-3.5 bg-slate-800 text-white text-left">
+              <span class="flex items-center gap-2 font-semibold text-sm">
+                <span>💳</span> Payment Gateways
+              </span>
+              <svg :class="['h-4 w-4 transition-transform duration-200', openSections.includes('payment') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
               </svg>
-              <div>
-                <h3 class="text-sm font-semibold text-gray-800">Google OAuth</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Allows clients (and staff) to sign in / register with their Google account. Get credentials from <span class="font-medium">Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs</span>.</p>
-                <p class="text-xs text-gray-400 mt-1">Redirect URI to whitelist: <code class="bg-gray-100 px-1 rounded">{{ appUrl }}/auth/google/callback</code></p>
+            </button>
+
+            <div v-show="openSections.includes('payment')" class="bg-white divide-y divide-gray-100">
+
+              <!-- Stripe -->
+              <div class="p-5 space-y-4">
+                <div>
+                  <h4 class="text-sm font-semibold text-gray-800">Stripe</h4>
+                  <p class="text-xs text-gray-400 mt-0.5">Accept card payments via Stripe. Get keys from <span class="font-medium">dashboard.stripe.com → Developers → API keys</span>.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Publishable Key</label>
+                    <input v-model="intForm.integration_stripe_key" type="text" autocomplete="off" placeholder="pk_live_…"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p v-if="intForm.errors.integration_stripe_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_stripe_key }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Secret Key</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_stripe_secret" :type="showSecrets['stripe_secret'] ? 'text' : 'password'" autocomplete="new-password" placeholder="sk_live_…"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('stripe_secret')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['stripe_secret']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret <span class="text-gray-400 font-normal">(optional — for verifying Stripe events)</span></label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_stripe_webhook_secret" :type="showSecrets['stripe_webhook'] ? 'text' : 'password'" autocomplete="new-password" placeholder="whsec_…"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('stripe_webhook')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['stripe_webhook']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
-                <input v-model="intForm.integration_google_client_id" type="text" autocomplete="off" placeholder="1234567890-abc….apps.googleusercontent.com"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+
+              <!-- PayPal -->
+              <div class="p-5 space-y-4">
+                <div>
+                  <h4 class="text-sm font-semibold text-gray-800">PayPal</h4>
+                  <p class="text-xs text-gray-400 mt-0.5">Accept payments via PayPal. Get credentials from <span class="font-medium">developer.paypal.com → My Apps &amp; Credentials</span>.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                    <input v-model="intForm.integration_paypal_client_id" type="text" autocomplete="off"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_paypal_client_secret" :type="showSecrets['paypal_secret'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('paypal_secret')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['paypal_secret']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mode</label>
+                    <select v-model="intForm.integration_paypal_mode"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <option value="sandbox">Sandbox (testing)</option>
+                      <option value="live">Live</option>
+                    </select>
+                    <span v-if="intForm.integration_paypal_mode === 'sandbox'" class="inline-flex items-center gap-1 mt-1.5 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
-                <input v-model="intForm.integration_google_client_secret" type="password" autocomplete="new-password" placeholder="GOCSPX-…"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+
+              <!-- Authorize.Net -->
+              <div class="p-5 space-y-4">
+                <div>
+                  <h4 class="text-sm font-semibold text-gray-800">Authorize.Net</h4>
+                  <p class="text-xs text-gray-400 mt-0.5">Accept card payments via Authorize.Net. Get credentials from <span class="font-medium">Account → Settings → API Credentials &amp; Keys</span>.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Login ID</label>
+                    <input v-model="intForm.integration_authorizenet_login_id" type="text" autocomplete="off"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Transaction Key</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_authorizenet_transaction_key" :type="showSecrets['anet_txkey'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('anet_txkey')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['anet_txkey']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client Key <span class="text-gray-400 font-normal">(for Accept.js / hosted form)</span></label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_authorizenet_client_key" :type="showSecrets['anet_clientkey'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('anet_clientkey')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['anet_clientkey']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3 pt-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                      <input v-model="intForm.integration_authorizenet_sandbox" type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                      Use Sandbox (testing mode)
+                    </label>
+                    <span v-if="intForm.integration_authorizenet_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
 
-          <!-- Microsoft OAuth -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <div class="flex items-start gap-3">
-              <svg class="h-7 w-7 mt-0.5 shrink-0" viewBox="0 0 23 23" fill="none">
-                <path fill="#f3f3f3" d="M0 0h23v23H0z"/><path fill="#f35325" d="M1 1h10v10H1z"/>
-                <path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/>
-                <path fill="#ffba08" d="M12 12h10v10H12z"/>
+          <!-- ── DOMAIN REGISTRARS ─────────────────────────────────────── -->
+          <div class="rounded-xl border border-gray-200 overflow-hidden">
+            <button type="button" @click="openSections.includes('registrar') ? openSections.splice(openSections.indexOf('registrar'), 1) : openSections.push('registrar')"
+              class="w-full flex items-center justify-between px-5 py-3.5 bg-slate-800 text-white text-left">
+              <span class="flex items-center gap-2 font-semibold text-sm">
+                <span>🌐</span> Domain Registrars
+              </span>
+              <svg :class="['h-4 w-4 transition-transform duration-200', openSections.includes('registrar') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
               </svg>
-              <div>
-                <h3 class="text-sm font-semibold text-gray-800">Microsoft OAuth</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Sign in / register with Microsoft / Azure AD accounts. Register an app in <span class="font-medium">Azure Portal → App registrations</span>.</p>
-                <p class="text-xs text-gray-400 mt-1">Redirect URI to whitelist: <code class="bg-gray-100 px-1 rounded">{{ appUrl }}/auth/microsoft/callback</code></p>
+            </button>
+
+            <div v-show="openSections.includes('registrar')" class="bg-white divide-y divide-gray-100">
+
+              <!-- Active Registrar selector -->
+              <div class="p-5 space-y-3">
+                <div>
+                  <h4 class="text-sm font-semibold text-gray-800">Active Registrar</h4>
+                  <p class="text-xs text-gray-400 mt-0.5">Select which registrar API to use when provisioning and managing domains.</p>
+                </div>
+                <div class="max-w-xs">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Registrar Driver</label>
+                  <select v-model="intForm.integration_registrar_driver"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— None selected —</option>
+                    <option value="namecheap">Namecheap</option>
+                    <option value="enom">eNom</option>
+                    <option value="opensrs">OpenSRS</option>
+                    <option value="hexonet">Hexonet</option>
+                  </select>
+                  <p v-if="intForm.errors.integration_registrar_driver" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_registrar_driver }}</p>
+                </div>
               </div>
+
+              <!-- Namecheap -->
+              <div class="p-5 space-y-4">
+                <h4 class="text-sm font-semibold text-gray-800">Namecheap</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API User</label>
+                    <input v-model="intForm.integration_namecheap_api_user" type="text" autocomplete="off"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p v-if="intForm.errors.integration_namecheap_api_user" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_api_user }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_namecheap_api_key" :type="showSecrets['nc_api_key'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('nc_api_key')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['nc_api_key']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                    <p v-if="intForm.errors.integration_namecheap_api_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_api_key }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client IP</label>
+                    <input v-model="intForm.integration_namecheap_client_ip" type="text" autocomplete="off" placeholder="1.2.3.4"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p class="text-xs text-gray-400 mt-0.5">Your server's IP, must be whitelisted in Namecheap</p>
+                    <p v-if="intForm.errors.integration_namecheap_client_ip" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_client_ip }}</p>
+                  </div>
+                  <div class="flex items-center gap-3 pt-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                      <input v-model="intForm.integration_namecheap_sandbox" type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                      Use Sandbox
+                    </label>
+                    <span v-if="intForm.integration_namecheap_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- eNom -->
+              <div class="p-5 space-y-4">
+                <h4 class="text-sm font-semibold text-gray-800">eNom</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                    <input v-model="intForm.integration_enom_uid" type="text" autocomplete="off"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p v-if="intForm.errors.integration_enom_uid" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_enom_uid }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_enom_pw" :type="showSecrets['enom_pw'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('enom_pw')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['enom_pw']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                    <p v-if="intForm.errors.integration_enom_pw" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_enom_pw }}</p>
+                  </div>
+                  <div class="flex items-center gap-3 pt-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                      <input v-model="intForm.integration_enom_sandbox" type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                      Use Sandbox
+                    </label>
+                    <span v-if="intForm.integration_enom_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- OpenSRS -->
+              <div class="p-5 space-y-4">
+                <h4 class="text-sm font-semibold text-gray-800">OpenSRS</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reseller Username</label>
+                    <input v-model="intForm.integration_opensrs_reseller_username" type="text" autocomplete="off"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p v-if="intForm.errors.integration_opensrs_reseller_username" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_opensrs_reseller_username }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_opensrs_api_key" :type="showSecrets['opensrs_key'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('opensrs_key')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['opensrs_key']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                    <p v-if="intForm.errors.integration_opensrs_api_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_opensrs_api_key }}</p>
+                  </div>
+                  <div class="flex items-center gap-3 pt-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                      <input v-model="intForm.integration_opensrs_sandbox" type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                      Use Sandbox
+                    </label>
+                    <span v-if="intForm.integration_opensrs_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hexonet -->
+              <div class="p-5 space-y-4">
+                <h4 class="text-sm font-semibold text-gray-800">Hexonet</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Login</label>
+                    <input v-model="intForm.integration_hexonet_login" type="text" autocomplete="off"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p v-if="intForm.errors.integration_hexonet_login" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_hexonet_login }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_hexonet_password" :type="showSecrets['hexonet_pw'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('hexonet_pw')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['hexonet_pw']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                    <p v-if="intForm.errors.integration_hexonet_password" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_hexonet_password }}</p>
+                  </div>
+                  <div class="flex items-center gap-3 pt-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                      <input v-model="intForm.integration_hexonet_sandbox" type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                      Use Sandbox
+                    </label>
+                    <span v-if="intForm.integration_hexonet_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
-            <div class="grid grid-cols-2 gap-4">
+          </div>
+
+          <!-- ── FRAUD PREVENTION ──────────────────────────────────────── -->
+          <div class="rounded-xl border border-gray-200 overflow-hidden">
+            <button type="button" @click="openSections.includes('fraud') ? openSections.splice(openSections.indexOf('fraud'), 1) : openSections.push('fraud')"
+              class="w-full flex items-center justify-between px-5 py-3.5 bg-slate-800 text-white text-left">
+              <span class="flex items-center gap-2 font-semibold text-sm">
+                <span>🛡️</span> Fraud Prevention
+              </span>
+              <svg :class="['h-4 w-4 transition-transform duration-200', openSections.includes('fraud') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+
+            <div v-show="openSections.includes('fraud')" class="bg-white p-5 space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Client ID (Application ID)</label>
-                <input v-model="intForm.integration_microsoft_client_id" type="text" autocomplete="off"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                <h4 class="text-sm font-semibold text-gray-800">MaxMind minFraud</h4>
+                <p class="text-xs text-gray-400 mt-0.5">Automatically score new orders using MaxMind minFraud. Get credentials at <span class="font-medium">maxmind.com → Account → Manage License Keys</span>.</p>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
-                <input v-model="intForm.integration_microsoft_client_secret" type="password" autocomplete="new-password"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tenant ID <span class="text-gray-400 font-normal">(leave "common" for any MS account)</span></label>
-                <input v-model="intForm.integration_microsoft_tenant" type="text" placeholder="common"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+              <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                <input v-model="intForm.fraud_check_enabled" type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                Enable fraud scoring on new orders
+              </label>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Account ID</label>
+                  <input v-model="intForm.fraud_maxmind_account_id" type="text" autocomplete="off" placeholder="123456"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <p v-if="intForm.errors.fraud_maxmind_account_id" class="text-xs text-red-500 mt-1">{{ intForm.errors.fraud_maxmind_account_id }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">License Key</label>
+                  <div class="relative">
+                    <input v-model="intForm.fraud_maxmind_license_key" :type="showSecrets['mm_key'] ? 'text' : 'password'" autocomplete="new-password" placeholder="••••••••"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <button type="button" @click="toggleSecret('mm_key')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                      <svg v-if="showSecrets['mm_key']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                      <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                    </button>
+                  </div>
+                  <p v-if="intForm.errors.fraud_maxmind_license_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.fraud_maxmind_license_key }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Score Threshold (1–100)</label>
+                  <input v-model="intForm.fraud_score_threshold" type="number" min="1" max="100"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <p class="text-xs text-gray-400 mt-0.5">Orders at or above this score trigger the action below</p>
+                  <p v-if="intForm.errors.fraud_score_threshold" class="text-xs text-red-500 mt-1">{{ intForm.errors.fraud_score_threshold }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Action When Threshold Exceeded</label>
+                  <select v-model="intForm.fraud_action"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="flag">Flag for review — order is placed, score shown in admin</option>
+                    <option value="reject">Reject — order is blocked immediately</option>
+                  </select>
+                  <p v-if="intForm.errors.fraud_action" class="text-xs text-red-500 mt-1">{{ intForm.errors.fraud_action }}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Stripe -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-800">Stripe</h3>
-              <p class="text-xs text-gray-400 mt-0.5">Accept card payments via Stripe. Get keys from <span class="font-medium">dashboard.stripe.com → Developers → API keys</span>.</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Publishable Key</label>
-                <input v-model="intForm.integration_stripe_key" type="text" autocomplete="off" placeholder="pk_live_…"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+          <!-- ── OAUTH / SOCIAL LOGIN ──────────────────────────────────── -->
+          <div class="rounded-xl border border-gray-200 overflow-hidden">
+            <button type="button" @click="openSections.includes('oauth') ? openSections.splice(openSections.indexOf('oauth'), 1) : openSections.push('oauth')"
+              class="w-full flex items-center justify-between px-5 py-3.5 bg-slate-800 text-white text-left">
+              <span class="flex items-center gap-2 font-semibold text-sm">
+                <span>🔑</span> OAuth / Social Login
+              </span>
+              <svg :class="['h-4 w-4 transition-transform duration-200', openSections.includes('oauth') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+
+            <div v-show="openSections.includes('oauth')" class="bg-white divide-y divide-gray-100">
+
+              <!-- Google -->
+              <div class="p-5 space-y-4">
+                <div class="flex items-start gap-3">
+                  <svg class="h-7 w-7 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  <div>
+                    <h4 class="text-sm font-semibold text-gray-800">Google</h4>
+                    <p class="text-xs text-gray-400 mt-0.5">Allows clients (and staff) to sign in / register with their Google account. Get credentials from <span class="font-medium">Google Cloud Console → APIs &amp; Services → Credentials → OAuth 2.0 Client IDs</span>.</p>
+                    <p class="text-xs text-gray-400 mt-1">Redirect URI to whitelist: <code class="bg-gray-100 px-1 rounded">{{ appUrl }}/auth/google/callback</code></p>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                    <input v-model="intForm.integration_google_client_id" type="text" autocomplete="off" placeholder="1234567890-abc….apps.googleusercontent.com"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p v-if="intForm.errors.integration_google_client_id" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_google_client_id }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_google_client_secret" :type="showSecrets['google_secret'] ? 'text' : 'password'" autocomplete="new-password" placeholder="GOCSPX-…"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('google_secret')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['google_secret']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                    <p v-if="intForm.errors.integration_google_client_secret" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_google_client_secret }}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Secret Key</label>
-                <input v-model="intForm.integration_stripe_secret" type="password" autocomplete="new-password" placeholder="sk_live_…"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+
+              <!-- Microsoft -->
+              <div class="p-5 space-y-4">
+                <div class="flex items-start gap-3">
+                  <svg class="h-7 w-7 mt-0.5 shrink-0" viewBox="0 0 23 23" fill="none">
+                    <path fill="#f3f3f3" d="M0 0h23v23H0z"/><path fill="#f35325" d="M1 1h10v10H1z"/>
+                    <path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                    <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                  </svg>
+                  <div>
+                    <h4 class="text-sm font-semibold text-gray-800">Microsoft</h4>
+                    <p class="text-xs text-gray-400 mt-0.5">Sign in / register with Microsoft / Azure AD accounts. Register an app in <span class="font-medium">Azure Portal → App registrations</span>.</p>
+                    <p class="text-xs text-gray-400 mt-1">Redirect URI to whitelist: <code class="bg-gray-100 px-1 rounded">{{ appUrl }}/auth/microsoft/callback</code></p>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                    <input v-model="intForm.integration_microsoft_client_id" type="text" autocomplete="off"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p v-if="intForm.errors.integration_microsoft_client_id" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_microsoft_client_id }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
+                    <div class="relative">
+                      <input v-model="intForm.integration_microsoft_client_secret" :type="showSecrets['ms_secret'] ? 'text' : 'password'" autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                      <button type="button" @click="toggleSecret('ms_secret')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                        <svg v-if="showSecrets['ms_secret']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                      </button>
+                    </div>
+                    <p v-if="intForm.errors.integration_microsoft_client_secret" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_microsoft_client_secret }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tenant ID</label>
+                    <input v-model="intForm.integration_microsoft_tenant" type="text" placeholder="common"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                    <p class="text-xs text-gray-400 mt-0.5">Use 'common' for multi-tenant</p>
+                    <p v-if="intForm.errors.integration_microsoft_tenant" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_microsoft_tenant }}</p>
+                  </div>
+                </div>
               </div>
-              <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret <span class="text-gray-400 font-normal">(optional — for verifying Stripe events)</span></label>
-                <input v-model="intForm.integration_stripe_webhook_secret" type="password" autocomplete="new-password" placeholder="whsec_…"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-              </div>
+
             </div>
           </div>
 
-          <!-- PayPal -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-800">PayPal</h3>
-              <p class="text-xs text-gray-400 mt-0.5">Accept payments via PayPal. Get credentials from <span class="font-medium">developer.paypal.com → My Apps & Credentials</span>.</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
-                <input v-model="intForm.integration_paypal_client_id" type="text" autocomplete="off"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
-                <input v-model="intForm.integration_paypal_client_secret" type="password" autocomplete="new-password"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Mode</label>
-                <select v-model="intForm.integration_paypal_mode"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="sandbox">Sandbox (testing)</option>
-                  <option value="live">Live</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Authorize.Net -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-800">Authorize.Net</h3>
-              <p class="text-xs text-gray-400 mt-0.5">Accept card payments via Authorize.Net. Get credentials from <span class="font-medium">Account → Settings → API Credentials & Keys</span>.</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">API Login ID</label>
-                <input v-model="intForm.integration_authorizenet_login_id" type="text" autocomplete="off"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Transaction Key</label>
-                <input v-model="intForm.integration_authorizenet_transaction_key" type="password" autocomplete="new-password"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Client Key <span class="text-gray-400 font-normal">(for Accept.js / hosted form)</span></label>
-                <input v-model="intForm.integration_authorizenet_client_key" type="password" autocomplete="new-password"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-              </div>
-              <div class="flex items-center gap-3 pt-5">
-                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input v-model="intForm.integration_authorizenet_sandbox" type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                  Use Sandbox (testing mode)
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Fraud Check (MaxMind minFraud) -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-800">Fraud Check</h3>
-              <p class="text-xs text-gray-400 mt-0.5">Automatically score new orders using MaxMind minFraud. Get credentials at <span class="font-medium">maxmind.com → Account → Manage License Keys</span>.</p>
-            </div>
-            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-              <input v-model="intForm.fraud_check_enabled" type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-              Enable fraud scoring on new orders
-            </label>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Account ID</label>
-                <input v-model="intForm.fraud_maxmind_account_id" type="text" autocomplete="off" placeholder="123456"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">License Key</label>
-                <input v-model="intForm.fraud_maxmind_license_key" type="password" autocomplete="new-password" placeholder="••••••••"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Score Threshold (0–100)</label>
-                <input v-model="intForm.fraud_score_threshold" type="number" min="1" max="100"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                <p class="text-xs text-gray-400 mt-0.5">Orders at or above this score trigger the action below</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Action When Threshold Exceeded</label>
-                <select v-model="intForm.fraud_action"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="flag">Flag for review — order is placed, score shown in admin</option>
-                  <option value="reject">Reject — order is blocked immediately</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3">
+          <!-- Save button -->
+          <div class="flex items-center gap-3 pt-1">
             <button type="submit" :disabled="intForm.processing"
               class="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
               Save Integration Settings

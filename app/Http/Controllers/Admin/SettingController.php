@@ -160,6 +160,25 @@ class SettingController extends Controller
             'fraud_maxmind_license_key'               => ['nullable', 'string', 'max:255'],
             'fraud_score_threshold'                   => ['nullable', 'integer', 'min:1', 'max:100'],
             'fraud_action'                            => ['nullable', 'in:flag,reject'],
+            // Domain registrar
+            'integration_registrar_driver'               => ['nullable', 'in:namecheap,enom,opensrs,hexonet'],
+            // Namecheap
+            'integration_namecheap_api_user'             => ['nullable', 'string', 'max:100'],
+            'integration_namecheap_api_key'              => ['nullable', 'string', 'max:255'],
+            'integration_namecheap_client_ip'            => ['nullable', 'ip'],
+            'integration_namecheap_sandbox'              => ['nullable', 'boolean'],
+            // eNom
+            'integration_enom_uid'                       => ['nullable', 'string', 'max:100'],
+            'integration_enom_pw'                        => ['nullable', 'string', 'max:255'],
+            'integration_enom_sandbox'                   => ['nullable', 'boolean'],
+            // OpenSRS
+            'integration_opensrs_api_key'                => ['nullable', 'string', 'max:255'],
+            'integration_opensrs_reseller_username'      => ['nullable', 'string', 'max:100'],
+            'integration_opensrs_sandbox'                => ['nullable', 'boolean'],
+            // Hexonet
+            'integration_hexonet_login'                  => ['nullable', 'string', 'max:100'],
+            'integration_hexonet_password'               => ['nullable', 'string', 'max:255'],
+            'integration_hexonet_sandbox'                => ['nullable', 'boolean'],
         ]);
 
         Setting::setMany($data);
