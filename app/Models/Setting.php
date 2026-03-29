@@ -38,8 +38,12 @@ class Setting extends Model
      */
     public static function allKeyed(): array
     {
-        return Cache::remember('app_settings', 3600, function () {
-            return static::pluck('value', 'key')->all();
-        });
+        try {
+            return Cache::remember('app_settings', 3600, function () {
+                return static::pluck('value', 'key')->all();
+            });
+        } catch (\Throwable) {
+            return [];
+        }
     }
 }
