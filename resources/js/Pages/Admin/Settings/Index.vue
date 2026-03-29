@@ -35,6 +35,10 @@ const form = useForm({
     tagline:            s.tagline            ?? '',
     portal_theme:       s.portal_theme       ?? 'blue',
     domain_search_tlds: s.domain_search_tlds ?? '.com,.net,.org,.io',
+    // Two-Factor Authentication
+    otp_enabled:        s.otp_enabled    !== undefined ? !!s.otp_enabled    : true,
+    otp_lifetime:       s.otp_lifetime   ?? 0,
+    otp_keep_alive:     s.otp_keep_alive !== undefined ? !!s.otp_keep_alive : true,
     timezone:           s.timezone           ?? 'UTC',
     date_format:        s.date_format        ?? 'M d, Y',
     // Company
@@ -891,6 +895,46 @@ const timezones = [
                     <input v-model="form.domain_search_tlds" type="text" placeholder=".com,.net,.org,.io"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
                     <p class="text-xs text-gray-400 mt-1">Comma-separated TLDs shown in the domain search widget. Requires a domain registrar configured in Integrations.</p>
+                </div>
+
+                <!-- Two-Factor Authentication -->
+                <div class="border-t border-gray-100 pt-4">
+                    <p class="text-sm font-semibold text-gray-800 mb-3">Two-Factor Authentication</p>
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between gap-4 cursor-pointer">
+                            <div>
+                                <span class="block text-sm font-medium text-gray-700">Require 2FA for staff &amp; admins</span>
+                                <span class="block text-xs text-gray-400 mt-0.5">When enabled, admin and staff accounts must complete a TOTP challenge after login.</span>
+                            </div>
+                            <button type="button" @click="form.otp_enabled = !form.otp_enabled"
+                                :class="['relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
+                                    form.otp_enabled ? 'bg-indigo-600' : 'bg-gray-200']">
+                                <span :class="['inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform duration-200',
+                                    form.otp_enabled ? 'translate-x-5' : 'translate-x-0']" />
+                            </button>
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Session lifetime <span class="font-normal text-gray-400">(minutes)</span></label>
+                                <input v-model.number="form.otp_lifetime" type="number" min="0" max="1440"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                <p class="text-xs text-gray-400 mt-1">0 = valid for the entire session.</p>
+                            </div>
+                            <div class="flex flex-col justify-between">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Keep-alive</label>
+                                <label class="flex items-center gap-2 cursor-pointer mt-1">
+                                    <button type="button" @click="form.otp_keep_alive = !form.otp_keep_alive"
+                                        :class="['relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
+                                            form.otp_keep_alive ? 'bg-indigo-600' : 'bg-gray-200']">
+                                        <span :class="['inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform duration-200',
+                                            form.otp_keep_alive ? 'translate-x-5' : 'translate-x-0']" />
+                                    </button>
+                                    <span class="text-sm text-gray-600">Reset timer on each request</span>
+                                </label>
+                                <p class="text-xs text-gray-400 mt-1">Only applies when lifetime &gt; 0.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

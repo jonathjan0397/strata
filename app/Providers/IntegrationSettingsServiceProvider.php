@@ -56,5 +56,10 @@ class IntegrationSettingsServiceProvider extends ServiceProvider
         if ($v = $s['integration_hexonet_login']       ?? null) Config::set('registrars.hexonet.login',             $v);
         if ($v = $s['integration_hexonet_password']    ?? null) Config::set('registrars.hexonet.password',          $v);
         if (isset($s['integration_hexonet_sandbox']))            Config::set('registrars.hexonet.sandbox',           (bool) $s['integration_hexonet_sandbox']);
+
+        // Two-Factor Authentication (Google2FA)
+        if (isset($s['otp_enabled']))    Config::set('google2fa.enabled',    (bool) $s['otp_enabled']);
+        if (isset($s['otp_lifetime']))   Config::set('google2fa.lifetime',   (int)  $s['otp_lifetime']);
+        if (isset($s['otp_keep_alive'])) Config::set('google2fa.keep_alive', (bool) $s['otp_keep_alive']);
     }
 }
