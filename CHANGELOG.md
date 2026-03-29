@@ -13,6 +13,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [V1-Beta] — 2026-03-28 — Fresh Install Hardening & Release Pipeline
+
+### Added
+- **GitHub Actions release workflow** — tag-triggered CI builds `Strata-V1-Beta.zip` with `vendor/` and `public/build/` pre-compiled; attaches to GitHub Release with install instructions; auto-detects beta/alpha/rc tags for pre-release flag
+- **Pre-install URL auto-detection** (`AppServiceProvider`) — when `APP_URL` is still `http://localhost`, detects real base URL from the incoming request and calls `URL::forceRootUrl()` so Ziggy and `route()` helpers generate correct URLs before the installer runs
+- **Subdirectory install support** — all 22+ hardcoded absolute paths in Portal pages replaced with Ziggy `route()` calls; `ASSET_URL` written to `.env` by the installer; `CheckInstalled` redirect and `AppServiceProvider` URL detection both respect subdirectory prefixes via `getBaseUrl()`
+- **Install README troubleshooting section** — documents 403 Forbidden (subdirectory, AllowOverride, mod_rewrite), missing storage directories, and root@localhost errors with specific CWP/cPanel guidance
+- **Release notes rewrite** — Quick Install instructions now reflect the actual CWP/cPanel subdomain workflow; wizard auto-launches, no manual `/install` navigation needed
+
+### Fixed
+- **BF-026** — `HandleInertiaRequests::share()` flash closures called `$request->session()` without checking `hasSession()` first; threw `RuntimeException` on all install route requests where `StartSession` is stripped (fresh install 500)
+- **BF-027** — `CheckInstalled` issued `redirect('/install')` — absolute path ignored subdirectory prefix; fixed with `getSchemeAndHttpHost() . getBaseUrl() . '/install'`
+- **BF-028** — Laravel 12 default cache driver is `database`; before installer runs no `.env` exists so cache queries hit `root@localhost` with no password; fixed by switching cache to `array` driver pre-install in `AppServiceProvider`
+- **BF-029** — Pre-install DB connection error logged as 500 (duplicate of BF-028 root cause, same fix)
+- **BF-030** — `withoutMiddleware` on install routes listed `App\Http\Middleware\VerifyCsrfToken` which does not exist in Laravel 12; actual class is `Illuminate\Foundation\Http\Middleware\VerifyCsrfToken`; exclusion was a no-op causing CSRF middleware to call `$request->session()` and throw on POST install routes
+- **BF-031** — Release ZIP `--exclude "storage/framework/sessions/*"` wildcard also excluded `.gitkeep` files; ZIP dropped those directories entirely; fresh installs failed with "directory does not exist"; fixed by re-adding `.gitkeep` files after the main zip command
+- **BF-032** — Sample data seeder had 9 column/enum mismatches against actual migrations (`uses` → `uses_count`, `valid_from` → `starts_at`, `valid_until` → `expires_at`, `active` → `is_active` on promo_codes; product type `hosting` → `shared`; announcement `content` → `body`, removed non-existent `pinned`; payment status `paid` → `completed`; quote status `pending` → `sent`)
+
+### Changed
+- **Rebranded** — official name updated to **Strata Service Billing and Support Platform** across `config/app.php`, `.env.example`, `PortalLayout.vue`, `README.md`, `README-INSTALL.md`, and release workflow
+- **Copyright notice** — `© 2026 Jonathan R. Covington` added to portal footer and install documentation
+- **`@vitejs/plugin-vue`** upgraded from `^5.1` to `^6.0` to resolve npm peer dependency conflict with Vite 8 in the release workflow
+- **`package-lock.json`** regenerated after plugin-vue upgrade
+
+---
+
 ## [2.0.0] — 2026-03-28 — Product Addons & Affiliate System
 
 ### Added
