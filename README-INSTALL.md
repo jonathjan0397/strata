@@ -115,9 +115,13 @@ Use **Supervisor** to keep it running. Shared hosting users on **Sync** mode do 
 
 ## Upgrading
 
-1. Back up your database before upgrading.
-2. Replace all files **except** `.env` and the `storage/` directory.
-3. Run `php artisan migrate --force` to apply any new database migrations.
+No command line required. The upgrade wizard handles everything in your browser.
+
+1. **Back up your database** before upgrading.
+2. Download the latest release ZIP from the releases page.
+3. **Extract and upload** the ZIP over your existing install — it is safe to overwrite all files. The ZIP never contains `.env`, `storage/installed.lock`, your uploaded files, or your logs, so nothing important is overwritten.
+4. Visit **`https://yourdomain.com/upgrade`** in your browser.
+5. Enter your super-admin email and password to authorize — the wizard runs all database migrations, rebuilds caches, and updates the version automatically.
 
 ---
 
