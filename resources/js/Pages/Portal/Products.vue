@@ -128,22 +128,5 @@ const typeColor = {
 
     <div v-else class="text-center py-20 text-white/40">No products in this category.</div>
 
-    <!-- Widget embed instructions -->
-    <div class="mt-20 rounded-2xl p-8"
-      style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(8px);">
-      <h2 class="text-lg font-bold text-white mb-2">Embed this catalog on your website</h2>
-      <p class="text-sm text-white/55 mb-5">Paste the following snippet anywhere on your existing site to show a live product listing.</p>
-      <div class="rounded-xl p-4 font-mono text-xs text-sky-200 overflow-x-auto"
-        style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);">
-        <div class="text-white/30 mb-1">&lt;!-- Strata Service Catalog Widget --&gt;</div>
-        <div>&lt;div</div>
-        <div class="pl-4">data-strata-widget=<span class="text-amber-300">"catalog"</span></div>
-        <div class="pl-4">data-strata-url=<span class="text-amber-300">"{{ $page.props.ziggy?.url ?? '' }}"</span></div>
-        <div class="pl-4">data-strata-limit=<span class="text-amber-300">"6"</span></div>
-        <div class="pl-4">data-strata-theme=<span class="text-amber-300">"glass"</span><span class="text-white/40"> &lt;!-- or "light" --&gt;</span></div>
-        <div>&gt;&lt;/div&gt;</div>
-        <div class="mt-2">&lt;script src=<span class="text-amber-300">"{{ $page.props.ziggy?.url ?? '' }}/strata-widget.js"</span> async&gt;&lt;/script&gt;</div>
-      </div>
-    </div>
   </div>
 </template>

@@ -221,6 +221,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('support/{ticket}/department',      [Admin\SupportController::class, 'transferDepartment'])->name('support.transfer');
         Route::post('support/{ticket}/merge',            [Admin\SupportController::class, 'merge'])->name('support.merge');
 
+        // Widget Snippets
+        Route::get('widgets', [Admin\WidgetSnippetsController::class, 'index'])->name('widgets.index');
+
         // Settings
         Route::get('settings',                    [Admin\SettingController::class, 'index'])->name('settings.index');
         Route::patch('settings',                  [Admin\SettingController::class, 'update'])->name('settings.update');

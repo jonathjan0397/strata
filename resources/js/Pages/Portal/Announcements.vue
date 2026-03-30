@@ -70,15 +70,5 @@ function fmt(iso) {
       </template>
     </div>
 
-    <!-- Widget embed example -->
-    <div class="mt-16 rounded-2xl p-6"
-      style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(8px);">
-      <h3 class="text-sm font-semibold text-white mb-2">Embed on your website</h3>
-      <div class="rounded-xl p-4 font-mono text-xs text-sky-200 overflow-x-auto"
-        style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);">
-        <div>&lt;div data-strata-widget=<span class="text-amber-300">"announcements"</span> data-strata-url=<span class="text-amber-300">"{{ $page.props.ziggy?.url ?? '' }}"</span>&gt;&lt;/div&gt;</div>
-        <div class="mt-1">&lt;script src=<span class="text-amber-300">"{{ $page.props.ziggy?.url ?? '' }}/strata-widget.js"</span> async&gt;&lt;/script&gt;</div>
-      </div>
-    </div>
   </div>
 </template>
