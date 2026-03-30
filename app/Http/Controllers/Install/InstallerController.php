@@ -251,15 +251,13 @@ class InstallerController extends Controller
                 $storageMode = 'controller';
             }
 
-            // 7. Cache config for production (skip on sync/shared — may not have write access to cache dir)
-            try {
-                Artisan::call('config:cache');
-                Artisan::call('route:cache');
-            } catch (Throwable) {
-                // Non-fatal on shared hosting
-            }
-
-            // 8. Write lock file — blocks future access to /install
+            // 7. Write lock file — blocks future access to /install
+            // NOTE: config:cache is intentionally NOT run here. The install process runs
+            // inside the bootstrap request before the new .env has been loaded by Dotenv,
+            // so config:cache would bake APP_URL=http://localhost and cache.default=array
+            // into bootstrap/cache/config.php, breaking widget URLs and assets on every
+            // subsequent request. The upgrade wizard runs config:cache safely because
+            // .env is already correct at that point.
             $version = $this->appVersion();
             file_put_contents(
                 storage_path('installed.lock'),
