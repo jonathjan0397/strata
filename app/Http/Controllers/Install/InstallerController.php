@@ -377,11 +377,15 @@ ENV;
         $user = \App\Models\User::updateOrCreate(
             ['email' => $request->admin_email],
             [
-                'name'              => $request->admin_name,
-                'password'          => Hash::make($request->admin_password),
-                'email_verified_at' => now(),
+                'name'     => $request->admin_name,
+                'password' => Hash::make($request->admin_password),
             ]
         );
+
+        // email_verified_at is not in $fillable, so bypass mass-assignment guard
+        if (! $user->hasVerifiedEmail()) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
 
         if (! $user->hasRole('super-admin')) {
             $user->assignRole('super-admin');
