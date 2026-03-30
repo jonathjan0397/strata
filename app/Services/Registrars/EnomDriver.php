@@ -242,4 +242,10 @@ class EnomDriver implements RegistrarDriver
             "{$type}Country"             => $c['registrant_country'],
         ];
     }
+
+    /** Price importing not yet implemented for eNom. */
+    public function getPricing(): array
+    {
+        return [];
+    }
 }

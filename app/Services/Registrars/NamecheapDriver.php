@@ -183,6 +183,46 @@ class NamecheapDriver implements RegistrarDriver
         }
     }
 
+    /**
+     * Fetch registrar cost pricing for all TLDs via namecheap.users.getPricing.
+     *
+     * @return array<string, array{register: float|null, renew: float|null, transfer: float|null, currency: string}>
+     */
+    public function getPricing(): array
+    {
+        $pricing = [];
+
+        foreach (['REGISTER' => 'register', 'RENEW' => 'renew', 'TRANSFER' => 'transfer'] as $action => $key) {
+            try {
+                $xml = $this->call('namecheap.users.getPricing', [
+                    'ProductType' => 'DOMAIN',
+                    'ActionName'  => $action,
+                ]);
+
+                foreach ($xml->CommandResponse->UserGetPricingResult->ProductType ?? [] as $productType) {
+                    foreach ($productType->ProductCategory as $category) {
+                        foreach ($category->Product as $product) {
+                            $tld  = strtolower((string) $product['Name']);
+                            $price = null;
+                            foreach ($product->Price as $p) {
+                                if ((int) $p['Duration'] === 1 && (string) $p['DurationType'] === 'YEAR') {
+                                    $price = (float) $p['YourPrice'];
+                                    break;
+                                }
+                            }
+                            $pricing[$tld][$key]       = $price;
+                            $pricing[$tld]['currency'] = 'USD';
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // partial failure — continue with other actions
+            }
+        }
+
+        return $pricing;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     private function call(string $command, array $params = []): \SimpleXMLElement

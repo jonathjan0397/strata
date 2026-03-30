@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 
+const auth = computed(() => usePage().props.auth?.user)
+
 const page = usePage()
 const t = computed(() => {
   const theme = page.props.portalTheme ?? 'blue'
@@ -93,7 +95,9 @@ async function search() {
         </div>
         <div class="shrink-0 ml-3">
           <template v-if="r.available === true">
-            <a :href="route('register')"
+            <a :href="auth
+                ? route('client.domain-order.checkout') + '?domain=' + encodeURIComponent(r.domain)
+                : route('register')"
               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
               :style="`background: linear-gradient(135deg, ${t.btn1}, ${t.btn2});`">
               Register

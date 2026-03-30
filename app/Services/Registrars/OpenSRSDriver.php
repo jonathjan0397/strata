@@ -290,6 +290,12 @@ XML;
         ];
     }
 
+    /** Price importing not yet implemented for OpenSRS. */
+    public function getPricing(): array
+    {
+        return [];
+    }
+
     private function splitDomain(string $domain): array
     {
         $parts = explode('.', $domain, 2);

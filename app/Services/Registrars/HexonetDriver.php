@@ -261,4 +261,10 @@ class HexonetDriver implements RegistrarDriver
             'country'     => $c['registrant_country']  ?? '',
         ];
     }
+
+    /** Price importing not yet implemented for Hexonet. */
+    public function getPricing(): array
+    {
+        return [];
+    }
 }

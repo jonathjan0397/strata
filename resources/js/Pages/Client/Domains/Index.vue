@@ -19,11 +19,15 @@ const statusClass = {
     <div>
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-xl font-bold text-gray-900">My Domains</h1>
+            <Link :href="route('client.domain-order.search')"
+                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                Register New Domain
+            </Link>
         </div>
 
         <div v-if="!domains.length" class="bg-white rounded-xl border border-gray-200 px-6 py-12 text-center">
             <p class="text-gray-500 text-sm mb-4">You don't have any domains yet.</p>
-            <Link :href="route('client.order.catalog')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            <Link :href="route('client.domain-order.search')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
                 Register a Domain
             </Link>
         </div>

@@ -277,6 +277,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('domains/{domain}/privacy',         [Admin\DomainController::class, 'setPrivacy'])->name('domains.privacy');
         Route::post('domains/{domain}/refresh',         [Admin\DomainController::class, 'refresh'])->name('domains.refresh');
 
+        // TLD Pricing
+        Route::get('tld-pricing',                  [Admin\TldPricingController::class, 'index'])->name('tld-pricing.index');
+        Route::post('tld-pricing',                 [Admin\TldPricingController::class, 'store'])->name('tld-pricing.store');
+        Route::patch('tld-pricing/{tldPrice}',     [Admin\TldPricingController::class, 'update'])->name('tld-pricing.update');
+        Route::delete('tld-pricing/{tldPrice}',    [Admin\TldPricingController::class, 'destroy'])->name('tld-pricing.destroy');
+        Route::post('tld-pricing/import',          [Admin\TldPricingController::class, 'import'])->name('tld-pricing.import');
+
         // Modules / Servers
         Route::get('modules',              [Admin\ModuleController::class, 'index'])->name('modules.index');
         Route::get('modules/create',       [Admin\ModuleController::class, 'create'])->name('modules.create');
@@ -394,6 +401,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('domains/{domain}/nameservers', [Client\DomainController::class, 'setNameservers'])->name('domains.nameservers');
         Route::post('domains/{domain}/auto-renew',  [Client\DomainController::class, 'toggleAutoRenew'])->name('domains.auto-renew');
         Route::get('domains/check',              [Client\DomainController::class, 'checkAvailability'])->name('domains.check');
+        // Domain registration order flow
+        Route::get('domain-order',               [Client\DomainOrderController::class, 'search'])->name('domain-order.search');
+        Route::get('domain-order/check',         [Client\DomainOrderController::class, 'check'])->name('domain-order.check');
+        Route::get('domain-order/checkout',      [Client\DomainOrderController::class, 'checkout'])->name('domain-order.checkout');
+        Route::post('domain-order',              [Client\DomainOrderController::class, 'place'])->name('domain-order.place');
         Route::post('promo/validate',            [Client\PromoController::class, 'validate'])->name('promo.validate');
         Route::get('quotes',                     [Client\QuoteController::class, 'index'])->name('quotes.index');
         Route::get('quotes/{quote}',             [Client\QuoteController::class, 'show'])->name('quotes.show');

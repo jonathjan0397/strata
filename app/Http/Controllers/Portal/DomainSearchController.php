@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Models\TldPrice;
 use App\Services\DomainRegistrarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,12 +36,14 @@ class DomainSearchController extends Controller
             $tld = '.' . ltrim($tld, '.');
             $domain = $sld . $tld;
             try {
-                $check = DomainRegistrarService::checkAvailability($domain);
+                $check    = DomainRegistrarService::checkAvailability($domain);
+                $tldPrice = TldPrice::where('tld', $tld)->where('is_active', true)->first();
+
                 $results[] = [
                     'domain'    => $domain,
                     'available' => $check['available'] ?? false,
-                    'price'     => $check['price']     ?? null,
-                    'currency'  => $check['currency']  ?? 'USD',
+                    'price'     => $tldPrice ? $tldPrice->register_price : ($check['price'] ?? null),
+                    'currency'  => $tldPrice ? $tldPrice->currency : ($check['currency'] ?? 'USD'),
                 ];
             } catch (\Throwable $e) {
                 $results[] = [
