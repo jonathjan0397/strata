@@ -7,6 +7,7 @@ defineOptions({ layout: AppLayout })
 const props = defineProps({ affiliate: Object, pendingPayouts: Array })
 
 const settingsForm = useForm({
+  code:             props.affiliate.code,
   commission_type:  props.affiliate.commission_type,
   commission_value: props.affiliate.commission_value,
   payout_threshold: props.affiliate.payout_threshold,
@@ -24,6 +25,12 @@ function approve() {
 function deactivate() {
   if (confirm('Deactivate this affiliate?')) {
     router.post(route('admin.affiliates.deactivate', props.affiliate.id))
+  }
+}
+
+function remove() {
+  if (confirm('Permanently remove this affiliate? Their referral history and payouts will also be deleted.')) {
+    router.delete(route('admin.affiliates.destroy', props.affiliate.id))
   }
 }
 
@@ -86,22 +93,34 @@ function fmt(val) {
             class="w-full px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
             Reactivate
           </button>
+          <button @click="remove"
+            class="w-full px-3 py-2 rounded-lg bg-red-100 text-red-700 text-sm font-medium hover:bg-red-200">
+            Remove Affiliate
+          </button>
         </div>
       </div>
 
       <!-- Commission Settings -->
       <div class="bg-white rounded-xl border border-gray-200 p-5 text-sm">
-        <h2 class="font-semibold text-gray-900 mb-3">Commission Settings</h2>
+        <h2 class="font-semibold text-gray-900 mb-3">Settings</h2>
         <form @submit.prevent="saveSettings" class="space-y-3">
           <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Referral Code</label>
+            <input v-model="settingsForm.code" type="text" maxlength="20"
+              class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-mono uppercase" />
+            <p v-if="settingsForm.errors.code" class="text-xs text-red-600 mt-1">{{ settingsForm.errors.code }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Commission Type</label>
             <select v-model="settingsForm.commission_type" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
               <option value="percent">Percent (%)</option>
               <option value="fixed">Fixed ($)</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Value</label>
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+              Value ({{ settingsForm.commission_type === 'percent' ? '%' : '$' }})
+            </label>
             <input v-model="settingsForm.commission_value" type="number" step="0.01" min="0"
               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm" />
           </div>
@@ -109,6 +128,11 @@ function fmt(val) {
             <label class="block text-xs font-medium text-gray-600 mb-1">Payout Threshold ($)</label>
             <input v-model="settingsForm.payout_threshold" type="number" step="0.01" min="0"
               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <textarea v-model="settingsForm.notes" rows="2"
+              class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm resize-none" />
           </div>
           <button type="submit" :disabled="settingsForm.processing"
             class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-3 py-2 rounded-lg">

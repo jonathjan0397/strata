@@ -357,8 +357,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Affiliates
         Route::get('affiliates',                              [Admin\AffiliateController::class, 'index'])->name('affiliates.index');
+        Route::post('affiliates',                             [Admin\AffiliateController::class, 'store'])->name('affiliates.store');
         Route::get('affiliates/{affiliate}',                  [Admin\AffiliateController::class, 'show'])->name('affiliates.show');
         Route::patch('affiliates/{affiliate}',                [Admin\AffiliateController::class, 'update'])->name('affiliates.update');
+        Route::delete('affiliates/{affiliate}',               [Admin\AffiliateController::class, 'destroy'])->name('affiliates.destroy');
         Route::post('affiliates/{affiliate}/approve',              [Admin\AffiliateController::class, 'approve'])->name('affiliates.approve');
         Route::post('affiliates/{affiliate}/deactivate',           [Admin\AffiliateController::class, 'deactivate'])->name('affiliates.deactivate');
         Route::post('affiliates/payouts/{payout}/approve',         [Admin\AffiliateController::class, 'approvePayout'])->name('affiliates.payouts.approve');

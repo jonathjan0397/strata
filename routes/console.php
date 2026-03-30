@@ -15,7 +15,7 @@ Artisan::command('inspire', function () {
 */
 
 // Generate renewal invoices daily at 08:00 for services due within 14 days
-Schedule::command('billing:generate-invoices --days=14')
+Schedule::command('billing:generate-renewals --days=14')
     ->dailyAt('08:00')
     ->withoutOverlapping()
     ->runInBackground();

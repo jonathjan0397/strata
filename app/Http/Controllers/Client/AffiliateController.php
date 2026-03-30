@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Affiliate;
 use App\Models\AffiliatePayout;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -31,15 +32,17 @@ class AffiliateController extends Controller
             return back()->with('error', 'You already have an affiliate account.');
         }
 
+        $settings = Setting::allKeyed();
+
         Affiliate::create([
             'user_id'          => $user->id,
             'code'             => strtoupper(Str::random(8)),
             'status'           => 'pending',
-            'commission_type'  => 'percent',
-            'commission_value' => 10,
+            'commission_type'  => $settings['affiliate_default_commission_type']  ?? 'percent',
+            'commission_value' => $settings['affiliate_default_commission_value'] ?? 10,
             'balance'          => 0,
             'total_earned'     => 0,
-            'payout_threshold' => 50,
+            'payout_threshold' => $settings['affiliate_default_payout_threshold'] ?? 50,
         ]);
 
         return back()->with('success', 'Affiliate account created! It will be reviewed and activated shortly.');

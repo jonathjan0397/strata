@@ -58,6 +58,10 @@ const form = useForm({
     tax_rate:                    s.tax_rate                    ?? '0',
     tax_name:                    s.tax_name                    ?? 'Tax',
     bank_transfer_instructions:  s.bank_transfer_instructions  ?? '',
+    // Affiliate defaults
+    affiliate_default_commission_type:  s.affiliate_default_commission_type  ?? 'percent',
+    affiliate_default_commission_value: s.affiliate_default_commission_value ?? '10',
+    affiliate_default_payout_threshold: s.affiliate_default_payout_threshold ?? '50',
 })
 
 // Mail settings form
@@ -1033,6 +1037,34 @@ const timezones = [
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y font-mono">
                     </textarea>
                     <p class="text-xs text-gray-400 mt-1">Shown to clients when they select Bank Transfer on an unpaid invoice.</p>
+                </div>
+
+                <!-- Affiliate Defaults -->
+                <div class="pt-4 border-t border-gray-100">
+                    <p class="text-sm font-semibold text-gray-800 mb-3">Affiliate Program Defaults</p>
+                    <p class="text-xs text-gray-500 mb-3">Applied when a client self-registers as an affiliate. Individual commission rates can be overridden per affiliate.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Default Commission Type</label>
+                            <select v-model="form.affiliate_default_commission_type"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="percent">Percent (%)</option>
+                                <option value="fixed">Fixed ($)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                Default Value ({{ form.affiliate_default_commission_type === 'percent' ? '%' : '$' }})
+                            </label>
+                            <input v-model="form.affiliate_default_commission_value" type="number" step="0.01" min="0"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Default Payout Threshold ($)</label>
+                            <input v-model="form.affiliate_default_payout_threshold" type="number" step="0.01" min="0"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -52,6 +52,10 @@ class SettingController extends Controller
             'otp_keep_alive'             => ['nullable', 'boolean'],
             // Bank Transfer
             'bank_transfer_instructions' => ['nullable', 'string', 'max:2000'],
+            // Affiliate defaults
+            'affiliate_default_commission_type'  => ['nullable', 'in:percent,fixed'],
+            'affiliate_default_commission_value' => ['nullable', 'numeric', 'min:0'],
+            'affiliate_default_payout_threshold' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         Setting::setMany($data);

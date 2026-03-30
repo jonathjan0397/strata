@@ -102,7 +102,7 @@ class KbController extends Controller
             'sort_order'     => ['integer', 'min:0'],
         ]);
 
-        $data['slug']      = Str::slug($data['title']);
+        $data['slug']      = $this->uniqueSlug(Str::slug($data['title']));
         $data['author_id'] = $request->user()->id;
 
         $article = KbArticle::create($data);
@@ -130,7 +130,7 @@ class KbController extends Controller
         ]);
 
         if ($kbArticle->title !== $data['title']) {
-            $data['slug'] = Str::slug($data['title']);
+            $data['slug'] = $this->uniqueSlug(Str::slug($data['title']), $kbArticle->id);
         }
 
         $kbArticle->update($data);
@@ -144,6 +144,23 @@ class KbController extends Controller
 
         return redirect()->route('admin.kb.index')
             ->with('flash', ['success' => 'Article deleted.']);
+    }
+
+    private function uniqueSlug(string $base, ?int $excludeId = null): string
+    {
+        $slug    = $base;
+        $counter = 2;
+
+        while (
+            KbArticle::where('slug', $slug)
+                ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+                ->exists()
+        ) {
+            $slug = "{$base}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 
     public function uploadImage(Request $request): JsonResponse
