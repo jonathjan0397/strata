@@ -404,7 +404,7 @@ function fmt(iso) {
           </ul>
         </div>
 
-        <a href="/admin/dashboard"
+        <a href="/admin"
           class="block w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl transition-colors">
           Go to Admin Dashboard →
         </a>
