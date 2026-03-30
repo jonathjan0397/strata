@@ -152,6 +152,11 @@ class UpgradeController extends Controller
             if (! $user || ! Hash::check($password, $user->password)) {
                 return response()->json(['success' => false, 'error' => 'Credential check failed.'], 401);
             }
+
+            // Backfill email_verified_at — was not in $fillable so installs before RC4 left it null
+            if (! $user->hasVerifiedEmail()) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
         } catch (Throwable $e) {
             return response()->json(['success' => false, 'error' => 'Auth error: ' . $e->getMessage()], 500);
         }
