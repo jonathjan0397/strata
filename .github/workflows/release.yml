@@ -1,165 +1,85 @@
-name: Release
+name: Build & Release
 
 on:
   push:
     tags:
-      - 'v*'
-      - 'V*'
+      - "v*"
 
 jobs:
-  build:
+  release:
+    name: Build release package
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
+      # ── Checkout ──────────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ── PHP + Composer ────────────────────────────────────────────────────────
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          extensions: mbstring, pdo, pdo_mysql, openssl, tokenizer, json, ctype, bcmath, fileinfo, xml, gd
-          tools: composer:v2
+          php-version: "8.3"
+          extensions: mbstring, pdo, pdo_mysql, zip, gd, bcmath, intl, opcache
+          coverage: none
 
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install PHP dependencies (production only)
+      - name: Install Composer dependencies (production)
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-      - name: Install Node dependencies
+      # ── Node + Vite ───────────────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install npm dependencies
         run: npm ci
 
       - name: Build frontend assets
         run: npm run build
 
-      # ── Ensure required empty storage directories exist in the package ───────
-      - name: Prepare storage structure
-        run: |
-          mkdir -p storage/app/public
-          mkdir -p storage/framework/cache/data
-          mkdir -p storage/framework/sessions
-          mkdir -p storage/framework/views
-          mkdir -p storage/logs
-          touch storage/app/public/.gitkeep
-          touch storage/framework/cache/data/.gitkeep
-          touch storage/framework/sessions/.gitkeep
-          touch storage/framework/views/.gitkeep
-          touch storage/logs/.gitkeep
-          touch bootstrap/cache/.gitkeep
-
-      # ── Shared Hosting ZIP — vendor/ + built assets included ─────────────────
-      # Users upload this ZIP, point domain root to public/, run /install.
-      - name: Build shared-hosting ZIP
+      # ── Create release ZIP ────────────────────────────────────────────────────
+      - name: Package release ZIP
         run: |
           TAG="${GITHUB_REF_NAME}"
-          ZIP="Strata-${TAG}.zip"
+          ZIP="strata-${TAG}.zip"
 
-          zip -r "${ZIP}" . \
+          zip -r "$ZIP" . \
             --exclude "*.git*" \
-            --exclude ".github/*" \
-            --exclude "node_modules/*" \
-            --exclude "tests/*" \
-            --exclude ".env" \
-            --exclude ".env.*" \
-            --exclude "storage/installed.lock" \
-            --exclude "storage/logs/*.log" \
-            --exclude "storage/framework/cache/data/*" \
-            --exclude "storage/framework/sessions/*" \
-            --exclude "storage/framework/views/*" \
-            --exclude "storage/app/public/*" \
-            --exclude "Dockerfile" \
-            --exclude "docker-compose.yml" \
-            --exclude "docker/*" \
-            --exclude "phpunit.xml" \
-            --exclude "vite.config.js" \
-            --exclude "package.json" \
-            --exclude "package-lock.json" \
-            --exclude ".gitignore" \
-            --exclude ".gitattributes" \
-            --exclude "HANDOFF.md" \
-            --exclude "BUGFIX.md"
+            --exclude "*/.git/*" \
+            --exclude "*/node_modules/*" \
+            --exclude "*/tests/*" \
+            --exclude "*/.env*" \
+            --exclude "*/storage/logs/*" \
+            --exclude "*/storage/framework/cache/data/*" \
+            --exclude "*/storage/framework/sessions/*" \
+            --exclude "*/storage/framework/views/*" \
+            --exclude "*/storage/app/public/*" \
+            --exclude "*/.github/*"
 
-          # Re-add .gitkeep files — the wildcard excludes above strip them,
-          # but ZIP drops empty directories so these files must be present.
-          zip "${ZIP}" \
-            storage/app/public/.gitkeep \
-            storage/framework/cache/data/.gitkeep \
-            storage/framework/sessions/.gitkeep \
-            storage/framework/views/.gitkeep \
-            storage/logs/.gitkeep \
-            bootstrap/cache/.gitkeep
+          echo "ZIP_NAME=$ZIP" >> "$GITHUB_ENV"
 
-          echo "ZIP=${ZIP}" >> "$GITHUB_ENV"
-
-      # ── Detect pre-release (any tag containing beta, alpha, or rc) ───────────
-      - name: Detect pre-release
-        id: prerelease
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          if echo "$TAG" | grep -qiE '(beta|alpha|rc)'; then
-            echo "IS_PRERELEASE=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "IS_PRERELEASE=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      # ── Publish GitHub Release with ZIP attached ──────────────────────────────
+      # ── Publish GitHub Release ────────────────────────────────────────────────
       - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Strata ${{ github.ref_name }}"
+          body: |
+            ## Strata Service Billing and Support Platform — ${{ github.ref_name }}
+
+            ### Installation
+            1. Upload and extract this ZIP to your server's web root
+            2. Copy `.env.example` to `.env` and configure your database and mail settings
+            3. Visit `/install` to run the setup wizard
+
+            ### Upgrade from a previous version
+            1. Upload and extract this ZIP (your `.env` and `storage/` are preserved)
+            2. Visit `/upgrade` to run the upgrade wizard — runs migrations automatically
+
+            See [CHANGELOG.md](CHANGELOG.md) for what's new in this release.
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'RC') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          PRERELEASE="${{ steps.prerelease.outputs.IS_PRERELEASE }}"
-
-          if [ "$PRERELEASE" = "true" ]; then
-            STATUS_LINE="> **Beta Release — test in a non-production environment**"
-          else
-            STATUS_LINE="> **Stable Release**"
-          fi
-
-          cat > release_notes.md << NOTES_EOF
-          ## Strata Service Billing and Support Platform ${TAG}
-
-          ${STATUS_LINE}
-          > Report issues at: https://github.com/${{ github.repository }}/issues
-
-          ### Quick Install (Shared Hosting / CWP / cPanel)
-
-          1. Download \`${ZIP}\` below and extract it
-          2. Upload the extracted folder to your server (e.g. \`public_html/strata/\`)
-          3. In your control panel create a **subdomain** (e.g. \`billing.yourdomain.com\`) and set its document root to the \`public/\` subfolder inside the uploaded directory (e.g. \`public_html/strata/public\`)
-          4. Set \`storage/\` and \`bootstrap/cache/\` to **chmod 755**
-          5. Visit your subdomain — the setup wizard launches automatically
-          6. Set up the cron job shown at the end of the wizard
-
-          > **Root domain install:** point the domain document root directly to the \`public/\` subfolder instead of creating a subdomain.
-
-          > **Troubleshooting:** see \`README-INSTALL.md\` inside the ZIP for common errors (403 Forbidden, missing storage directories, etc.).
-
-          ### Upgrading from a Previous Version
-
-          1. Download \`${ZIP}\` below
-          2. Visit **yourdomain.com/upgrade** in your browser — the upgrade wizard will guide you through the rest
-          3. The wizard can accept the ZIP directly (if your server has ext-zip) **or** you can upload the files via FTP first and use "files already uploaded" mode
-          4. Credentials, uploaded files, and your \`.env\` are never touched by the upgrade
-
-          > The upgrade wizard requires your super-admin email and password to authorize. It runs database migrations, clears caches, and updates the version lock file automatically.
-          NOTES_EOF
-
-          gh release delete "${TAG}" --yes 2>/dev/null || true
-
-          if [ "$PRERELEASE" = "true" ]; then
-            gh release create "${TAG}" "${ZIP}" \
-              --title "Strata Service Billing and Support Platform ${TAG}" \
-              --notes-file release_notes.md \
-              --prerelease
-          else
-            gh release create "${TAG}" "${ZIP}" \
-              --title "Strata Service Billing and Support Platform ${TAG}" \
-              --notes-file release_notes.md
-          fi
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
