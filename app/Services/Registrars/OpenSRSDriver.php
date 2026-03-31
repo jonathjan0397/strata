@@ -258,23 +258,52 @@ XML;
         libxml_use_internal_errors(true);
         $doc = simplexml_load_string($xml);
         if ($doc === false) {
-            throw new RuntimeException('OpenSRS returned unparseable XML response.');
+            $errors = array_map(fn ($e) => trim($e->message), libxml_get_errors());
+            libxml_clear_errors();
+            throw new RuntimeException('OpenSRS returned unparseable XML: '.implode('; ', $errors));
         }
 
-        $result = json_decode(json_encode($doc), true);
+        // body > data_block > dt_assoc holds the top-level response items
+        $dtAssoc = $doc->body->data_block->dt_assoc ?? null;
+        if ($dtAssoc === null) {
+            throw new RuntimeException('OpenSRS response missing expected body/data_block/dt_assoc structure.');
+        }
 
-        $body = $result['body']['data_block']['dt_assoc']['item'] ?? [];
+        return $this->parseDtAssoc($dtAssoc);
+    }
 
-        $flat = [];
-        foreach ($body as $item) {
-            $key = $item['@attributes']['key'] ?? null;
-            $value = $item['dt_assoc']['item'] ?? $item['_'] ?? $item;
-            if ($key) {
-                $flat[$key] = $value;
+    /**
+     * Recursively parse an OpenSRS dt_assoc node into a PHP array.
+     * dt_assoc  => associative array keyed by item/@key
+     * dt_array  => numerically-indexed array keyed by item/@key (0, 1, 2 …)
+     */
+    private function parseDtAssoc(\SimpleXMLElement $node): array
+    {
+        $result = [];
+        foreach ($node->item as $item) {
+            $key = (string) ($item['key'] ?? '');
+            $result[$key] = $this->parseItem($item);
+        }
+
+        return $result;
+    }
+
+    private function parseItem(\SimpleXMLElement $item): mixed
+    {
+        if (isset($item->dt_assoc)) {
+            return $this->parseDtAssoc($item->dt_assoc);
+        }
+
+        if (isset($item->dt_array)) {
+            $arr = [];
+            foreach ($item->dt_array->item as $child) {
+                $arr[] = $this->parseItem($child);
             }
+
+            return $arr;
         }
 
-        return $flat;
+        return (string) $item;
     }
 
     private function buildContact(array $c): array
@@ -303,29 +332,30 @@ XML;
     {
         $pricing = [];
 
-        try {
-            $result = $this->call('get_product_list', 'domain', [
-                'product_type' => 'domain_registration',
-            ]);
+        $result = $this->call('get_product_list', 'domain', [
+            'product_type' => 'domain_registration',
+        ]);
 
-            // Response: attributes.products[] each with tld, register, renew, transfer prices
-            $products = $result['attributes']['products'] ?? [];
+        $code = (int) ($result['response_code'] ?? 0);
+        if ($code < 200 || $code >= 300) {
+            throw new RuntimeException('OpenSRS get_product_list failed: '.($result['response_text'] ?? "code {$code}"));
+        }
 
-            foreach ($products as $product) {
-                $tld = strtolower(ltrim($product['tld'] ?? '', '.'));
-                if ($tld === '') {
-                    continue;
-                }
+        // attributes.products is a dt_array — parsed as a plain PHP array
+        $products = $result['attributes']['products'] ?? [];
 
-                $pricing[$tld] = [
-                    'register' => isset($product['price_register']) ? (float) $product['price_register'] : null,
-                    'renew' => isset($product['price_renew']) ? (float) $product['price_renew'] : null,
-                    'transfer' => isset($product['price_transfer']) ? (float) $product['price_transfer'] : null,
-                    'currency' => $product['currency'] ?? 'USD',
-                ];
+        foreach ($products as $product) {
+            $tld = strtolower(ltrim($product['tld'] ?? '', '.'));
+            if ($tld === '') {
+                continue;
             }
-        } catch (\Throwable) {
-            // API unavailable or response format changed
+
+            $pricing[$tld] = [
+                'register' => isset($product['price_register']) ? (float) $product['price_register'] : null,
+                'renew'    => isset($product['price_renew'])    ? (float) $product['price_renew']    : null,
+                'transfer' => isset($product['price_transfer']) ? (float) $product['price_transfer'] : null,
+                'currency' => $product['currency'] ?? 'USD',
+            ];
         }
 
         return $pricing;
