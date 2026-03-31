@@ -4,6 +4,7 @@ namespace App\Services\Registrars;
 
 use App\Contracts\RegistrarDriver;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -289,8 +290,8 @@ class EnomDriver implements RegistrarDriver
                     $pricing[$tld][$key] = $price;
                     $pricing[$tld]['currency'] = 'USD';
                 }
-            } catch (\Throwable) {
-                // partial failure — continue with other actions
+            } catch (\Throwable $e) {
+                Log::warning("eNom getPricing [{$enomAction}] failed: ".$e->getMessage());
             }
         }
 

@@ -208,8 +208,8 @@ class DomainTransferController extends Controller
                 'due_date' => now()->addDays((int) Setting::get('invoice_due_days', 7))->format('M d, Y'),
                 'invoice_url' => route('client.invoices.show', $invoiceId),
             ]));
-        } catch (Throwable) {
-            // mail failure must not block order confirmation
+        } catch (Throwable $e) {
+            Log::warning("Domain transfer order confirmation email failed for invoice #{$invoiceId}: ".$e->getMessage());
         }
 
         return redirect()->route('client.invoices.show', $invoiceId)

@@ -111,8 +111,8 @@ class StripeWebhookController extends Controller
                 'amount' => number_format((float) $invoice->total, 2),
                 'invoice_url' => route('client.invoices.show', $invoice->id),
             ]));
-        } catch (\Throwable) {
-            // mail failure must not block invoice being marked paid
+        } catch (\Throwable $e) {
+            Log::warning("Invoice #{$invoice->id} payment confirmation email failed: ".$e->getMessage());
         }
     }
 

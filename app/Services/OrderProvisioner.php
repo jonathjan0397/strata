@@ -195,8 +195,8 @@ class OrderProvisioner
 
         try {
             Mail::to($user->email)->send(new TemplateMailable($template, $vars));
-        } catch (\Throwable) {
-            // mail failure must not block domain activation
+        } catch (\Throwable $e) {
+            Log::warning("Domain email [{$template}] failed for user #{$user->id}: ".$e->getMessage());
         }
     }
 
@@ -223,8 +223,8 @@ class OrderProvisioner
 
         try {
             Mail::to($user->email)->send(new TemplateMailable('service.active', $vars));
-        } catch (\Throwable) {
-            // mail failure must not block service activation
+        } catch (\Throwable $e) {
+            Log::warning("Service activation email failed for user #{$user->id}: ".$e->getMessage());
         }
     }
 }

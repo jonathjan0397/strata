@@ -4,6 +4,7 @@ namespace App\Services\Registrars;
 
 use App\Contracts\RegistrarDriver;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class NamecheapDriver implements RegistrarDriver
@@ -218,8 +219,8 @@ class NamecheapDriver implements RegistrarDriver
                         }
                     }
                 }
-            } catch (\Throwable) {
-                // partial failure — continue with other actions
+            } catch (\Throwable $e) {
+                Log::warning("Namecheap getPricing [{$action}] failed: ".$e->getMessage());
             }
         }
 

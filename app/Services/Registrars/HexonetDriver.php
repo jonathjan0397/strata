@@ -4,6 +4,7 @@ namespace App\Services\Registrars;
 
 use App\Contracts\RegistrarDriver;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -303,8 +304,8 @@ class HexonetDriver implements RegistrarDriver
                     'currency' => $prop['CURRENCY'][$i] ?? 'USD',
                 ];
             }
-        } catch (\Throwable) {
-            // API unavailable or response format changed
+        } catch (\Throwable $e) {
+            throw new RuntimeException('Hexonet getPricing failed: '.$e->getMessage(), 0, $e);
         }
 
         return $pricing;

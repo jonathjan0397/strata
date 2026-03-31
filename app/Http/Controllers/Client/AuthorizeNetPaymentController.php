@@ -67,8 +67,8 @@ class AuthorizeNetPaymentController extends Controller
                     'amount' => number_format((float) $invoice->total, 2),
                     'invoice_url' => route('client.invoices.show', $invoice->id),
                 ]));
-            } catch (Throwable) {
-                // mail failure must not block payment confirmation
+            } catch (Throwable $e) {
+                Log::warning("Invoice #{$invoice->id} payment confirmation email failed: ".$e->getMessage());
             }
 
             return response()->json(['success' => true]);
