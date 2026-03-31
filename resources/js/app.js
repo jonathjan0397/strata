@@ -21,7 +21,10 @@ router.visit = function (url, options = {}) {
 };
 
 createInertiaApp({
-    title: (title) => title ? `${title} — Strata` : 'Strata',
+    title: (title) => {
+        const site = window.__SITE_NAME__ ?? 'Strata Service Billing and Support Platform'
+        return title ? `${title} — ${site}` : site
+    },
 
     resolve: (name) =>
         resolvePageComponent(

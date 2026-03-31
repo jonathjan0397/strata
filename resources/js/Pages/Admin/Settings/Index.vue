@@ -31,6 +31,7 @@ function uploadLogo() {
 
 const form = useForm({
     // General
+    site_title:         s.site_title         ?? '',
     company_name:       s.company_name       ?? '',
     tagline:            s.tagline            ?? '',
     portal_theme:       s.portal_theme       ?? 'blue',
@@ -197,6 +198,7 @@ const timezones = [
             <div class="flex gap-4">
                 <Link :href="route('admin.departments.index')" class="text-sm text-indigo-600 hover:underline">Departments</Link>
                 <Link :href="route('admin.canned-responses.index')" class="text-sm text-indigo-600 hover:underline">Canned Responses</Link>
+                <Link :href="route('admin.mail-pipes.index')" class="text-sm text-indigo-600 hover:underline">Mail Pipes</Link>
             </div>
         </div>
 
@@ -842,6 +844,12 @@ const timezones = [
                             Upload
                         </button>
                     </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Site Title</label>
+                    <input v-model="form.site_title" type="text" placeholder="Strata Service Billing and Support Platform"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <p class="text-xs text-gray-400 mt-1">Shown in browser tab titles and email subjects. Leave blank to use the application default.</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Company / Brand Name</label>

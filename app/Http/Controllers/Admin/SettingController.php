@@ -26,6 +26,7 @@ class SettingController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'site_title'        => ['nullable', 'string', 'max:255'],
             'company_name'      => ['nullable', 'string', 'max:255'],
             'timezone'          => ['nullable', 'string', 'max:100'],
             'date_format'       => ['nullable', 'string', 'max:50'],
@@ -108,8 +109,9 @@ class SettingController extends Controller
                 return response()->json(['success' => false, 'message' => "sendmail binary not found or not executable: {$bin}"], 422);
             }
 
-            $message  = "To: {$to}\r\nFrom: {$from}\r\nSubject: Strata - Mail Test\r\n\r\n";
-            $message .= "This is a test email from Strata. Your mail configuration is working.\r\n";
+            $siteName = Setting::get('site_title', Setting::get('company_name', config('app.name')));
+            $message  = "To: {$to}\r\nFrom: {$from}\r\nSubject: {$siteName} - Mail Test\r\n\r\n";
+            $message .= "This is a test email from {$siteName}. Your mail configuration is working.\r\n";
 
             $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
             $proc = proc_open($path, $descriptors, $pipes);
@@ -134,8 +136,9 @@ class SettingController extends Controller
         }
 
         try {
-            Mail::raw('This is a test email from Strata. Your mail configuration is working.', function ($msg) use ($to) {
-                $msg->to($to)->subject('Strata — Mail Test');
+            $siteName = Setting::get('site_title', Setting::get('company_name', config('app.name')));
+            Mail::raw("This is a test email from {$siteName}. Your mail configuration is working.", function ($msg) use ($to, $siteName) {
+                $msg->to($to)->subject("{$siteName} — Mail Test");
             });
 
             return response()->json(['success' => true, 'message' => 'Test email sent.']);

@@ -35,6 +35,9 @@ if (! is_link(public_path('storage'))) {
 // ── Stripe webhook (CSRF exempt — verified by signature) ─────────────────────
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
 
+// ── Email pipe endpoint (CSRF exempt — authenticated by pipe_token) ───────────
+Route::post('pipe/{token}', [Admin\MailboxPipeController::class, 'receive'])->name('pipe.receive');
+
 // ── Installer (blocked by CheckInstalled once storage/installed.lock exists) ─
 // Session/cookie/CSRF middleware are stripped so no laravel-session cookie is
 // ever issued during install — prevents ModSecurity false-positive 403s on
@@ -255,6 +258,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/canned-responses',                      [Admin\CannedResponseController::class, 'store'])->name('canned-responses.store');
         Route::patch('settings/canned-responses/{cannedResponse}',    [Admin\CannedResponseController::class, 'update'])->name('canned-responses.update');
         Route::delete('settings/canned-responses/{cannedResponse}',   [Admin\CannedResponseController::class, 'destroy'])->name('canned-responses.destroy');
+
+        // Mail Pipes (email → ticket)
+        Route::get('settings/mail-pipes',                             [Admin\MailboxPipeController::class, 'index'])->name('mail-pipes.index');
+        Route::post('settings/mail-pipes',                            [Admin\MailboxPipeController::class, 'store'])->name('mail-pipes.store');
+        Route::patch('settings/mail-pipes/{mailboxPipe}',             [Admin\MailboxPipeController::class, 'update'])->name('mail-pipes.update');
+        Route::post('settings/mail-pipes/{mailboxPipe}/token',        [Admin\MailboxPipeController::class, 'regenerateToken'])->name('mail-pipes.token');
+        Route::delete('settings/mail-pipes/{mailboxPipe}',            [Admin\MailboxPipeController::class, 'destroy'])->name('mail-pipes.destroy');
 
         // Knowledge Base (admin)
         Route::get('kb',                                      [Admin\KbController::class, 'index'])->name('kb.index');
