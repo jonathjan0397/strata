@@ -35,11 +35,13 @@ function toggleAutoRenew() {
 }
 
 const statusClass = {
-    active:      'bg-green-100 text-green-700',
-    pending:     'bg-yellow-100 text-yellow-700',
-    expired:     'bg-red-100 text-red-700',
-    cancelled:   'bg-gray-100 text-gray-500',
-    transferred: 'bg-blue-100 text-blue-700',
+    active:           'bg-green-100 text-green-700',
+    pending:          'bg-yellow-100 text-yellow-700',
+    transfer_pending: 'bg-yellow-100 text-yellow-700',
+    transferring:     'bg-blue-100 text-blue-700',
+    expired:          'bg-red-100 text-red-700',
+    cancelled:        'bg-gray-100 text-gray-500',
+    transferred:      'bg-blue-100 text-blue-700',
 }
 </script>
 

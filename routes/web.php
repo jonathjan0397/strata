@@ -408,6 +408,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('domain-order/check',         [Client\DomainOrderController::class, 'check'])->name('domain-order.check');
         Route::get('domain-order/checkout',      [Client\DomainOrderController::class, 'checkout'])->name('domain-order.checkout');
         Route::post('domain-order',              [Client\DomainOrderController::class, 'place'])->name('domain-order.place');
+        // Domain transfer flow
+        Route::get('domain-transfer',            [Client\DomainTransferController::class, 'search'])->name('domain-transfer.search');
+        Route::get('domain-transfer/checkout',   [Client\DomainTransferController::class, 'checkout'])->name('domain-transfer.checkout');
+        Route::post('domain-transfer',           [Client\DomainTransferController::class, 'place'])->name('domain-transfer.place');
         Route::post('promo/validate',            [Client\PromoController::class, 'validate'])->name('promo.validate');
         Route::get('quotes',                     [Client\QuoteController::class, 'index'])->name('quotes.index');
         Route::get('quotes/{quote}',             [Client\QuoteController::class, 'show'])->name('quotes.show');

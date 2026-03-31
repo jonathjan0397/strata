@@ -243,9 +243,54 @@ class EnomDriver implements RegistrarDriver
         ];
     }
 
-    /** Price importing not yet implemented for eNom. */
+    /**
+     * Fetch reseller cost pricing for all TLDs.
+     * Uses PE_GetProductList (eNom extended product catalog API).
+     *
+     * @return array<string, array{register: float|null, renew: float|null, transfer: float|null, currency: string}>
+     */
     public function getPricing(): array
     {
-        return [];
+        $pricing = [];
+
+        $actions = [
+            'REGISTER' => 'register',
+            'RENEW'    => 'renew',
+            'TRANSFER' => 'transfer',
+        ];
+
+        foreach ($actions as $enomAction => $key) {
+            try {
+                $raw = Http::get($this->baseUrl, [
+                    'uid'             => $this->uid,
+                    'pw'              => $this->pw,
+                    'command'         => 'PE_GetProductList',
+                    'responsetype'    => 'xml',
+                    'ProductType'     => 'Domain',
+                    'ProductCategory' => strtoupper($enomAction),
+                ]);
+
+                $xml = simplexml_load_string($raw->body());
+                if ($xml === false) {
+                    continue;
+                }
+
+                foreach ($xml->ProductList->Product ?? [] as $product) {
+                    $tld   = strtolower(ltrim((string) $product->TLD, '.'));
+                    $price = isset($product->Price) ? (float) $product->Price : null;
+
+                    if ($tld === '') {
+                        continue;
+                    }
+
+                    $pricing[$tld][$key]       = $price;
+                    $pricing[$tld]['currency'] = 'USD';
+                }
+            } catch (\Throwable) {
+                // partial failure — continue with other actions
+            }
+        }
+
+        return $pricing;
     }
 }

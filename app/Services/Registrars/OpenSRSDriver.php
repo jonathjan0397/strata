@@ -290,10 +290,42 @@ XML;
         ];
     }
 
-    /** Price importing not yet implemented for OpenSRS. */
+    /**
+     * Fetch reseller cost pricing for all TLDs.
+     * Uses the get_product_list / domain action (OpenSRS XCP API).
+     *
+     * @return array<string, array{register: float|null, renew: float|null, transfer: float|null, currency: string}>
+     */
     public function getPricing(): array
     {
-        return [];
+        $pricing = [];
+
+        try {
+            $result = $this->call('get_product_list', 'domain', [
+                'product_type' => 'domain_registration',
+            ]);
+
+            // Response: attributes.products[] each with tld, register, renew, transfer prices
+            $products = $result['attributes']['products'] ?? [];
+
+            foreach ($products as $product) {
+                $tld = strtolower(ltrim($product['tld'] ?? '', '.'));
+                if ($tld === '') {
+                    continue;
+                }
+
+                $pricing[$tld] = [
+                    'register' => isset($product['price_register']) ? (float) $product['price_register'] : null,
+                    'renew'    => isset($product['price_renew'])    ? (float) $product['price_renew']    : null,
+                    'transfer' => isset($product['price_transfer']) ? (float) $product['price_transfer'] : null,
+                    'currency' => $product['currency'] ?? 'USD',
+                ];
+            }
+        } catch (\Throwable) {
+            // API unavailable or response format changed
+        }
+
+        return $pricing;
     }
 
     private function splitDomain(string $domain): array

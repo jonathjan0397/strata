@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TemplateMailable;
+use App\Models\ClientCredit;
 use App\Models\Domain;
 use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Models\TldPrice;
 use App\Services\AuditLogger;
-use App\Services\DomainRegistrarService;
 use App\Services\OrderProvisioner;
 use App\Services\WorkflowEngine;
 use Illuminate\Http\RedirectResponse;
@@ -22,95 +22,41 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
 
-class DomainOrderController extends Controller
+class DomainTransferController extends Controller
 {
-    /** Domain search page. */
+    /** Transfer initiation page. */
     public function search(): Response
     {
-        $tldString = Setting::get('domain_search_tlds', '.com,.net,.org,.io');
-        $tlds = array_filter(array_map('trim', explode(',', $tldString)));
-
-        return Inertia::render('Client/DomainOrder/Search', [
-            'defaultTlds' => array_values($tlds),
-        ]);
+        return Inertia::render('Client/DomainTransfer/Search');
     }
 
-    /** JSON: check availability + pricing for a SLD across all configured TLDs. */
-    public function check(Request $request)
-    {
-        $request->validate([
-            'domain' => ['required', 'string', 'max:63', 'regex:/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$/'],
-        ]);
-
-        $driver = Setting::get('integration_registrar_driver');
-        if (! $driver) {
-            return response()->json(['error' => 'Domain registration is not configured.'], 503);
-        }
-
-        $sld = strtolower(trim($request->input('domain')));
-        if (str_contains($sld, '.')) {
-            $sld = explode('.', $sld)[0];
-        }
-
-        $tldString = Setting::get('domain_search_tlds', '.com,.net,.org,.io');
-        $tlds = array_filter(array_map(fn($t) => '.' . ltrim(trim($t), '.'), explode(',', $tldString)));
-
-        $results = [];
-        foreach ($tlds as $tld) {
-            $domain = $sld . $tld;
-            try {
-                $check = DomainRegistrarService::checkAvailability($domain);
-                $tldPrice = TldPrice::where('tld', $tld)->where('is_active', true)->first();
-
-                $price    = $tldPrice ? $tldPrice->register_price : ($check['price'] ?? null);
-                $currency = $tldPrice ? $tldPrice->currency : ($check['currency'] ?? 'USD');
-
-                $results[] = [
-                    'domain'    => $domain,
-                    'available' => $check['available'] ?? false,
-                    'price'     => $price,
-                    'currency'  => $currency,
-                    'has_pricing' => $price !== null,
-                ];
-            } catch (\Throwable) {
-                $results[] = [
-                    'domain'    => $domain,
-                    'available' => null,
-                    'error'     => 'Could not check availability.',
-                ];
-            }
-        }
-
-        return response()->json(['results' => $results]);
-    }
-
-    /** Checkout page for a specific domain. */
+    /** Checkout page — validates domain + auth code, resolves transfer pricing. */
     public function checkout(Request $request): Response|RedirectResponse
     {
         $request->validate([
-            'domain' => ['required', 'string', 'max:253'],
+            'domain'    => ['required', 'string', 'max:253'],
+            'auth_code' => ['required', 'string', 'max:255'],
         ]);
 
-        $domain = strtolower(trim($request->input('domain')));
+        $domain   = strtolower(trim($request->input('domain')));
+        $authCode = $request->input('auth_code');
 
-        // Resolve TLD pricing
         $tldPrice = TldPrice::forDomain($domain);
 
-        if (! $tldPrice || $tldPrice->register_price === null) {
-            return redirect()->route('client.domain-order.search')
-                ->with('flash', ['error' => "No pricing available for the selected domain. Please contact support."]);
+        if (! $tldPrice || $tldPrice->transfer_price === null) {
+            return redirect()->route('client.domain-transfer.search')
+                ->with('flash', ['error' => 'Transfer pricing is not available for this domain. Please contact support.']);
         }
 
-        // Pre-fill contact from user profile where available
         $user = $request->user();
 
-        return Inertia::render('Client/DomainOrder/Checkout', [
-            'domain'       => $domain,
-            'price'        => $tldPrice->register_price,
-            'renewPrice'   => $tldPrice->renew_price,
-            'currency'     => $tldPrice->currency,
-            'creditBalance'=> (float) $user->credit_balance,
-            'prefill'      => [
+        return Inertia::render('Client/DomainTransfer/Checkout', [
+            'domain'        => $domain,
+            'authCode'      => $authCode,
+            'price'         => $tldPrice->transfer_price,
+            'currency'      => $tldPrice->currency,
+            'creditBalance' => (float) $user->credit_balance,
+            'prefill'       => [
                 'first' => explode(' ', $user->name)[0] ?? '',
                 'last'  => implode(' ', array_slice(explode(' ', $user->name), 1)) ?: '',
                 'email' => $user->email,
@@ -118,12 +64,12 @@ class DomainOrderController extends Controller
         ]);
     }
 
-    /** Place the domain registration order. */
+    /** Place the domain transfer order. */
     public function place(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'domain'             => ['required', 'string', 'max:253'],
-            'years'              => ['required', 'integer', 'min:1', 'max:10'],
+            'auth_code'          => ['required', 'string', 'max:255'],
             'apply_credit'       => ['nullable', 'boolean'],
             'registrant_first'   => ['required', 'string', 'max:100'],
             'registrant_last'    => ['required', 'string', 'max:100'],
@@ -136,46 +82,44 @@ class DomainOrderController extends Controller
             'registrant_country' => ['required', 'string', 'size:2'],
         ]);
 
-        $domain    = strtolower(trim($data['domain']));
-        $years     = (int) $data['years'];
-        $tldPrice  = TldPrice::forDomain($domain);
+        $domain      = strtolower(trim($data['domain']));
+        $authCode    = $data['auth_code'];
+        $tldPrice    = TldPrice::forDomain($domain);
+        $applyCredit = (bool) $request->input('apply_credit', false);
 
-        if (! $tldPrice || $tldPrice->register_price === null) {
-            return back()->with('flash', ['error' => 'No pricing available for this domain.']);
+        if (! $tldPrice || $tldPrice->transfer_price === null) {
+            return back()->with('flash', ['error' => 'Transfer pricing is not available for this domain.']);
         }
 
-        $pricePerYear = $tldPrice->register_price;
-        $total        = round($pricePerYear * $years, 2);
-        $applyCredit  = (bool) $request->input('apply_credit', false);
-
+        $total     = $tldPrice->transfer_price;
         $invoiceId = null;
 
         try {
-            DB::transaction(function () use ($request, $domain, $years, $tldPrice, $pricePerYear, $total, $applyCredit, $data, &$invoiceId) {
+            DB::transaction(function () use ($request, $domain, $authCode, $tldPrice, $total, $applyCredit, $data, &$invoiceId) {
                 $user = $request->user();
 
-                // 1. Service record (no product_id — domain registration)
+                // 1. Service record (no product — domain transfer)
                 $service = Service::create([
                     'user_id'           => $user->id,
                     'product_id'        => null,
                     'domain'            => $domain,
                     'status'            => 'pending',
-                    'amount'            => $pricePerYear,
-                    'billing_cycle'     => $years === 1 ? 'annual' : ($years === 2 ? 'biennial' : 'triennial'),
+                    'amount'            => $total,
+                    'billing_cycle'     => 'annual',
                     'registration_date' => now(),
-                    'next_due_date'     => now()->addYears($years),
+                    'next_due_date'     => now()->addYear(),
                 ]);
 
-                // 2. Domain record (pending until invoice paid)
+                // 2. Domain record (transfer_pending until invoice paid)
                 Domain::create([
-                    'user_id'         => $user->id,
-                    'service_id'      => $service->id,
-                    'name'            => $domain,
-                    'registrar'       => config('registrars.default', 'namecheap'),
-                    'status'          => 'pending',
-                    'auto_renew'      => true,
-                    'registrar_data'  => [
-                        'years'              => $years,
+                    'user_id'        => $user->id,
+                    'service_id'     => $service->id,
+                    'name'           => $domain,
+                    'registrar'      => config('registrars.default', 'namecheap'),
+                    'status'         => 'transfer_pending',
+                    'auto_renew'     => true,
+                    'registrar_data' => [
+                        'auth_code'          => $authCode,
                         'registrant_first'   => $data['registrant_first'],
                         'registrant_last'    => $data['registrant_last'],
                         'registrant_email'   => $data['registrant_email'],
@@ -205,9 +149,9 @@ class DomainOrderController extends Controller
 
                 $invoice->items()->create([
                     'service_id'  => $service->id,
-                    'description' => "Domain Registration — {$domain}" . ($years > 1 ? " ({$years} years)" : ''),
-                    'quantity'    => $years,
-                    'unit_price'  => $pricePerYear,
+                    'description' => "Domain Transfer — {$domain}",
+                    'quantity'    => 1,
+                    'unit_price'  => $total,
                     'total'       => $total,
                 ]);
 
@@ -217,7 +161,7 @@ class DomainOrderController extends Controller
                     $apply        = min($available, (float) $invoice->amount_due);
                     $newAmountDue = round((float) $invoice->amount_due - $apply, 2);
 
-                    \App\Models\ClientCredit::create([
+                    ClientCredit::create([
                         'user_id'     => $user->id,
                         'amount'      => -$apply,
                         'description' => "Applied at checkout — Invoice #{$invoice->id}",
@@ -238,11 +182,11 @@ class DomainOrderController extends Controller
             });
 
         } catch (Throwable $e) {
-            Log::error("Domain order failed for {$domain}: " . $e->getMessage());
+            Log::error("Domain transfer order failed for {$domain}: " . $e->getMessage());
             return back()->with('flash', ['error' => 'Order could not be placed: ' . $e->getMessage()]);
         }
 
-        // If the invoice was fully covered by credit, trigger provisioning now
+        // If fully covered by credit, trigger transfer initiation now
         $invoice = Invoice::find($invoiceId);
         if ($invoice && $invoice->isPaid()) {
             try {
@@ -250,7 +194,7 @@ class DomainOrderController extends Controller
                 AuditLogger::log('invoice.paid', $invoice, ['amount' => $invoice->total]);
                 WorkflowEngine::fire('invoice.paid', $invoice);
             } catch (Throwable $e) {
-                Log::error("Post-order provisioning failed for invoice #{$invoiceId}: " . $e->getMessage());
+                Log::error("Post-order domain provisioning failed for invoice #{$invoiceId}: " . $e->getMessage());
             }
         }
 
@@ -268,6 +212,6 @@ class DomainOrderController extends Controller
         }
 
         return redirect()->route('client.invoices.show', $invoiceId)
-            ->with('success', 'Domain order placed! Pay your invoice to complete registration.');
+            ->with('success', 'Domain transfer order placed! Pay your invoice to initiate the transfer.');
     }
 }

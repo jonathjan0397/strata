@@ -262,9 +262,49 @@ class HexonetDriver implements RegistrarDriver
         ];
     }
 
-    /** Price importing not yet implemented for Hexonet. */
+    /**
+     * Fetch reseller cost pricing for all TLDs.
+     * Uses QueryDomainPricelist (HEXONET ISPAPI API).
+     *
+     * Response properties:
+     *   PROPERTY[CLASS][n]         — TLD identifier (e.g. "DOMAIN_COM")
+     *   PROPERTY[PRICEREGISTER][n] — register cost
+     *   PROPERTY[PRICERENEW][n]    — renew cost
+     *   PROPERTY[PRICETRANSFER][n] — transfer cost
+     *   PROPERTY[CURRENCY][n]      — currency code
+     *
+     * @return array<string, array{register: float|null, renew: float|null, transfer: float|null, currency: string}>
+     */
     public function getPricing(): array
     {
-        return [];
+        $pricing = [];
+
+        try {
+            $response = $this->call("QueryDomainPricelist\ncurrency=USD");
+
+            $prop  = $response['property'];
+            $count = count($prop['CLASS'] ?? []);
+
+            for ($i = 0; $i < $count; $i++) {
+                // CLASS is like "DOMAIN_COM" — extract TLD after first underscore
+                $class = strtolower($prop['CLASS'][$i] ?? '');
+                $tld   = ltrim(substr($class, (int) strpos($class, '_')), '_');
+
+                if ($tld === '') {
+                    continue;
+                }
+
+                $pricing[$tld] = [
+                    'register' => isset($prop['PRICEREGISTER'][$i]) ? (float) $prop['PRICEREGISTER'][$i] : null,
+                    'renew'    => isset($prop['PRICERENEW'][$i])    ? (float) $prop['PRICERENEW'][$i]    : null,
+                    'transfer' => isset($prop['PRICETRANSFER'][$i]) ? (float) $prop['PRICETRANSFER'][$i] : null,
+                    'currency' => $prop['CURRENCY'][$i] ?? 'USD',
+                ];
+            }
+        } catch (\Throwable) {
+            // API unavailable or response format changed
+        }
+
+        return $pricing;
     }
 }
