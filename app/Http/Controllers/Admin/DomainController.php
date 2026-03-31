@@ -82,12 +82,12 @@ class DomainController extends Controller
     {
         try {
             $driver = DomainRegistrarService::driver($domain->registrar);
-            $info   = $driver->getInfo($domain->name);
+            $info = $driver->getInfo($domain->name);
 
             $domain->update([
-                'expires_at'   => $info['expires_at'] ?: $domain->expires_at,
-                'locked'       => $info['locked'],
-                'privacy'      => $info['privacy'],
+                'expires_at' => $info['expires_at'] ?: $domain->expires_at,
+                'locked' => $info['locked'],
+                'privacy' => $info['privacy'],
                 'nameserver_1' => $info['nameservers'][0] ?? null,
                 'nameserver_2' => $info['nameservers'][1] ?? null,
                 'nameserver_3' => $info['nameservers'][2] ?? null,
@@ -96,7 +96,7 @@ class DomainController extends Controller
 
             return back()->with('flash', ['success' => 'Domain info refreshed from registrar.']);
         } catch (\Exception $e) {
-            return back()->with('flash', ['error' => 'Refresh failed: ' . $e->getMessage()]);
+            return back()->with('flash', ['error' => 'Refresh failed: '.$e->getMessage()]);
         }
     }
 }

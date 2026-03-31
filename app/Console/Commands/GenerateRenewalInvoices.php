@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class GenerateRenewalInvoices extends Command
 {
-    protected $signature   = 'billing:generate-renewals {--days=7 : Generate for services due within this many days}';
+    protected $signature = 'billing:generate-renewals {--days=7 : Generate for services due within this many days}';
+
     protected $description = 'Generate renewal invoices for services approaching their next due date.';
 
     public function handle(): int
@@ -27,15 +28,14 @@ class GenerateRenewalInvoices extends Command
             ->whereNull('scheduled_cancel_at')   // skip end-of-period cancellations
             ->where(fn ($q) => $q->whereNull('trial_ends_at')
                 ->orWhere('trial_ends_at', '<=', now()->toDateString()))  // skip active trials
-            ->whereDoesntHave('invoiceItems', fn ($q) =>
-                $q->whereHas('invoice', fn ($inv) =>
-                    $inv->whereIn('status', ['unpaid', 'draft'])
-                )
+            ->whereDoesntHave('invoiceItems', fn ($q) => $q->whereHas('invoice', fn ($inv) => $inv->whereIn('status', ['unpaid', 'draft'])
+            )
             )
             ->get();
 
         if ($services->isEmpty()) {
             $this->info('No services require renewal invoices.');
+
             return self::SUCCESS;
         }
 
@@ -45,35 +45,35 @@ class GenerateRenewalInvoices extends Command
         foreach ($services as $service) {
             try {
                 DB::transaction(function () use ($service, &$created) {
-                    $taxRate  = TaxRate::resolveForUser($service->user);
-                    $rate     = $taxRate ? (float) $taxRate->rate : 0;
+                    $taxRate = TaxRate::resolveForUser($service->user);
+                    $rate = $taxRate ? (float) $taxRate->rate : 0;
                     $subtotal = (float) $service->amount;
-                    $tax      = round($subtotal * ($rate / 100), 2);
-                    $total    = $subtotal + $tax;
+                    $tax = round($subtotal * ($rate / 100), 2);
+                    $total = $subtotal + $tax;
 
                     $label = $service->domain
                         ? "Renewal: {$service->domain}"
                         : "Renewal: {$service->product->name}";
 
                     $invoice = Invoice::create([
-                        'user_id'    => $service->user_id,
-                        'status'     => 'unpaid',
-                        'subtotal'   => $subtotal,
-                        'tax_rate'   => $rate,
-                        'tax'        => $tax,
-                        'total'      => $total,
+                        'user_id' => $service->user_id,
+                        'status' => 'unpaid',
+                        'subtotal' => $subtotal,
+                        'tax_rate' => $rate,
+                        'tax' => $tax,
+                        'total' => $total,
                         'amount_due' => $total,
-                        'date'       => now()->toDateString(),
-                        'due_date'   => $service->next_due_date,
-                        'notes'      => 'Auto-generated renewal invoice.',
+                        'date' => now()->toDateString(),
+                        'due_date' => $service->next_due_date,
+                        'notes' => 'Auto-generated renewal invoice.',
                     ]);
 
                     $invoice->items()->create([
-                        'service_id'  => $service->id,
+                        'service_id' => $service->id,
                         'description' => $label,
-                        'quantity'    => 1,
-                        'unit_price'  => $subtotal,
-                        'total'       => $subtotal,
+                        'quantity' => 1,
+                        'unit_price' => $subtotal,
+                        'total' => $subtotal,
                     ]);
 
                     AuditLogger::log('invoice.auto_generated', $invoice, ['service_id' => $service->id]);
@@ -94,10 +94,8 @@ class GenerateRenewalInvoices extends Command
             ->where('status', 'active')
             ->whereNotNull('next_due_date')
             ->where('next_due_date', '<=', now()->addDays($days)->toDateString())
-            ->whereDoesntHave('invoiceItems', fn ($q) =>
-                $q->whereHas('invoice', fn ($inv) =>
-                    $inv->whereIn('status', ['unpaid', 'draft'])
-                )
+            ->whereDoesntHave('invoiceItems', fn ($q) => $q->whereHas('invoice', fn ($inv) => $inv->whereIn('status', ['unpaid', 'draft'])
+            )
             )
             ->get();
 
@@ -109,25 +107,25 @@ class GenerateRenewalInvoices extends Command
                 try {
                     DB::transaction(function () use ($sa, &$addonCreated) {
                         $invoice = Invoice::create([
-                            'user_id'    => $sa->service->user_id,
-                            'status'     => 'unpaid',
-                            'subtotal'   => $sa->amount,
-                            'tax_rate'   => 0,
-                            'tax'        => 0,
-                            'total'      => $sa->amount,
+                            'user_id' => $sa->service->user_id,
+                            'status' => 'unpaid',
+                            'subtotal' => $sa->amount,
+                            'tax_rate' => 0,
+                            'tax' => 0,
+                            'total' => $sa->amount,
                             'amount_due' => $sa->amount,
-                            'date'       => now()->toDateString(),
-                            'due_date'   => $sa->next_due_date,
-                            'notes'      => 'Auto-generated addon renewal.',
+                            'date' => now()->toDateString(),
+                            'due_date' => $sa->next_due_date,
+                            'notes' => 'Auto-generated addon renewal.',
                         ]);
 
                         $invoice->items()->create([
-                            'service_id'       => $sa->service_id,
+                            'service_id' => $sa->service_id,
                             'service_addon_id' => $sa->id,
-                            'description'      => "Addon Renewal: {$sa->addon->name}",
-                            'quantity'         => 1,
-                            'unit_price'       => $sa->amount,
-                            'total'            => $sa->amount,
+                            'description' => "Addon Renewal: {$sa->addon->name}",
+                            'quantity' => 1,
+                            'unit_price' => $sa->amount,
+                            'total' => $sa->amount,
                         ]);
 
                         $addonCreated++;

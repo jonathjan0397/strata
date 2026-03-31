@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialiteController extends Controller
@@ -28,9 +29,9 @@ class SocialiteController extends Controller
         $user = User::firstOrCreate(
             ['email' => $social->getEmail()],
             [
-                'name'              => $social->getName() ?? $social->getNickname() ?? 'User',
+                'name' => $social->getName() ?? $social->getNickname() ?? 'User',
                 'email_verified_at' => now(),
-                'password'          => bcrypt(\Illuminate\Support\Str::random(32)),
+                'password' => bcrypt(Str::random(32)),
             ]
         );
 

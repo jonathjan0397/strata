@@ -28,8 +28,8 @@ class ClientGroup extends Model
     {
         return match ($this->discount_type) {
             'percent' => round($subtotal * ($this->discount_value / 100), 2),
-            'fixed'   => min((float) $this->discount_value, $subtotal),
-            default   => 0.0,
+            'fixed' => min((float) $this->discount_value, $subtotal),
+            default => 0.0,
         };
     }
 }

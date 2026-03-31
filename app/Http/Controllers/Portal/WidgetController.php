@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
-use App\Models\KbArticle;
 use App\Models\KbCategory;
 use App\Models\Product;
+use App\Models\Setting;
+use App\Services\DomainRegistrarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,10 +17,10 @@ class WidgetController extends Controller
     private function corsHeaders(): array
     {
         return [
-            'Access-Control-Allow-Origin'  => '*',
+            'Access-Control-Allow-Origin' => '*',
             'Access-Control-Allow-Methods' => 'GET, OPTIONS',
             'Access-Control-Allow-Headers' => 'Content-Type',
-            'Cache-Control'                => 'public, max-age=60',
+            'Cache-Control' => 'public, max-age=60',
         ];
     }
 
@@ -62,27 +63,27 @@ class WidgetController extends Controller
         return response()->json(['data' => $categories], 200, $this->corsHeaders());
     }
 
-    public function domainSearch(Request $request): \Illuminate\Http\JsonResponse
+    public function domainSearch(Request $request): JsonResponse
     {
         $request->validate([
             'domain' => ['required', 'string', 'max:63'],
         ]);
 
-        $driver = \App\Models\Setting::get('integration_registrar_driver');
+        $driver = Setting::get('integration_registrar_driver');
         if (! $driver) {
             return response()->json(['error' => 'Domain search not configured.'], 503, $this->corsHeaders());
         }
 
         $sld = strtolower(trim(explode('.', $request->input('domain'))[0]));
-        $tldString = \App\Models\Setting::get('domain_search_tlds', '.com,.net,.org,.io');
-        $tlds = array_filter(array_map(fn($t) => trim($t), explode(',', $tldString)));
+        $tldString = Setting::get('domain_search_tlds', '.com,.net,.org,.io');
+        $tlds = array_filter(array_map(fn ($t) => trim($t), explode(',', $tldString)));
 
         $results = [];
         foreach ($tlds as $tld) {
-            $tld = '.' . ltrim($tld, '.');
-            $domain = $sld . $tld;
+            $tld = '.'.ltrim($tld, '.');
+            $domain = $sld.$tld;
             try {
-                $check = \App\Services\DomainRegistrarService::checkAvailability($domain);
+                $check = DomainRegistrarService::checkAvailability($domain);
                 $results[] = ['domain' => $domain, 'available' => $check['available'] ?? false, 'price' => $check['price'] ?? null, 'currency' => $check['currency'] ?? 'USD'];
             } catch (\Throwable) {
                 $results[] = ['domain' => $domain, 'available' => null];
@@ -99,7 +100,7 @@ class WidgetController extends Controller
         $js = $this->buildWidgetJs($baseUrl);
 
         return response($js, 200, [
-            'Content-Type'  => 'application/javascript; charset=UTF-8',
+            'Content-Type' => 'application/javascript; charset=UTF-8',
             'Cache-Control' => 'public, max-age=300',
             'Access-Control-Allow-Origin' => '*',
         ]);

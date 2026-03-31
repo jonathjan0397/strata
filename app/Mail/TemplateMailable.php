@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\EmailTemplate;
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -15,12 +16,14 @@ class TemplateMailable extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     public string $renderedSubject;
+
     public string $renderedHtml;
+
     public string $renderedPlain;
 
     public function __construct(
         public readonly string $slug,
-        public readonly array  $vars = [],
+        public readonly array $vars = [],
     ) {}
 
     public function envelope(): Envelope
@@ -39,13 +42,13 @@ class TemplateMailable extends Mailable implements ShouldQueue
         $template = EmailTemplate::findBySlug($this->slug);
 
         if (! $template) {
-            $this->renderedHtml  = '<p>No template found for: '.$this->slug.'</p>';
+            $this->renderedHtml = '<p>No template found for: '.$this->slug.'</p>';
             $this->renderedPlain = 'No template found for: '.$this->slug;
 
             return new Content(htmlString: $this->renderedHtml);
         }
 
-        $this->renderedHtml  = $this->wrapHtml($template->render('body_html', $this->vars), $template->render('subject', $this->vars));
+        $this->renderedHtml = $this->wrapHtml($template->render('body_html', $this->vars), $template->render('subject', $this->vars));
         $this->renderedPlain = $template->render('body_plain', $this->vars) ?: strip_tags($this->renderedHtml);
 
         return new Content(htmlString: $this->renderedHtml);
@@ -53,11 +56,11 @@ class TemplateMailable extends Mailable implements ShouldQueue
 
     private function wrapHtml(string $body, string $subject): string
     {
-        $appName  = \App\Models\Setting::get('company_name', config('app.name'));
-        $logoPath = \App\Models\Setting::get('logo_path');
+        $appName = Setting::get('company_name', config('app.name'));
+        $logoPath = Setting::get('logo_path');
         $logoHtml = $logoPath
-            ? '<img src="' . url('storage/' . $logoPath) . '" alt="' . e($appName) . '" style="max-height:48px;max-width:200px;">'
-            : '<span style="font-size:20px;font-weight:700;color:#fff;">' . e($appName) . '</span>';
+            ? '<img src="'.url('storage/'.$logoPath).'" alt="'.e($appName).'" style="max-height:48px;max-width:200px;">'
+            : '<span style="font-size:20px;font-weight:700;color:#fff;">'.e($appName).'</span>';
 
         return <<<HTML
 <!DOCTYPE html>

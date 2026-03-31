@@ -1,9 +1,11 @@
 <?php
 
 use App\Providers\AppServiceProvider;
+use App\Providers\IntegrationSettingsServiceProvider;
+use App\Providers\MailSettingsServiceProvider;
 
 return [
     AppServiceProvider::class,
-    App\Providers\MailSettingsServiceProvider::class,
-    App\Providers\IntegrationSettingsServiceProvider::class,
+    MailSettingsServiceProvider::class,
+    IntegrationSettingsServiceProvider::class,
 ];

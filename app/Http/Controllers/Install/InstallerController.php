@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Install;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use PDO;
@@ -31,99 +32,99 @@ class InstallerController extends Controller
     /** Step 1 — Check server requirements. */
     public function requirements(): JsonResponse
     {
-        $uploadMax  = $this->parseBytes(ini_get('upload_max_filesize'));
-        $postMax    = $this->parseBytes(ini_get('post_max_size'));
-        $maxExec    = (int) ini_get('max_execution_time');
-        $memLimit   = $this->parseBytes(ini_get('memory_limit'));
+        $uploadMax = $this->parseBytes(ini_get('upload_max_filesize'));
+        $postMax = $this->parseBytes(ini_get('post_max_size'));
+        $maxExec = (int) ini_get('max_execution_time');
+        $memLimit = $this->parseBytes(ini_get('memory_limit'));
 
         $checks = [
             'php_version' => [
-                'label'  => 'PHP >= 8.3',
-                'pass'   => version_compare(PHP_VERSION, '8.3.0', '>='),
+                'label' => 'PHP >= 8.3',
+                'pass' => version_compare(PHP_VERSION, '8.3.0', '>='),
                 'detail' => PHP_VERSION,
             ],
             'pdo' => [
                 'label' => 'PDO extension',
-                'pass'  => extension_loaded('pdo'),
+                'pass' => extension_loaded('pdo'),
             ],
             'pdo_mysql' => [
                 'label' => 'PDO MySQL driver',
-                'pass'  => extension_loaded('pdo_mysql'),
+                'pass' => extension_loaded('pdo_mysql'),
             ],
             'mbstring' => [
                 'label' => 'mbstring extension',
-                'pass'  => extension_loaded('mbstring'),
+                'pass' => extension_loaded('mbstring'),
             ],
             'openssl' => [
                 'label' => 'OpenSSL extension',
-                'pass'  => extension_loaded('openssl'),
+                'pass' => extension_loaded('openssl'),
             ],
             'tokenizer' => [
                 'label' => 'Tokenizer extension',
-                'pass'  => extension_loaded('tokenizer'),
+                'pass' => extension_loaded('tokenizer'),
             ],
             'json' => [
                 'label' => 'JSON extension',
-                'pass'  => extension_loaded('json'),
+                'pass' => extension_loaded('json'),
             ],
             'ctype' => [
                 'label' => 'Ctype extension',
-                'pass'  => extension_loaded('ctype'),
+                'pass' => extension_loaded('ctype'),
             ],
             'bcmath' => [
                 'label' => 'BCMath extension',
-                'pass'  => extension_loaded('bcmath'),
+                'pass' => extension_loaded('bcmath'),
             ],
             'file_uploads' => [
-                'label'  => 'File uploads enabled',
-                'pass'   => (bool) ini_get('file_uploads'),
+                'label' => 'File uploads enabled',
+                'pass' => (bool) ini_get('file_uploads'),
                 'detail' => ini_get('file_uploads') ? 'enabled' : 'disabled',
             ],
             'upload_max_filesize' => [
-                'label'  => 'upload_max_filesize >= 10 MB',
-                'pass'   => $uploadMax >= 10 * 1024 * 1024,
+                'label' => 'upload_max_filesize >= 10 MB',
+                'pass' => $uploadMax >= 10 * 1024 * 1024,
                 'detail' => ini_get('upload_max_filesize'),
             ],
             'post_max_size' => [
-                'label'  => 'post_max_size >= 10 MB',
-                'pass'   => $postMax >= 10 * 1024 * 1024,
+                'label' => 'post_max_size >= 10 MB',
+                'pass' => $postMax >= 10 * 1024 * 1024,
                 'detail' => ini_get('post_max_size'),
             ],
             'max_execution_time' => [
-                'label'  => 'max_execution_time >= 60s (or 0)',
-                'pass'   => $maxExec === 0 || $maxExec >= 60,
-                'detail' => $maxExec === 0 ? 'unlimited' : $maxExec . 's',
+                'label' => 'max_execution_time >= 60s (or 0)',
+                'pass' => $maxExec === 0 || $maxExec >= 60,
+                'detail' => $maxExec === 0 ? 'unlimited' : $maxExec.'s',
             ],
             'memory_limit' => [
-                'label'  => 'memory_limit >= 128 MB',
-                'pass'   => $memLimit === -1 || $memLimit >= 128 * 1024 * 1024,
+                'label' => 'memory_limit >= 128 MB',
+                'pass' => $memLimit === -1 || $memLimit >= 128 * 1024 * 1024,
                 'detail' => ini_get('memory_limit'),
             ],
             'mod_rewrite' => [
-                'label'  => 'mod_rewrite / URL rewriting',
-                'pass'   => $this->checkModRewrite(),
+                'label' => 'mod_rewrite / URL rewriting',
+                'pass' => $this->checkModRewrite(),
                 'detail' => $this->checkModRewrite() ? 'available' : 'not detected',
-                'warn'   => true, // warning, not hard block
+                'warn' => true, // warning, not hard block
             ],
             'symlink' => [
-                'label'  => 'symlink() function',
-                'pass'   => function_exists('symlink'),
+                'label' => 'symlink() function',
+                'pass' => function_exists('symlink'),
                 'detail' => function_exists('symlink') ? 'available' : 'disabled (controller fallback will be used)',
-                'warn'   => true, // warning — installer will use fallback
+                'warn' => true, // warning — installer will use fallback
             ],
             'storage_writable' => [
-                'label'  => 'storage/ writable',
-                'pass'   => is_writable(storage_path()),
+                'label' => 'storage/ writable',
+                'pass' => is_writable(storage_path()),
                 'detail' => storage_path(),
             ],
             'bootstrap_writable' => [
-                'label'  => 'bootstrap/cache/ writable',
-                'pass'   => is_writable(base_path('bootstrap/cache')),
+                'label' => 'bootstrap/cache/ writable',
+                'pass' => is_writable(base_path('bootstrap/cache')),
                 'detail' => base_path('bootstrap/cache'),
             ],
             'env_writable' => [
-                'label'  => '.env writable (or creatable)',
-                'pass'   => is_writable(base_path()) || is_writable(base_path('.env')),
+                'label' => '.env writable (or creatable)',
+                'pass' => is_writable(base_path()) || is_writable(base_path('.env')),
                 'detail' => base_path('.env'),
             ],
         ];
@@ -132,7 +133,7 @@ class InstallerController extends Controller
         $allPass = collect($checks)->every(fn ($c) => $c['pass'] || ($c['warn'] ?? false));
 
         return response()->json([
-            'checks'   => $checks,
+            'checks' => $checks,
             'all_pass' => $allPass,
         ]);
     }
@@ -141,9 +142,9 @@ class InstallerController extends Controller
     public function testDatabase(Request $request): JsonResponse
     {
         $v = Validator::make($request->all(), [
-            'db_host'     => ['required', 'string'],
-            'db_port'     => ['required', 'integer', 'min:1', 'max:65535'],
-            'db_name'     => ['required', 'string'],
+            'db_host' => ['required', 'string'],
+            'db_port' => ['required', 'integer', 'min:1', 'max:65535'],
+            'db_name' => ['required', 'string'],
             'db_username' => ['required', 'string'],
             'db_password' => ['nullable', 'string'],
         ]);
@@ -153,7 +154,7 @@ class InstallerController extends Controller
         }
 
         // Passwords are base64-encoded client-side to avoid WAF false positives.
-        $rawB64  = $request->db_password ?? '';
+        $rawB64 = $request->db_password ?? '';
         $decoded = $rawB64 ? base64_decode($rawB64) : '';
         $request->merge(['db_password' => $decoded]);
 
@@ -165,8 +166,8 @@ class InstallerController extends Controller
         try {
             $dsn = "mysql:host={$host};port={$request->db_port};dbname={$request->db_name};charset=utf8mb4";
             $pdo = new PDO($dsn, $request->db_username, $decoded, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_TIMEOUT            => 5,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 5,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
             $version = $pdo->query('SELECT VERSION()')->fetchColumn();
@@ -181,16 +182,16 @@ class InstallerController extends Controller
     public function install(Request $request): JsonResponse
     {
         $v = Validator::make($request->all(), [
-            'app_name'         => ['required', 'string', 'max:100'],
-            'app_url'          => ['required', 'url'],
-            'db_host'          => ['required', 'string'],
-            'db_port'          => ['required', 'integer'],
-            'db_name'          => ['required', 'string'],
-            'db_username'      => ['required', 'string'],
-            'db_password'      => ['nullable', 'string'],
-            'admin_name'       => ['required', 'string', 'max:100'],
-            'admin_email'      => ['required', 'email'],
-            'admin_password'   => ['required', 'string', 'min:8'],
+            'app_name' => ['required', 'string', 'max:100'],
+            'app_url' => ['required', 'url'],
+            'db_host' => ['required', 'string'],
+            'db_port' => ['required', 'integer'],
+            'db_name' => ['required', 'string'],
+            'db_username' => ['required', 'string'],
+            'db_password' => ['nullable', 'string'],
+            'admin_name' => ['required', 'string', 'max:100'],
+            'admin_email' => ['required', 'email'],
+            'admin_password' => ['required', 'string', 'min:8'],
             'queue_connection' => ['required', 'string', 'in:sync,database'],
         ]);
 
@@ -203,8 +204,8 @@ class InstallerController extends Controller
         // differs between web and CLI PHP processes on shared hosting).
         $request->merge([
             'admin_password' => base64_decode($request->admin_password),
-            'db_password'    => $request->db_password ? base64_decode($request->db_password) : '',
-            'db_host'        => $request->db_host === 'localhost' ? '127.0.0.1' : $request->db_host,
+            'db_password' => $request->db_password ? base64_decode($request->db_password) : '',
+            'db_host' => $request->db_host === 'localhost' ? '127.0.0.1' : $request->db_host,
         ]);
 
         try {
@@ -220,8 +221,8 @@ class InstallerController extends Controller
             // 4. Run seeders
             foreach (['RolesAndPermissionsSeeder', 'EmailTemplatesSeeder', 'DepartmentsSeeder', 'SettingsSeeder'] as $seeder) {
                 Artisan::call('db:seed', [
-                    '--class'          => $seeder,
-                    '--force'          => true,
+                    '--class' => $seeder,
+                    '--force' => true,
                     '--no-interaction' => true,
                 ]);
             }
@@ -232,8 +233,8 @@ class InstallerController extends Controller
             // 5a. Optional sample data
             if ($request->boolean('sample_data')) {
                 Artisan::call('db:seed', [
-                    '--class'          => 'SampleDataSeeder',
-                    '--force'          => true,
+                    '--class' => 'SampleDataSeeder',
+                    '--force' => true,
                     '--no-interaction' => true,
                 ]);
             }
@@ -262,27 +263,27 @@ class InstallerController extends Controller
             file_put_contents(
                 storage_path('installed.lock'),
                 json_encode([
-                    'installed_at'   => now()->toIso8601String(),
-                    'version'        => $version,
-                    'queue'          => $request->queue_connection,
-                    'storage_mode'   => $storageMode,
-                    'sample_data'    => $request->boolean('sample_data'),
-                    'install_token'  => \Illuminate\Support\Str::uuid()->toString(),
+                    'installed_at' => now()->toIso8601String(),
+                    'version' => $version,
+                    'queue' => $request->queue_connection,
+                    'storage_mode' => $storageMode,
+                    'sample_data' => $request->boolean('sample_data'),
+                    'install_token' => Str::uuid()->toString(),
                     'install_secret' => bin2hex(random_bytes(32)),
                 ])
             );
 
             return response()->json([
-                'success'      => true,
-                'queue'        => $request->queue_connection,
+                'success' => true,
+                'queue' => $request->queue_connection,
                 'storage_mode' => $storageMode,
-                'app_url'      => rtrim($request->app_url, '/'),
+                'app_url' => rtrim($request->app_url, '/'),
             ]);
 
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -291,9 +292,9 @@ class InstallerController extends Controller
 
     private function writeEnv(Request $request): void
     {
-        $appKey   = 'base64:'.base64_encode(random_bytes(32));
-        $appUrl   = rtrim($request->app_url, '/');
-        $appName  = addslashes($request->app_name);
+        $appKey = 'base64:'.base64_encode(random_bytes(32));
+        $appUrl = rtrim($request->app_url, '/');
+        $appName = addslashes($request->app_name);
         $queueConn = $request->queue_connection ?? 'sync';
 
         $env = <<<ENV
@@ -358,9 +359,9 @@ ENV;
     private function rebootConfig(Request $request): void
     {
         config([
-            'database.default'                    => 'mysql',
-            'database.connections.mysql.host'     => $request->db_host,
-            'database.connections.mysql.port'     => $request->db_port,
+            'database.default' => 'mysql',
+            'database.connections.mysql.host' => $request->db_host,
+            'database.connections.mysql.port' => $request->db_port,
             'database.connections.mysql.database' => $request->db_name,
             'database.connections.mysql.username' => $request->db_username,
             'database.connections.mysql.password' => $request->db_password ?? '',
@@ -372,10 +373,10 @@ ENV;
 
     private function createAdminUser(Request $request): void
     {
-        $user = \App\Models\User::updateOrCreate(
+        $user = User::updateOrCreate(
             ['email' => $request->admin_email],
             [
-                'name'     => $request->admin_name,
+                'name' => $request->admin_name,
                 'password' => Hash::make($request->admin_password),
             ]
         );
@@ -404,6 +405,7 @@ ENV;
                 return $decoded['version'];
             }
         }
+
         return '1.0-RC1';
     }
 
@@ -412,6 +414,7 @@ ENV;
         if (function_exists('apache_get_modules')) {
             return in_array('mod_rewrite', apache_get_modules(), true);
         }
+
         // On hosts where apache_get_modules() is unavailable, assume true
         // (the installer itself is reachable, which implies rewriting works).
         return true;
@@ -425,7 +428,8 @@ ENV;
             return -1;
         }
         $last = strtolower(substr($value, -1));
-        $num  = (int) $value;
+        $num = (int) $value;
+
         return match ($last) {
             'g' => $num * 1024 * 1024 * 1024,
             'm' => $num * 1024 * 1024,

@@ -36,45 +36,45 @@ class QuoteController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'user_id'        => ['required', 'exists:users,id'],
-            'valid_until'    => ['nullable', 'date'],
+            'user_id' => ['required', 'exists:users,id'],
+            'valid_until' => ['nullable', 'date'],
             'client_message' => ['nullable', 'string', 'max:5000'],
-            'notes'          => ['nullable', 'string', 'max:5000'],
-            'tax_rate'       => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'items'          => ['required', 'array', 'min:1'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'items' => ['required', 'array', 'min:1'],
             'items.*.description' => ['required', 'string', 'max:500'],
-            'items.*.quantity'    => ['required', 'numeric', 'min:0.01'],
-            'items.*.unit_price'  => ['required', 'numeric', 'min:0'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ]);
 
         $quote = DB::transaction(function () use ($data, $request) {
             $subtotal = collect($data['items'])->sum(fn ($i) => $i['quantity'] * $i['unit_price']);
-            $taxRate  = (float) ($data['tax_rate'] ?? 0);
-            $tax      = round($subtotal * ($taxRate / 100), 2);
+            $taxRate = (float) ($data['tax_rate'] ?? 0);
+            $tax = round($subtotal * ($taxRate / 100), 2);
 
             $q = Quote::create([
-                'user_id'        => $data['user_id'],
-                'status'         => 'draft',
-                'subtotal'       => $subtotal,
-                'tax_rate'       => $taxRate,
-                'tax'            => $tax,
-                'total'          => $subtotal + $tax,
-                'valid_until'    => $data['valid_until'] ?? null,
+                'user_id' => $data['user_id'],
+                'status' => 'draft',
+                'subtotal' => $subtotal,
+                'tax_rate' => $taxRate,
+                'tax' => $tax,
+                'total' => $subtotal + $tax,
+                'valid_until' => $data['valid_until'] ?? null,
                 'client_message' => $data['client_message'] ?? null,
-                'notes'          => $data['notes'] ?? null,
-                'created_by'     => $request->user()->id,
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $request->user()->id,
             ]);
 
             $q->update([
-                'quote_number' => 'QUO-' . now()->format('Ymd') . '-' . str_pad($q->id, 4, '0', STR_PAD_LEFT),
+                'quote_number' => 'QUO-'.now()->format('Ymd').'-'.str_pad($q->id, 4, '0', STR_PAD_LEFT),
             ]);
 
             foreach ($data['items'] as $item) {
                 $q->items()->create([
                     'description' => $item['description'],
-                    'quantity'    => $item['quantity'],
-                    'unit_price'  => $item['unit_price'],
-                    'total'       => round($item['quantity'] * $item['unit_price'], 2),
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total' => round($item['quantity'] * $item['unit_price'], 2),
                 ]);
             }
 
@@ -99,7 +99,7 @@ class QuoteController extends Controller
         $quote->load('items');
 
         return Inertia::render('Admin/Quotes/Form', [
-            'quote'   => $quote,
+            'quote' => $quote,
             'clients' => User::orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
@@ -109,31 +109,31 @@ class QuoteController extends Controller
         abort_if(in_array($quote->status, ['accepted', 'declined']), 422);
 
         $data = $request->validate([
-            'user_id'        => ['required', 'exists:users,id'],
-            'valid_until'    => ['nullable', 'date'],
+            'user_id' => ['required', 'exists:users,id'],
+            'valid_until' => ['nullable', 'date'],
             'client_message' => ['nullable', 'string', 'max:5000'],
-            'notes'          => ['nullable', 'string', 'max:5000'],
-            'tax_rate'       => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'items'          => ['required', 'array', 'min:1'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'items' => ['required', 'array', 'min:1'],
             'items.*.description' => ['required', 'string', 'max:500'],
-            'items.*.quantity'    => ['required', 'numeric', 'min:0.01'],
-            'items.*.unit_price'  => ['required', 'numeric', 'min:0'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ]);
 
         DB::transaction(function () use ($quote, $data) {
             $subtotal = collect($data['items'])->sum(fn ($i) => $i['quantity'] * $i['unit_price']);
-            $taxRate  = (float) ($data['tax_rate'] ?? 0);
-            $tax      = round($subtotal * ($taxRate / 100), 2);
+            $taxRate = (float) ($data['tax_rate'] ?? 0);
+            $tax = round($subtotal * ($taxRate / 100), 2);
 
             $quote->update([
-                'user_id'        => $data['user_id'],
-                'subtotal'       => $subtotal,
-                'tax_rate'       => $taxRate,
-                'tax'            => $tax,
-                'total'          => $subtotal + $tax,
-                'valid_until'    => $data['valid_until'] ?? null,
+                'user_id' => $data['user_id'],
+                'subtotal' => $subtotal,
+                'tax_rate' => $taxRate,
+                'tax' => $tax,
+                'total' => $subtotal + $tax,
+                'valid_until' => $data['valid_until'] ?? null,
                 'client_message' => $data['client_message'] ?? null,
-                'notes'          => $data['notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
             ]);
 
             $quote->items()->delete();
@@ -141,9 +141,9 @@ class QuoteController extends Controller
             foreach ($data['items'] as $item) {
                 $quote->items()->create([
                     'description' => $item['description'],
-                    'quantity'    => $item['quantity'],
-                    'unit_price'  => $item['unit_price'],
-                    'total'       => round($item['quantity'] * $item['unit_price'], 2),
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total' => round($item['quantity'] * $item['unit_price'], 2),
                 ]);
             }
         });
@@ -172,13 +172,13 @@ class QuoteController extends Controller
 
         try {
             Mail::to($quote->user->email)->send(new TemplateMailable('quote.sent', [
-                'name'         => $quote->user->name,
-                'app_name'     => config('app.name'),
+                'name' => $quote->user->name,
+                'app_name' => config('app.name'),
                 'quote_number' => $quote->quote_number,
-                'total'        => number_format((float) $quote->total, 2),
-                'valid_until'  => $quote->valid_until?->format('M d, Y') ?? 'Open',
-                'quote_url'    => route('client.quotes.show', $quote->id),
-                'message'      => $quote->client_message ?? '',
+                'total' => number_format((float) $quote->total, 2),
+                'valid_until' => $quote->valid_until?->format('M d, Y') ?? 'Open',
+                'quote_url' => route('client.quotes.show', $quote->id),
+                'message' => $quote->client_message ?? '',
             ]));
         } catch (\Throwable) {
             // Mail failure must not block the status change
@@ -199,24 +199,24 @@ class QuoteController extends Controller
 
         $invoice = DB::transaction(function () use ($quote) {
             $inv = Invoice::create([
-                'user_id'    => $quote->user_id,
-                'status'     => 'unpaid',
-                'subtotal'   => $quote->subtotal,
-                'tax_rate'   => $quote->tax_rate,
-                'tax'        => $quote->tax,
-                'total'      => $quote->total,
+                'user_id' => $quote->user_id,
+                'status' => 'unpaid',
+                'subtotal' => $quote->subtotal,
+                'tax_rate' => $quote->tax_rate,
+                'tax' => $quote->tax,
+                'total' => $quote->total,
                 'amount_due' => $quote->total,
-                'date'       => now()->toDateString(),
-                'due_date'   => now()->addDays(7)->toDateString(),
-                'notes'      => "Converted from quote {$quote->quote_number}",
+                'date' => now()->toDateString(),
+                'due_date' => now()->addDays(7)->toDateString(),
+                'notes' => "Converted from quote {$quote->quote_number}",
             ]);
 
             foreach ($quote->items as $item) {
                 $inv->items()->create([
                     'description' => $item->description,
-                    'quantity'    => $item->quantity,
-                    'unit_price'  => $item->unit_price,
-                    'total'       => $item->total,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'total' => $item->total,
                 ]);
             }
 

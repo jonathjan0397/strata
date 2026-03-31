@@ -16,15 +16,15 @@ class CannedResponseController extends Controller
     {
         return Inertia::render('Admin/Settings/CannedResponses', [
             'cannedResponses' => CannedResponse::with('department')->orderBy('title')->get(),
-            'departments'     => Department::active()->get(['id', 'name']),
+            'departments' => Department::active()->get(['id', 'name']),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'title'         => ['required', 'string', 'max:255'],
-            'body'          => ['required', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string'],
             'department_id' => ['nullable', 'exists:departments,id'],
         ]);
 
@@ -36,8 +36,8 @@ class CannedResponseController extends Controller
     public function update(Request $request, CannedResponse $cannedResponse): RedirectResponse
     {
         $data = $request->validate([
-            'title'         => ['required', 'string', 'max:255'],
-            'body'          => ['required', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string'],
             'department_id' => ['nullable', 'exists:departments,id'],
         ]);
 

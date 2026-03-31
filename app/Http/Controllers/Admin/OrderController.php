@@ -14,19 +14,17 @@ class OrderController extends Controller
     {
         $orders = Order::with('user')
             ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->when($request->search, fn ($q, $s) =>
-                $q->where('order_number', 'like', "%{$s}%")
-                  ->orWhereHas('user', fn ($u) =>
-                      $u->where('name', 'like', "%{$s}%")
-                        ->orWhere('email', 'like', "%{$s}%")
-                  )
+            ->when($request->search, fn ($q, $s) => $q->where('order_number', 'like', "%{$s}%")
+                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%")
+                )
             )
             ->latest()
             ->paginate(25)
             ->withQueryString();
 
         return Inertia::render('Admin/Orders/Index', [
-            'orders'  => $orders,
+            'orders' => $orders,
             'filters' => $request->only('search', 'status'),
         ]);
     }

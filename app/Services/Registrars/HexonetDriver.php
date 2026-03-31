@@ -20,16 +20,18 @@ use RuntimeException;
 class HexonetDriver implements RegistrarDriver
 {
     private string $login;
+
     private string $password;
+
     private string $baseUrl;
 
     public function __construct()
     {
         $sandbox = config('registrars.hexonet.sandbox', true);
 
-        $this->login    = config('registrars.hexonet.login', '');
+        $this->login = config('registrars.hexonet.login', '');
         $this->password = config('registrars.hexonet.password', '');
-        $this->baseUrl  = $sandbox
+        $this->baseUrl = $sandbox
             ? 'https://api-ote.hexonet.net/api/call.cgi'
             : 'https://api.hexonet.net/api/call.cgi';
     }
@@ -42,7 +44,7 @@ class HexonetDriver implements RegistrarDriver
     public function checkAvailability(string $domain): array
     {
         $response = $this->call("CheckDomains\ndomain0={$domain}");
-        $check    = $response['property']['DOMAINCHECK'][0] ?? '';
+        $check = $response['property']['DOMAINCHECK'][0] ?? '';
 
         // HEXONET returns "210 domain available" or "211 domain not available"
         $available = str_starts_with(trim($check), '210');
@@ -54,7 +56,7 @@ class HexonetDriver implements RegistrarDriver
     {
         $nameservers = $contact['nameservers'] ?? ['ns1.hexonet.net', 'ns2.hexonet.net'];
 
-        $cmd  = "AddDomain\n";
+        $cmd = "AddDomain\n";
         $cmd .= "domain={$domain}\n";
         $cmd .= "period={$years}\n";
 
@@ -77,10 +79,10 @@ class HexonetDriver implements RegistrarDriver
         }
 
         return [
-            'success'        => true,
+            'success' => true,
             'registrar_data' => [
-                'domain'     => $domain,
-                'object_id'  => $response['property']['OBJECTID'][0] ?? null,
+                'domain' => $domain,
+                'object_id' => $response['property']['OBJECTID'][0] ?? null,
                 'created_at' => $response['property']['CREATEDDATE'][0] ?? null,
             ],
         ];
@@ -95,7 +97,7 @@ class HexonetDriver implements RegistrarDriver
         }
 
         return [
-            'success'    => true,
+            'success' => true,
             'expires_at' => $response['property']['EXPIRATIONDATE'][0] ?? '',
         ];
     }
@@ -109,7 +111,7 @@ class HexonetDriver implements RegistrarDriver
         }
 
         return [
-            'success'     => true,
+            'success' => true,
             'transfer_id' => $response['property']['TRANSFERID'][0] ?? $domain,
         ];
     }
@@ -151,9 +153,9 @@ class HexonetDriver implements RegistrarDriver
         $p = $response['property'];
 
         return [
-            'expires_at'  => $p['EXPIRATIONDATE'][0] ?? '',
-            'locked'      => (($p['TRANSFERLOCK'][0] ?? '0') === '1'),
-            'privacy'     => strtolower($p['X-WHOISGUARD'][0] ?? '0') !== '0',
+            'expires_at' => $p['EXPIRATIONDATE'][0] ?? '',
+            'locked' => (($p['TRANSFERLOCK'][0] ?? '0') === '1'),
+            'privacy' => strtolower($p['X-WHOISGUARD'][0] ?? '0') !== '0',
             'nameservers' => $p['NAMESERVER'] ?? [],
         ];
     }
@@ -188,8 +190,8 @@ class HexonetDriver implements RegistrarDriver
     private function call(string $command): array
     {
         $body = http_build_query([
-            's_login'   => $this->login,
-            's_pw'      => $this->password,
+            's_login' => $this->login,
+            's_pw' => $this->password,
             's_command' => $command,
         ]);
 
@@ -214,9 +216,9 @@ class HexonetDriver implements RegistrarDriver
     private function parseResponse(string $raw): array
     {
         $result = [
-            'code'        => '500',
+            'code' => '500',
             'description' => 'No response from HEXONET API',
-            'property'    => [],
+            'property' => [],
         ];
 
         foreach (explode("\n", $raw) as $line) {
@@ -226,7 +228,7 @@ class HexonetDriver implements RegistrarDriver
             }
 
             [$key, $value] = array_pad(explode('=', $line, 2), 2, '');
-            $key   = trim($key);
+            $key = trim($key);
             $value = trim($value);
 
             if (strtoupper($key) === 'CODE') {
@@ -250,15 +252,15 @@ class HexonetDriver implements RegistrarDriver
     private function buildContactLines(array $c): array
     {
         return [
-            'firstname'   => $c['registrant_first']   ?? '',
-            'lastname'    => $c['registrant_last']     ?? '',
-            'email'       => $c['registrant_email']    ?? '',
-            'phone'       => $c['registrant_phone']    ?? '',
-            'street'      => $c['registrant_address']  ?? '',
-            'city'        => $c['registrant_city']     ?? '',
-            'state'       => $c['registrant_state']    ?? '',
-            'zip'         => $c['registrant_zip']      ?? '',
-            'country'     => $c['registrant_country']  ?? '',
+            'firstname' => $c['registrant_first'] ?? '',
+            'lastname' => $c['registrant_last'] ?? '',
+            'email' => $c['registrant_email'] ?? '',
+            'phone' => $c['registrant_phone'] ?? '',
+            'street' => $c['registrant_address'] ?? '',
+            'city' => $c['registrant_city'] ?? '',
+            'state' => $c['registrant_state'] ?? '',
+            'zip' => $c['registrant_zip'] ?? '',
+            'country' => $c['registrant_country'] ?? '',
         ];
     }
 
@@ -282,13 +284,13 @@ class HexonetDriver implements RegistrarDriver
         try {
             $response = $this->call("QueryDomainPricelist\ncurrency=USD");
 
-            $prop  = $response['property'];
+            $prop = $response['property'];
             $count = count($prop['CLASS'] ?? []);
 
             for ($i = 0; $i < $count; $i++) {
                 // CLASS is like "DOMAIN_COM" — extract TLD after first underscore
                 $class = strtolower($prop['CLASS'][$i] ?? '');
-                $tld   = ltrim(substr($class, (int) strpos($class, '_')), '_');
+                $tld = ltrim(substr($class, (int) strpos($class, '_')), '_');
 
                 if ($tld === '') {
                     continue;
@@ -296,7 +298,7 @@ class HexonetDriver implements RegistrarDriver
 
                 $pricing[$tld] = [
                     'register' => isset($prop['PRICEREGISTER'][$i]) ? (float) $prop['PRICEREGISTER'][$i] : null,
-                    'renew'    => isset($prop['PRICERENEW'][$i])    ? (float) $prop['PRICERENEW'][$i]    : null,
+                    'renew' => isset($prop['PRICERENEW'][$i]) ? (float) $prop['PRICERENEW'][$i] : null,
                     'transfer' => isset($prop['PRICETRANSFER'][$i]) ? (float) $prop['PRICETRANSFER'][$i] : null,
                     'currency' => $prop['CURRENCY'][$i] ?? 'USD',
                 ];

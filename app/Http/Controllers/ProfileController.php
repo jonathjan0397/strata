@@ -19,11 +19,11 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'    => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100'],
             'company' => ['nullable', 'string', 'max:100'],
-            'phone'   => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'country' => ['nullable', 'string', 'max:2'],
-            'state'   => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
         ]);
 
         $request->user()->update($validated);

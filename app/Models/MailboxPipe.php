@@ -20,10 +20,10 @@ class MailboxPipe extends Model
     {
         return [
             'create_client_if_not_exists' => 'boolean',
-            'strip_signature'             => 'boolean',
-            'auto_reply_enabled'          => 'boolean',
-            'reject_unknown_senders'      => 'boolean',
-            'is_active'                   => 'boolean',
+            'strip_signature' => 'boolean',
+            'auto_reply_enabled' => 'boolean',
+            'reject_unknown_senders' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

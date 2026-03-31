@@ -20,11 +20,11 @@ class Quote extends Model
     protected function casts(): array
     {
         return [
-            'subtotal'   => 'decimal:2',
-            'tax_rate'   => 'decimal:2',
-            'tax'        => 'decimal:2',
-            'total'      => 'decimal:2',
-            'valid_until'=> 'date',
+            'subtotal' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
+            'tax' => 'decimal:2',
+            'total' => 'decimal:2',
+            'valid_until' => 'date',
         ];
     }
 

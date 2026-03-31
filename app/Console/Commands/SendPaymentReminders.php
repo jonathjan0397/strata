@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Mail;
 
 class SendPaymentReminders extends Command
 {
-    protected $signature   = 'billing:send-reminders';
+    protected $signature = 'billing:send-reminders';
+
     protected $description = 'Send payment reminder emails for upcoming and overdue invoices';
 
     public function handle(): int
@@ -32,12 +33,12 @@ class SendPaymentReminders extends Command
 
             foreach ($invoices as $invoice) {
                 Mail::to($invoice->user->email)->queue(new TemplateMailable('invoice.reminder', [
-                    'name'        => $invoice->user->name,
-                    'app_name'    => config('app.name'),
-                    'invoice_id'  => $invoice->id,
-                    'amount'      => number_format((float) $invoice->amount_due, 2),
-                    'due_date'    => $invoice->due_date->format('M d, Y'),
-                    'days_until'  => $days,
+                    'name' => $invoice->user->name,
+                    'app_name' => config('app.name'),
+                    'invoice_id' => $invoice->id,
+                    'amount' => number_format((float) $invoice->amount_due, 2),
+                    'due_date' => $invoice->due_date->format('M d, Y'),
+                    'days_until' => $days,
                     'invoice_url' => route('client.invoices.show', $invoice->id),
                 ]));
 

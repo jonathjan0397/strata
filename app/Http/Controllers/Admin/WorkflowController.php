@@ -47,9 +47,9 @@ class WorkflowController extends Controller
     public function create(): Response
     {
         return Inertia::render('Admin/Workflows/Edit', [
-            'workflow'    => null,
-            'triggers'    => self::TRIGGERS,
-            'operators'   => self::OPERATORS,
+            'workflow' => null,
+            'triggers' => self::TRIGGERS,
+            'operators' => self::OPERATORS,
             'actionTypes' => self::ACTION_TYPES,
         ]);
     }
@@ -59,8 +59,8 @@ class WorkflowController extends Controller
         $data = $this->validated($request);
 
         $workflow = Workflow::create([
-            'name'      => $data['name'],
-            'trigger'   => $data['trigger'],
+            'name' => $data['name'],
+            'trigger' => $data['trigger'],
             'is_active' => $data['is_active'] ?? true,
         ]);
 
@@ -75,9 +75,9 @@ class WorkflowController extends Controller
         $workflow->load(['conditions', 'actions']);
 
         return Inertia::render('Admin/Workflows/Edit', [
-            'workflow'    => $workflow,
-            'triggers'    => self::TRIGGERS,
-            'operators'   => self::OPERATORS,
+            'workflow' => $workflow,
+            'triggers' => self::TRIGGERS,
+            'operators' => self::OPERATORS,
             'actionTypes' => self::ACTION_TYPES,
         ]);
     }
@@ -87,8 +87,8 @@ class WorkflowController extends Controller
         $data = $this->validated($request);
 
         $workflow->update([
-            'name'      => $data['name'],
-            'trigger'   => $data['trigger'],
+            'name' => $data['name'],
+            'trigger' => $data['trigger'],
             'is_active' => $data['is_active'] ?? true,
         ]);
 
@@ -110,7 +110,7 @@ class WorkflowController extends Controller
     {
         $workflow->update(['is_active' => ! $workflow->is_active]);
 
-        return back()->with('success', 'Workflow ' . ($workflow->is_active ? 'activated' : 'deactivated') . '.');
+        return back()->with('success', 'Workflow '.($workflow->is_active ? 'activated' : 'deactivated').'.');
     }
 
     // -----------------------------------------------------------------------
@@ -118,19 +118,19 @@ class WorkflowController extends Controller
     private function validated(Request $request): array
     {
         return $request->validate([
-            'name'                         => ['required', 'string', 'max:255'],
-            'trigger'                      => ['required', 'string', 'in:' . implode(',', self::TRIGGERS)],
-            'is_active'                    => ['boolean'],
-            'conditions'                   => ['array'],
-            'conditions.*.field'           => ['required', 'string', 'max:100'],
-            'conditions.*.operator'        => ['required', 'string', 'in:' . implode(',', self::OPERATORS)],
-            'conditions.*.value'           => ['required', 'string', 'max:255'],
-            'conditions.*.sort_order'      => ['integer', 'min:0'],
-            'actions'                      => ['array'],
-            'actions.*.type'               => ['required', 'string', 'in:' . implode(',', self::ACTION_TYPES)],
-            'actions.*.config'             => ['array'],
-            'actions.*.delay_minutes'      => ['integer', 'min:0'],
-            'actions.*.sort_order'         => ['integer', 'min:0'],
+            'name' => ['required', 'string', 'max:255'],
+            'trigger' => ['required', 'string', 'in:'.implode(',', self::TRIGGERS)],
+            'is_active' => ['boolean'],
+            'conditions' => ['array'],
+            'conditions.*.field' => ['required', 'string', 'max:100'],
+            'conditions.*.operator' => ['required', 'string', 'in:'.implode(',', self::OPERATORS)],
+            'conditions.*.value' => ['required', 'string', 'max:255'],
+            'conditions.*.sort_order' => ['integer', 'min:0'],
+            'actions' => ['array'],
+            'actions.*.type' => ['required', 'string', 'in:'.implode(',', self::ACTION_TYPES)],
+            'actions.*.config' => ['array'],
+            'actions.*.delay_minutes' => ['integer', 'min:0'],
+            'actions.*.sort_order' => ['integer', 'min:0'],
         ]);
     }
 
@@ -139,9 +139,9 @@ class WorkflowController extends Controller
         $workflow->conditions()->delete();
         foreach ($data['conditions'] ?? [] as $i => $c) {
             $workflow->conditions()->create([
-                'field'      => $c['field'],
-                'operator'   => $c['operator'],
-                'value'      => $c['value'],
+                'field' => $c['field'],
+                'operator' => $c['operator'],
+                'value' => $c['value'],
                 'sort_order' => $c['sort_order'] ?? $i,
             ]);
         }
@@ -149,10 +149,10 @@ class WorkflowController extends Controller
         $workflow->actions()->delete();
         foreach ($data['actions'] ?? [] as $i => $a) {
             $workflow->actions()->create([
-                'type'          => $a['type'],
-                'config'        => $a['config'] ?? [],
+                'type' => $a['type'],
+                'config' => $a['config'] ?? [],
                 'delay_minutes' => $a['delay_minutes'] ?? 0,
-                'sort_order'    => $a['sort_order'] ?? $i,
+                'sort_order' => $a['sort_order'] ?? $i,
             ]);
         }
     }

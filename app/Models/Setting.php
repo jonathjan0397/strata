@@ -13,6 +13,7 @@ class Setting extends Model
     public static function get(string $key, mixed $default = null): mixed
     {
         $settings = static::allKeyed();
+
         return $settings[$key] ?? $default;
     }
 

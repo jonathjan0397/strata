@@ -11,16 +11,16 @@ return new class extends Migration
     {
         // Fraud scoring on orders
         Schema::table('orders', function (Blueprint $table) {
-            if (!Schema::hasColumn('orders', 'fraud_score')) {
+            if (! Schema::hasColumn('orders', 'fraud_score')) {
                 $table->decimal('fraud_score', 5, 2)->nullable()->after('client_notes');
             }
-            if (!Schema::hasColumn('orders', 'fraud_flags')) {
+            if (! Schema::hasColumn('orders', 'fraud_flags')) {
                 $table->json('fraud_flags')->nullable()->after('fraud_score');
             }
         });
 
         // Quotes table
-        if (!Schema::hasTable('quotes')) {
+        if (! Schema::hasTable('quotes')) {
             Schema::create('quotes', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -41,7 +41,7 @@ return new class extends Migration
         }
 
         // Quote line items
-        if (!Schema::hasTable('quote_items')) {
+        if (! Schema::hasTable('quote_items')) {
             Schema::create('quote_items', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('quote_id')->constrained()->cascadeOnDelete();
@@ -55,10 +55,10 @@ return new class extends Migration
 
         // Seed quote.sent email template
         DB::table('email_templates')->insertOrIgnore([[
-            'slug'       => 'quote.sent',
-            'name'       => 'Quote Sent',
-            'subject'    => 'Your Quote from {{app_name}} — {{quote_number}}',
-            'body_html'  => implode("\n", [
+            'slug' => 'quote.sent',
+            'name' => 'Quote Sent',
+            'subject' => 'Your Quote from {{app_name}} — {{quote_number}}',
+            'body_html' => implode("\n", [
                 '<p>Hi {{name}},</p>',
                 '<p>We\'ve prepared a quote for you. Please review it at your convenience.</p>',
                 '<p><strong>Quote:</strong> {{quote_number}}<br>',
@@ -84,7 +84,7 @@ return new class extends Migration
                 'Thank you,',
                 '{{app_name}}',
             ]),
-            'active'     => 1,
+            'active' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]]);

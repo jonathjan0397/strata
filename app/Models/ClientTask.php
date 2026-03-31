@@ -14,7 +14,7 @@ class ClientTask extends Model
     protected function casts(): array
     {
         return [
-            'due_at'       => 'datetime',
+            'due_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
     }

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Setting;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -20,11 +21,11 @@ class ClientEmail extends Mailable
 
     public function content(): Content
     {
-        $appName  = \App\Models\Setting::get('company_name', config('app.name'));
-        $logoPath = \App\Models\Setting::get('logo_path');
+        $appName = Setting::get('company_name', config('app.name'));
+        $logoPath = Setting::get('logo_path');
         $logoHtml = $logoPath
-            ? '<img src="' . url('storage/' . $logoPath) . '" alt="' . e($appName) . '" style="max-height:48px;max-width:200px;">'
-            : '<span style="font-size:20px;font-weight:700;color:#fff;">' . e($appName) . '</span>';
+            ? '<img src="'.url('storage/'.$logoPath).'" alt="'.e($appName).'" style="max-height:48px;max-width:200px;">'
+            : '<span style="font-size:20px;font-weight:700;color:#fff;">'.e($appName).'</span>';
 
         $bodyHtml = nl2br(e($this->body));
 

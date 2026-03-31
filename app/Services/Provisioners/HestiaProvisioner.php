@@ -16,17 +16,19 @@ use RuntimeException;
 class HestiaProvisioner implements ProvisionerDriver
 {
     private string $baseUrl;
+
     private string $adminUser;
+
     private string $apiKey;
 
     public function __construct(private readonly Module $module)
     {
-        $scheme        = $module->ssl ? 'https' : 'http';
+        $scheme = $module->ssl ? 'https' : 'http';
         $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/api/v1";
 
-        $config          = $module->module_config ?? [];
+        $config = $module->module_config ?? [];
         $this->adminUser = $config['admin_user'] ?? 'admin';
-        $this->apiKey    = decrypt($module->api_token_enc);
+        $this->apiKey = decrypt($module->api_token_enc);
     }
 
     public function slug(): string
@@ -48,30 +50,30 @@ class HestiaProvisioner implements ProvisionerDriver
         $password = Str::password(16, symbols: false);
 
         $params = [
-            'user'     => $username,
+            'user' => $username,
             'password' => $password,
-            'email'    => "admin@{$domain}",
-            'package'  => $plan ?? 'default',
-            'fname'    => $username,
-            'lname'    => 'User',
+            'email' => "admin@{$domain}",
+            'package' => $plan ?? 'default',
+            'fname' => $username,
+            'lname' => 'User',
         ];
 
         $result = $this->call('add', 'user', $params);
 
         if (($result['status'] ?? '') !== 'ok') {
-            throw new RuntimeException('HestiaCP account creation failed: ' . ($result['error'] ?? 'Unknown error'));
+            throw new RuntimeException('HestiaCP account creation failed: '.($result['error'] ?? 'Unknown error'));
         }
 
         // Add the domain to the new user
         $this->call('add', 'web', [
-            'user'   => $username,
+            'user' => $username,
             'domain' => $domain,
         ]);
 
         return [
             'username' => $username,
             'password' => $password,
-            'domain'   => $domain,
+            'domain' => $domain,
         ];
     }
 
@@ -80,7 +82,7 @@ class HestiaProvisioner implements ProvisionerDriver
         $result = $this->call('suspend', 'user', ['user' => $username]);
 
         if (isset($result['status']) && $result['status'] !== 'ok') {
-            throw new RuntimeException('HestiaCP suspend failed: ' . ($result['error'] ?? 'Unknown'));
+            throw new RuntimeException('HestiaCP suspend failed: '.($result['error'] ?? 'Unknown'));
         }
     }
 
@@ -89,19 +91,19 @@ class HestiaProvisioner implements ProvisionerDriver
         $result = $this->call('unsuspend', 'user', ['user' => $username]);
 
         if (isset($result['status']) && $result['status'] !== 'ok') {
-            throw new RuntimeException('HestiaCP unsuspend failed: ' . ($result['error'] ?? 'Unknown'));
+            throw new RuntimeException('HestiaCP unsuspend failed: '.($result['error'] ?? 'Unknown'));
         }
     }
 
     public function terminateAccount(string $username): void
     {
         $result = $this->call('delete', 'user', [
-            'user'    => $username,
-            'purge'   => 'yes',
+            'user' => $username,
+            'purge' => 'yes',
         ]);
 
         if (isset($result['status']) && $result['status'] !== 'ok') {
-            throw new RuntimeException('HestiaCP delete failed: ' . ($result['error'] ?? 'Unknown'));
+            throw new RuntimeException('HestiaCP delete failed: '.($result['error'] ?? 'Unknown'));
         }
     }
 
@@ -113,10 +115,10 @@ class HestiaProvisioner implements ProvisionerDriver
             ->withOptions(['verify' => $this->module->ssl])
             ->timeout(20)
             ->post("{$this->baseUrl}/", array_merge([
-                'user'       => $this->adminUser,
-                'password'   => $this->apiKey,
+                'user' => $this->adminUser,
+                'password' => $this->apiKey,
                 'returncode' => 'yes',
-                'cmd'        => "v-{$action}-{$object}",
+                'cmd' => "v-{$action}-{$object}",
             ], $params));
 
         if (! $response->successful()) {
@@ -138,6 +140,7 @@ class HestiaProvisioner implements ProvisionerDriver
         $base = preg_replace('/\.[^.]+$/', '', $domain);
         $base = preg_replace('/[^a-z0-9]/', '', strtolower($base));
         $base = substr($base, 0, 6);
-        return $base . Str::lower(Str::random(2));
+
+        return $base.Str::lower(Str::random(2));
     }
 }

@@ -17,8 +17,8 @@ class Module extends Model
     protected function casts(): array
     {
         return [
-            'ssl'      => 'boolean',
-            'active'   => 'boolean',
+            'ssl' => 'boolean',
+            'active' => 'boolean',
             'metadata' => 'array',
         ];
     }

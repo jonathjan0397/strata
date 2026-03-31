@@ -16,15 +16,15 @@ class PromoController extends Controller
     public function validate(Request $request): JsonResponse
     {
         $request->validate([
-            'code'       => ['required', 'string'],
+            'code' => ['required', 'string'],
             'product_id' => ['required', 'exists:products,id'],
-            'price'      => ['required', 'numeric', 'min:0'],
-            'setup_fee'  => ['nullable', 'numeric', 'min:0'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'setup_fee' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $price    = (float) $request->price;
+        $price = (float) $request->price;
         $setupFee = (float) ($request->setup_fee ?? 0);
-        $user     = $request->user();
+        $user = $request->user();
 
         $promo = PromoCode::where('code', strtoupper($request->code))->first();
 
@@ -40,18 +40,18 @@ class PromoController extends Controller
         $discount = $promo->calculateDiscount($price, $setupFee);
 
         $label = match ($promo->type) {
-            'percent'    => "{$promo->value}% off",
+            'percent' => "{$promo->value}% off",
             'free_setup' => 'Setup fee waived',
-            default      => '$' . number_format((float) $promo->value, 2) . ' off',
+            default => '$'.number_format((float) $promo->value, 2).' off',
         };
 
         return response()->json([
-            'valid'    => true,
-            'code'     => strtoupper($promo->code),
-            'type'     => $promo->type,
-            'value'    => $promo->value,
+            'valid' => true,
+            'code' => strtoupper($promo->code),
+            'type' => $promo->type,
+            'value' => $promo->value,
             'discount' => $discount,
-            'label'    => $label,
+            'label' => $label,
         ]);
     }
 }

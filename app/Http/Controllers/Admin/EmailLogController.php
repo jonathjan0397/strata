@@ -18,14 +18,14 @@ class EmailLogController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('to', 'like', "%{$search}%")
-                  ->orWhere('subject', 'like', "%{$search}%");
+                    ->orWhere('subject', 'like', "%{$search}%");
             });
         }
 
         $logs = $query->paginate(50)->withQueryString();
 
         return Inertia::render('Admin/EmailLog/Index', [
-            'logs'    => $logs,
+            'logs' => $logs,
             'filters' => ['search' => $request->input('search')],
         ]);
     }

@@ -8,7 +8,6 @@ use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
@@ -34,18 +33,18 @@ class StaffController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn ($u) => [
-                'id'          => $u->id,
-                'name'        => $u->name,
-                'email'       => $u->email,
-                'role'        => $u->roles->first()?->name ?? 'staff',
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'role' => $u->roles->first()?->name ?? 'staff',
                 'permissions' => $u->permissions->pluck('name')->values(),
-                'created_at'  => $u->created_at->toDateString(),
+                'created_at' => $u->created_at->toDateString(),
             ])
             ->sortBy(fn ($m) => $roleOrder[$m['role']] ?? 99)
             ->values();
 
         return Inertia::render('Admin/Staff/Index', [
-            'team'                 => $team,
+            'team' => $team,
             'availablePermissions' => self::STAFF_PERMISSIONS,
         ]);
     }
@@ -60,18 +59,18 @@ class StaffController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'                  => ['required', 'string', 'max:255'],
-            'email'                 => ['required', 'email', 'unique:users'],
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
-            'role'                  => ['required', 'in:admin,staff'],
-            'permissions'           => ['array'],
-            'permissions.*'         => ['string', 'in:' . implode(',', self::STAFF_PERMISSIONS)],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['required', 'in:admin,staff'],
+            'permissions' => ['array'],
+            'permissions.*' => ['string', 'in:'.implode(',', self::STAFF_PERMISSIONS)],
         ]);
 
         $user = User::create([
-            'name'              => $data['name'],
-            'email'             => $data['email'],
-            'password'          => Hash::make($data['password']),
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
             'email_verified_at' => now(),
         ]);
 
@@ -85,7 +84,7 @@ class StaffController extends Controller
         AuditLogger::log('staff.created', $user, ['role' => $data['role']]);
 
         return redirect()->route('admin.staff.index')
-            ->with('success', $data['name'] . ' has been added to the team.');
+            ->with('success', $data['name'].' has been added to the team.');
     }
 
     public function edit(User $staff): Response
@@ -94,10 +93,10 @@ class StaffController extends Controller
 
         return Inertia::render('Admin/Staff/Edit', [
             'member' => [
-                'id'          => $staff->id,
-                'name'        => $staff->name,
-                'email'       => $staff->email,
-                'role'        => $staff->roles->first()?->name ?? 'staff',
+                'id' => $staff->id,
+                'name' => $staff->name,
+                'email' => $staff->email,
+                'role' => $staff->roles->first()?->name ?? 'staff',
                 'permissions' => $staff->permissions->pluck('name')->values(),
             ],
             'availablePermissions' => self::STAFF_PERMISSIONS,
@@ -109,15 +108,15 @@ class StaffController extends Controller
         abort_unless($staff->hasAnyRole(self::ROLES), 404);
 
         $rules = [
-            'name'          => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'email', 'unique:users,email,' . $staff->id],
-            'role'          => ['required', 'in:admin,staff,super-admin'],
-            'permissions'   => ['array'],
-            'permissions.*' => ['string', 'in:' . implode(',', self::STAFF_PERMISSIONS)],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,'.$staff->id],
+            'role' => ['required', 'in:admin,staff,super-admin'],
+            'permissions' => ['array'],
+            'permissions.*' => ['string', 'in:'.implode(',', self::STAFF_PERMISSIONS)],
         ];
 
         if ($request->filled('password')) {
-            $rules['password']              = ['string', 'min:8', 'confirmed'];
+            $rules['password'] = ['string', 'min:8', 'confirmed'];
             $rules['password_confirmation'] = ['required'];
         }
 
@@ -142,7 +141,7 @@ class StaffController extends Controller
         AuditLogger::log('staff.updated', $staff, ['role' => $data['role']]);
 
         return redirect()->route('admin.staff.index')
-            ->with('success', $staff->name . ' has been updated.');
+            ->with('success', $staff->name.' has been updated.');
     }
 
     public function destroy(Request $request, User $staff): RedirectResponse
@@ -159,7 +158,7 @@ class StaffController extends Controller
         AuditLogger::log('staff.deleted', $staff, ['name' => $name]);
 
         return redirect()->route('admin.staff.index')
-            ->with('success', $name . ' has been removed from the team.');
+            ->with('success', $name.' has been removed from the team.');
     }
 
     private function ensurePermissionsExist(): void

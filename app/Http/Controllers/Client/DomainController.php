@@ -38,7 +38,7 @@ class DomainController extends Controller
         abort_if($domain->user_id !== auth()->id(), 403);
 
         $data = $request->validate([
-            'nameservers'   => ['required', 'array', 'min:2', 'max:6'],
+            'nameservers' => ['required', 'array', 'min:2', 'max:6'],
             'nameservers.*' => ['required', 'string', 'max:255'],
         ]);
 
@@ -73,6 +73,7 @@ class DomainController extends Controller
 
         try {
             $result = DomainRegistrarService::checkAvailability($data['domain']);
+
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json(['available' => false, 'error' => $e->getMessage()], 422);

@@ -13,9 +13,9 @@ class DomainRegistrarService
 {
     private static array $drivers = [
         'namecheap' => NamecheapDriver::class,
-        'enom'      => EnomDriver::class,
-        'opensrs'   => OpenSRSDriver::class,
-        'hexonet'   => HexonetDriver::class,
+        'enom' => EnomDriver::class,
+        'opensrs' => OpenSRSDriver::class,
+        'hexonet' => HexonetDriver::class,
     ];
 
     public static function driver(?string $name = null): RegistrarDriver

@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Mail;
 
 class FlagOverdueInvoices extends Command
 {
-    protected $signature   = 'billing:flag-overdue';
+    protected $signature = 'billing:flag-overdue';
+
     protected $description = 'Mark unpaid past-due invoices as overdue and notify clients';
 
     public function handle(): int
@@ -23,11 +24,11 @@ class FlagOverdueInvoices extends Command
             $invoice->update(['status' => 'overdue']);
 
             Mail::to($invoice->user->email)->queue(new TemplateMailable('invoice.overdue', [
-                'name'        => $invoice->user->name,
-                'app_name'    => config('app.name'),
-                'invoice_id'  => $invoice->id,
-                'amount'      => number_format((float) $invoice->amount_due, 2),
-                'due_date'    => $invoice->due_date->format('M d, Y'),
+                'name' => $invoice->user->name,
+                'app_name' => config('app.name'),
+                'invoice_id' => $invoice->id,
+                'amount' => number_format((float) $invoice->amount_due, 2),
+                'due_date' => $invoice->due_date->format('M d, Y'),
                 'invoice_url' => route('client.invoices.show', $invoice->id),
             ]));
         }

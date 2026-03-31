@@ -21,14 +21,14 @@ class FraudChecker
     {
         $empty = ['score' => null, 'flags' => [], 'blocked' => false];
 
-        if (!Setting::get('fraud_check_enabled')) {
+        if (! Setting::get('fraud_check_enabled')) {
             return $empty;
         }
 
-        $accountId  = Setting::get('fraud_maxmind_account_id');
+        $accountId = Setting::get('fraud_maxmind_account_id');
         $licenseKey = Setting::get('fraud_maxmind_license_key');
 
-        if (!$accountId || !$licenseKey) {
+        if (! $accountId || ! $licenseKey) {
             return $empty;
         }
 
@@ -38,28 +38,30 @@ class FraudChecker
                 ->acceptJson()
                 ->post('https://minfraud.maxmind.com/minfraud/v2.0/score', [
                     'device' => ['ip_address' => $request->ip()],
-                    'email'  => ['address'    => $email],
-                    'order'  => ['amount'     => $orderTotal, 'currency' => 'USD'],
+                    'email' => ['address' => $email],
+                    'order' => ['amount' => $orderTotal, 'currency' => 'USD'],
                 ]);
 
-            if (!$response->successful()) {
-                Log::warning('FraudChecker: minFraud API returned ' . $response->status(), [
+            if (! $response->successful()) {
+                Log::warning('FraudChecker: minFraud API returned '.$response->status(), [
                     'body' => $response->body(),
                 ]);
+
                 return $empty;
             }
 
-            $score     = (float) ($response->json('risk_score') ?? 0);
-            $threshold = (int)   Setting::get('fraud_score_threshold', 75);
-            $action    =         Setting::get('fraud_action', 'flag');
+            $score = (float) ($response->json('risk_score') ?? 0);
+            $threshold = (int) Setting::get('fraud_score_threshold', 75);
+            $action = Setting::get('fraud_action', 'flag');
 
             return [
-                'score'   => $score,
-                'flags'   => [],
+                'score' => $score,
+                'flags' => [],
                 'blocked' => ($score >= $threshold && $action === 'reject'),
             ];
         } catch (\Throwable $e) {
-            Log::warning('FraudChecker: exception during API call — ' . $e->getMessage());
+            Log::warning('FraudChecker: exception during API call — '.$e->getMessage());
+
             return $empty;
         }
     }

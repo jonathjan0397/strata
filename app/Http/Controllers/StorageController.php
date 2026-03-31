@@ -35,7 +35,7 @@ class StorageController extends Controller
             fpassthru($stream);
             fclose($stream);
         }, 200, [
-            'Content-Type'  => $mime,
+            'Content-Type' => $mime,
             'Cache-Control' => 'public, max-age=86400',
         ]);
     }

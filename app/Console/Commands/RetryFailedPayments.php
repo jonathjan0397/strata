@@ -11,23 +11,25 @@ use Stripe\StripeClient;
 
 class RetryFailedPayments extends Command
 {
-    protected $signature   = 'billing:retry-payments';
+    protected $signature = 'billing:retry-payments';
+
     protected $description = 'Retry auto-charge for overdue invoices with a saved payment method (dunning)';
 
     public function handle(): int
     {
         $maxAttempts = (int) Setting::get('dunning_max_attempts', 3);
-        $retryDays   = array_filter(
+        $retryDays = array_filter(
             array_map('intval', explode(',', Setting::get('dunning_retry_days', '1,3,7')))
         );
 
         if ($maxAttempts <= 0) {
             $this->info('Dunning disabled (dunning_max_attempts = 0).');
+
             return self::SUCCESS;
         }
 
         $charged = 0;
-        $failed  = 0;
+        $failed = 0;
 
         $invoices = Invoice::with(['user.paymentMethods'])
             ->where('status', 'overdue')
@@ -68,29 +70,29 @@ class RetryFailedPayments extends Command
                 $stripe = new StripeClient(config('services.stripe.secret'));
 
                 $intent = $stripe->paymentIntents->create([
-                    'amount'         => (int) round($invoice->amount_due * 100),
-                    'currency'       => strtolower(config('app.currency', 'usd')),
-                    'customer'       => $user->stripe_customer_id,
+                    'amount' => (int) round($invoice->amount_due * 100),
+                    'currency' => strtolower(config('app.currency', 'usd')),
+                    'customer' => $user->stripe_customer_id,
                     'payment_method' => $defaultCard->stripe_payment_method_id,
-                    'confirm'        => true,
-                    'off_session'    => true,
-                    'description'    => "Dunning retry #{$invoice->dunning_attempts}: Invoice #{$invoice->id}",
+                    'confirm' => true,
+                    'off_session' => true,
+                    'description' => "Dunning retry #{$invoice->dunning_attempts}: Invoice #{$invoice->id}",
                 ]);
 
                 if ($intent->status === 'succeeded') {
                     $invoice->update([
-                        'status'  => 'paid',
+                        'status' => 'paid',
                         'paid_at' => now(),
                         'amount_due' => 0,
                     ]);
 
                     $invoice->payments()->create([
-                        'user_id'                  => $user->id,
-                        'amount'                   => $invoice->total,
-                        'method'                   => 'stripe',
+                        'user_id' => $user->id,
+                        'amount' => $invoice->total,
+                        'method' => 'stripe',
                         'stripe_payment_intent_id' => $intent->id,
-                        'status'                   => 'succeeded',
-                        'paid_at'                  => now(),
+                        'status' => 'succeeded',
+                        'paid_at' => now(),
                     ]);
 
                     WorkflowEngine::fire('invoice.paid', $invoice->fresh());
@@ -105,7 +107,7 @@ class RetryFailedPayments extends Command
             }
         }
 
-        $this->info("Dunning: {$charged} charged, {$failed} failed, " . count($invoices) . " attempted.");
+        $this->info("Dunning: {$charged} charged, {$failed} failed, ".count($invoices).' attempted.');
 
         return self::SUCCESS;
     }

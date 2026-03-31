@@ -33,17 +33,17 @@ class AffiliateController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'user_id'          => ['required', 'exists:users,id', 'unique:affiliates,user_id'],
-            'code'             => ['nullable', 'string', 'max:20', 'alpha_num', 'unique:affiliates,code'],
-            'status'           => ['required', 'in:pending,active'],
-            'commission_type'  => ['required', 'in:percent,fixed'],
+            'user_id' => ['required', 'exists:users,id', 'unique:affiliates,user_id'],
+            'code' => ['nullable', 'string', 'max:20', 'alpha_num', 'unique:affiliates,code'],
+            'status' => ['required', 'in:pending,active'],
+            'commission_type' => ['required', 'in:percent,fixed'],
             'commission_value' => ['required', 'numeric', 'min:0'],
             'payout_threshold' => ['required', 'numeric', 'min:0'],
-            'notes'            => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
-        $data['code']        = $data['code'] ? strtoupper($data['code']) : strtoupper(Str::random(8));
-        $data['balance']     = 0;
+        $data['code'] = $data['code'] ? strtoupper($data['code']) : strtoupper(Str::random(8));
+        $data['balance'] = 0;
         $data['total_earned'] = 0;
 
         Affiliate::create($data);
@@ -65,11 +65,11 @@ class AffiliateController extends Controller
     public function update(Request $request, Affiliate $affiliate): RedirectResponse
     {
         $data = $request->validate([
-            'code'             => ['nullable', 'string', 'max:20', 'alpha_num', Rule::unique('affiliates', 'code')->ignore($affiliate->id)],
-            'commission_type'  => ['required', 'in:percent,fixed'],
+            'code' => ['nullable', 'string', 'max:20', 'alpha_num', Rule::unique('affiliates', 'code')->ignore($affiliate->id)],
+            'commission_type' => ['required', 'in:percent,fixed'],
             'commission_value' => ['required', 'numeric', 'min:0'],
             'payout_threshold' => ['required', 'numeric', 'min:0'],
-            'notes'            => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         if (! empty($data['code'])) {
@@ -121,7 +121,7 @@ class AffiliateController extends Controller
     public function approvePayout(AffiliatePayout $payout): RedirectResponse
     {
         $payout->update([
-            'status'       => 'paid',
+            'status' => 'paid',
             'processed_at' => now(),
         ]);
 

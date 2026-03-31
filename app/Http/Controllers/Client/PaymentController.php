@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Stripe\Checkout\Session as StripeSession;
 use Stripe\Stripe;
@@ -30,36 +29,36 @@ class PaymentController extends Controller
 
         try {
             $session = StripeSession::create([
-                'mode'        => 'payment',
-                'currency'    => config('services.stripe.currency', 'usd'),
-                'line_items'  => [[
-                    'quantity'   => 1,
+                'mode' => 'payment',
+                'currency' => config('services.stripe.currency', 'usd'),
+                'line_items' => [[
+                    'quantity' => 1,
                     'price_data' => [
-                        'currency'     => config('services.stripe.currency', 'usd'),
-                        'unit_amount'  => (int) round((float) $invoice->amount_due * 100),
+                        'currency' => config('services.stripe.currency', 'usd'),
+                        'unit_amount' => (int) round((float) $invoice->amount_due * 100),
                         'product_data' => [
-                            'name'        => "Invoice #{$invoice->id}",
+                            'name' => "Invoice #{$invoice->id}",
                             'description' => config('app.name').' — Invoice #'.$invoice->id,
                         ],
                     ],
                 ]],
-                'metadata'    => [
+                'metadata' => [
                     'invoice_id' => $invoice->id,
-                    'user_id'    => $request->user()->id,
+                    'user_id' => $request->user()->id,
                 ],
                 'success_url' => route('client.invoices.show', $invoice->id).'?paid=1',
-                'cancel_url'  => route('client.invoices.show', $invoice->id),
+                'cancel_url' => route('client.invoices.show', $invoice->id),
             ]);
 
             // Create a pending Payment record so we can reconcile the webhook
             Payment::create([
-                'invoice_id'    => $invoice->id,
-                'user_id'       => $request->user()->id,
-                'gateway'       => 'stripe',
-                'transaction_id'=> $session->id,
-                'amount'        => $invoice->amount_due,
-                'currency'      => strtoupper(config('services.stripe.currency', 'usd')),
-                'status'        => 'pending',
+                'invoice_id' => $invoice->id,
+                'user_id' => $request->user()->id,
+                'gateway' => 'stripe',
+                'transaction_id' => $session->id,
+                'amount' => $invoice->amount_due,
+                'currency' => strtoupper(config('services.stripe.currency', 'usd')),
+                'status' => 'pending',
             ]);
 
             return response()->json(['url' => $session->url]);

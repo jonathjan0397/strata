@@ -26,13 +26,13 @@ class AddonController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'description'   => ['nullable', 'string'],
-            'price'         => ['required', 'numeric', 'min:0'],
-            'setup_fee'     => ['required', 'numeric', 'min:0'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'setup_fee' => ['required', 'numeric', 'min:0'],
             'billing_cycle' => ['required', 'in:monthly,quarterly,semi_annual,annual,biennial,triennial,one_time'],
-            'is_active'     => ['boolean'],
-            'sort_order'    => ['integer'],
+            'is_active' => ['boolean'],
+            'sort_order' => ['integer'],
         ]);
 
         $addon = Addon::create($data);
@@ -49,13 +49,13 @@ class AddonController extends Controller
     public function update(Request $request, Addon $addon): RedirectResponse
     {
         $data = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'description'   => ['nullable', 'string'],
-            'price'         => ['required', 'numeric', 'min:0'],
-            'setup_fee'     => ['required', 'numeric', 'min:0'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'setup_fee' => ['required', 'numeric', 'min:0'],
             'billing_cycle' => ['required', 'in:monthly,quarterly,semi_annual,annual,biennial,triennial,one_time'],
-            'is_active'     => ['boolean'],
-            'sort_order'    => ['integer'],
+            'is_active' => ['boolean'],
+            'sort_order' => ['integer'],
         ]);
 
         $addon->update($data);

@@ -18,22 +18,22 @@ class PayPalPaymentController extends Controller
     private function client(): PayPalClient
     {
         $provider = new PayPalClient([
-            'mode'    => config('services.paypal.mode', 'sandbox'),
+            'mode' => config('services.paypal.mode', 'sandbox'),
             'sandbox' => [
-                'client_id'     => config('services.paypal.client_id'),
+                'client_id' => config('services.paypal.client_id'),
                 'client_secret' => config('services.paypal.client_secret'),
-                'app_id'        => '',
+                'app_id' => '',
             ],
             'live' => [
-                'client_id'     => config('services.paypal.client_id'),
+                'client_id' => config('services.paypal.client_id'),
                 'client_secret' => config('services.paypal.client_secret'),
-                'app_id'        => '',
+                'app_id' => '',
             ],
             'payment_action' => 'Sale',
-            'currency'       => config('services.paypal.currency', 'USD'),
-            'notify_url'     => '',
-            'locale'         => 'en_US',
-            'validate_ssl'   => true,
+            'currency' => config('services.paypal.currency', 'USD'),
+            'notify_url' => '',
+            'locale' => 'en_US',
+            'validate_ssl' => true,
         ]);
 
         $provider->getAccessToken();
@@ -54,16 +54,16 @@ class PayPalPaymentController extends Controller
             $provider = $this->client();
 
             $currency = strtoupper(config('services.paypal.currency', 'USD'));
-            $amount   = number_format((float) $invoice->amount_due, 2, '.', '');
+            $amount = number_format((float) $invoice->amount_due, 2, '.', '');
 
             $order = $provider->createOrder([
                 'intent' => 'CAPTURE',
                 'purchase_units' => [[
                     'reference_id' => (string) $invoice->id,
-                    'description'  => config('app.name').' — Invoice #'.$invoice->id,
-                    'amount'       => [
+                    'description' => config('app.name').' — Invoice #'.$invoice->id,
+                    'amount' => [
                         'currency_code' => $currency,
-                        'value'         => $amount,
+                        'value' => $amount,
                     ],
                 ]],
                 'application_context' => [
@@ -80,13 +80,13 @@ class PayPalPaymentController extends Controller
 
             // Store a pending payment record tied to the PayPal order ID
             Payment::create([
-                'invoice_id'     => $invoice->id,
-                'user_id'        => $request->user()->id,
-                'gateway'        => 'paypal',
+                'invoice_id' => $invoice->id,
+                'user_id' => $request->user()->id,
+                'gateway' => 'paypal',
                 'transaction_id' => $order['id'],
-                'amount'         => $invoice->amount_due,
-                'currency'       => $currency,
-                'status'         => 'pending',
+                'amount' => $invoice->amount_due,
+                'currency' => $currency,
+                'status' => 'pending',
             ]);
 
             // Find the approval link
@@ -120,7 +120,7 @@ class PayPalPaymentController extends Controller
 
         try {
             $provider = $this->client();
-            $capture  = $provider->capturePaymentOrder($orderId);
+            $capture = $provider->capturePaymentOrder($orderId);
 
             $status = $capture['status'] ?? null;
 
@@ -131,24 +131,24 @@ class PayPalPaymentController extends Controller
                 Payment::where('transaction_id', $orderId)
                     ->where('status', 'pending')
                     ->update([
-                        'status'           => 'completed',
-                        'transaction_id'   => $captureId,
+                        'status' => 'completed',
+                        'transaction_id' => $captureId,
                         'gateway_response' => json_encode($capture),
-                        'paid_at'          => now(),
+                        'paid_at' => now(),
                     ]);
 
                 // Mark invoice paid
                 if ($invoice->status !== 'paid') {
                     $invoice->update([
-                        'status'  => 'paid',
+                        'status' => 'paid',
                         'paid_at' => now(),
                     ]);
 
                     // Trigger on_payment provisioning
                     try {
                         OrderProvisioner::handleInvoicePaid($invoice);
-                    } catch (\Throwable $e) {
-                        Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+                    } catch (Throwable $e) {
+                        Log::error("on_payment provisioning failed for invoice #{$invoice->id}: ".$e->getMessage());
                     }
                 }
 

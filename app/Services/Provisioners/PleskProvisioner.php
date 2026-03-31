@@ -15,13 +15,14 @@ use RuntimeException;
 class PleskProvisioner implements ProvisionerDriver
 {
     private string $baseUrl;
+
     private string $auth;
 
     public function __construct(private readonly Module $module)
     {
-        $scheme        = $module->ssl ? 'https' : 'http';
+        $scheme = $module->ssl ? 'https' : 'http';
         $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/api/v2";
-        $this->auth    = decrypt($module->api_token_enc);
+        $this->auth = decrypt($module->api_token_enc);
     }
 
     public function slug(): string
@@ -44,11 +45,11 @@ class PleskProvisioner implements ProvisionerDriver
 
         // Create hosting subscription
         $payload = [
-            'name'                => $domain,
-            'ownerLogin'          => 'admin',
-            'hostingType'         => 'virtual',
-            'subscriptionId'      => null,
-            'ipAddresses'         => [],
+            'name' => $domain,
+            'ownerLogin' => 'admin',
+            'hostingType' => 'virtual',
+            'subscriptionId' => null,
+            'ipAddresses' => [],
         ];
 
         if ($plan) {
@@ -57,10 +58,10 @@ class PleskProvisioner implements ProvisionerDriver
 
         // Step 1: Create the customer / webspace
         $webspaceResp = $this->request('POST', '/webspaces', [
-            'name'        => $domain,
-            'ownerLogin'  => 'admin',
+            'name' => $domain,
+            'ownerLogin' => 'admin',
             'hostingType' => 'virtual',
-            'ip_addresses'=> [],
+            'ip_addresses' => [],
         ]);
 
         $subscriptionId = $webspaceResp['id'] ?? null;
@@ -70,17 +71,17 @@ class PleskProvisioner implements ProvisionerDriver
 
         // Step 2: Create the FTP / shell user for the subscription
         $this->request('POST', '/clients', [
-            'login'       => $username,
-            'password'    => $password,
-            'name'        => $domain,
-            'email'       => "admin@{$domain}",
-            'type'        => 'customer',
+            'login' => $username,
+            'password' => $password,
+            'name' => $domain,
+            'email' => "admin@{$domain}",
+            'type' => 'customer',
         ]);
 
         return [
             'username' => $username,
             'password' => $password,
-            'domain'   => $domain,
+            'domain' => $domain,
         ];
     }
 
@@ -127,17 +128,17 @@ class PleskProvisioner implements ProvisionerDriver
     private function request(string $method, string $path, array $body = []): mixed
     {
         $req = Http::withHeaders([
-            'Authorization' => 'Basic ' . base64_encode('admin:' . $this->auth),
-            'Content-Type'  => 'application/json',
-            'Accept'        => 'application/json',
+            'Authorization' => 'Basic '.base64_encode('admin:'.$this->auth),
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])->withOptions(['verify' => $this->module->ssl]);
 
         $response = match (strtoupper($method)) {
-            'GET'    => $req->get($this->baseUrl . $path),
-            'POST'   => $req->post($this->baseUrl . $path, $body),
-            'PUT'    => $req->put($this->baseUrl . $path, $body),
-            'DELETE' => $req->delete($this->baseUrl . $path),
-            default  => throw new RuntimeException("Unknown HTTP method: {$method}"),
+            'GET' => $req->get($this->baseUrl.$path),
+            'POST' => $req->post($this->baseUrl.$path, $body),
+            'PUT' => $req->put($this->baseUrl.$path, $body),
+            'DELETE' => $req->delete($this->baseUrl.$path),
+            default => throw new RuntimeException("Unknown HTTP method: {$method}"),
         };
 
         if (! $response->successful() && $method !== 'DELETE') {
@@ -156,6 +157,7 @@ class PleskProvisioner implements ProvisionerDriver
                 return $ws;
             }
         }
+
         return null;
     }
 
@@ -164,6 +166,7 @@ class PleskProvisioner implements ProvisionerDriver
         $base = preg_replace('/\.[^.]+$/', '', $domain);
         $base = preg_replace('/[^a-z0-9]/', '', strtolower($base));
         $base = substr($base, 0, 6);
-        return $base . Str::lower(Str::random(2));
+
+        return $base.Str::lower(Str::random(2));
     }
 }

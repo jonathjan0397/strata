@@ -15,37 +15,37 @@ return [
     */
 
     'google' => [
-        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect'      => env('APP_URL') . '/auth/google/callback',
+        'redirect' => env('APP_URL').'/auth/google/callback',
     ],
 
     'microsoft' => [
-        'client_id'     => env('MICROSOFT_CLIENT_ID'),
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
         'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
-        'redirect'      => env('APP_URL') . '/auth/microsoft/callback',
-        'tenant'        => env('MICROSOFT_TENANT_ID', 'common'),
+        'redirect' => env('APP_URL').'/auth/microsoft/callback',
+        'tenant' => env('MICROSOFT_TENANT_ID', 'common'),
     ],
 
     'stripe' => [
-        'key'            => env('STRIPE_KEY'),
-        'secret'         => env('STRIPE_SECRET'),
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
-        'currency'       => env('STRIPE_CURRENCY', 'usd'),
+        'currency' => env('STRIPE_CURRENCY', 'usd'),
     ],
 
     'paypal' => [
-        'client_id'     => env('PAYPAL_CLIENT_ID'),
+        'client_id' => env('PAYPAL_CLIENT_ID'),
         'client_secret' => env('PAYPAL_CLIENT_SECRET'),
-        'mode'          => env('PAYPAL_MODE', 'sandbox'), // sandbox | live
-        'currency'      => env('PAYPAL_CURRENCY', 'USD'),
+        'mode' => env('PAYPAL_MODE', 'sandbox'), // sandbox | live
+        'currency' => env('PAYPAL_CURRENCY', 'USD'),
     ],
 
     'authorizenet' => [
-        'login_id'        => env('AUTHORIZENET_API_LOGIN_ID'),
+        'login_id' => env('AUTHORIZENET_API_LOGIN_ID'),
         'transaction_key' => env('AUTHORIZENET_TRANSACTION_KEY'),
-        'client_key'      => env('AUTHORIZENET_CLIENT_KEY'),
-        'sandbox'         => env('AUTHORIZENET_SANDBOX', true),
+        'client_key' => env('AUTHORIZENET_CLIENT_KEY'),
+        'sandbox' => env('AUTHORIZENET_SANDBOX', true),
     ],
 
 ];

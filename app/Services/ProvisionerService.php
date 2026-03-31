@@ -13,10 +13,10 @@ use InvalidArgumentException;
 class ProvisionerService
 {
     private static array $drivers = [
-        'cpanel'      => CpanelProvisioner::class,
-        'plesk'       => PleskProvisioner::class,
+        'cpanel' => CpanelProvisioner::class,
+        'plesk' => PleskProvisioner::class,
         'directadmin' => DirectAdminProvisioner::class,
-        'hestia'      => HestiaProvisioner::class,
+        'hestia' => HestiaProvisioner::class,
     ];
 
     /** Return a driver instance for the given module. */

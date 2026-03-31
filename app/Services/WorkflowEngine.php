@@ -2,12 +2,17 @@
 
 namespace App\Services;
 
+use App\Jobs\ExecuteWorkflowAction;
+use App\Models\ClientCredit;
+use App\Models\Department;
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowRun;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -36,18 +41,19 @@ class WorkflowEngine
         // Evaluate all conditions (must ALL pass)
         foreach ($workflow->conditions as $condition) {
             $passed = static::evaluateCondition($condition->field, $condition->operator, $condition->value, $target);
-            $log[] = "Condition [{$condition->field} {$condition->operator} {$condition->value}]: " . ($passed ? 'pass' : 'fail');
+            $log[] = "Condition [{$condition->field} {$condition->operator} {$condition->value}]: ".($passed ? 'pass' : 'fail');
 
             if (! $passed) {
                 WorkflowRun::create([
                     'workflow_id' => $workflow->id,
-                    'trigger'     => $trigger,
+                    'trigger' => $trigger,
                     'target_type' => class_basename($target),
-                    'target_id'   => $target->getKey(),
-                    'status'      => 'skipped',
-                    'log'         => $log,
-                    'ran_at'      => now(),
+                    'target_id' => $target->getKey(),
+                    'status' => 'skipped',
+                    'log' => $log,
+                    'ran_at' => now(),
                 ]);
+
                 return;
             }
         }
@@ -56,9 +62,10 @@ class WorkflowEngine
         foreach ($workflow->actions as $action) {
             if ($action->delay_minutes > 0) {
                 // Schedule delayed actions via a queued job
-                \App\Jobs\ExecuteWorkflowAction::dispatch($action->id, $target->getMorphClass(), $target->getKey())
+                ExecuteWorkflowAction::dispatch($action->id, $target->getMorphClass(), $target->getKey())
                     ->delay(now()->addMinutes($action->delay_minutes));
                 $log[] = "Action [{$action->type}]: queued with {$action->delay_minutes}m delay";
+
                 continue;
             }
 
@@ -67,33 +74,34 @@ class WorkflowEngine
                 $log[] = "Action [{$action->type}]: executed";
             } catch (\Throwable $e) {
                 $log[] = "Action [{$action->type}]: failed — {$e->getMessage()}";
-                Log::error("WorkflowEngine action failed", [
+                Log::error('WorkflowEngine action failed', [
                     'workflow' => $workflow->id,
-                    'action'   => $action->type,
-                    'error'    => $e->getMessage(),
+                    'action' => $action->type,
+                    'error' => $e->getMessage(),
                 ]);
 
                 WorkflowRun::create([
                     'workflow_id' => $workflow->id,
-                    'trigger'     => $trigger,
+                    'trigger' => $trigger,
                     'target_type' => class_basename($target),
-                    'target_id'   => $target->getKey(),
-                    'status'      => 'failed',
-                    'log'         => $log,
-                    'ran_at'      => now(),
+                    'target_id' => $target->getKey(),
+                    'status' => 'failed',
+                    'log' => $log,
+                    'ran_at' => now(),
                 ]);
+
                 return;
             }
         }
 
         WorkflowRun::create([
             'workflow_id' => $workflow->id,
-            'trigger'     => $trigger,
+            'trigger' => $trigger,
             'target_type' => class_basename($target),
-            'target_id'   => $target->getKey(),
-            'status'      => 'completed',
-            'log'         => $log,
-            'ran_at'      => now(),
+            'target_id' => $target->getKey(),
+            'status' => 'completed',
+            'log' => $log,
+            'ran_at' => now(),
         ]);
     }
 
@@ -106,14 +114,14 @@ class WorkflowEngine
         $actual = static::resolveField($field, $target);
 
         return match ($operator) {
-            'eq'       => (string) $actual === $expected,
-            'neq'      => (string) $actual !== $expected,
-            'gt'       => (float) $actual > (float) $expected,
-            'lt'       => (float) $actual < (float) $expected,
-            'gte'      => (float) $actual >= (float) $expected,
-            'lte'      => (float) $actual <= (float) $expected,
+            'eq' => (string) $actual === $expected,
+            'neq' => (string) $actual !== $expected,
+            'gt' => (float) $actual > (float) $expected,
+            'lt' => (float) $actual < (float) $expected,
+            'gte' => (float) $actual >= (float) $expected,
+            'lte' => (float) $actual <= (float) $expected,
             'contains' => str_contains((string) $actual, $expected),
-            default    => false,
+            default => false,
         };
     }
 
@@ -123,7 +131,7 @@ class WorkflowEngine
      */
     private static function resolveField(string $field, Model $target): mixed
     {
-        $parts  = explode('.', $field);
+        $parts = explode('.', $field);
         $object = $target;
 
         foreach ($parts as $i => $part) {
@@ -150,28 +158,28 @@ class WorkflowEngine
     public static function executeAction(string $type, array $config, Model $target): void
     {
         match ($type) {
-            'send.email'       => static::actionSendEmail($config, $target),
-            'create.ticket'    => static::actionCreateTicket($config, $target),
-            'suspend.service'  => static::actionSuspendService($config, $target),
-            'add.credit'       => static::actionAddCredit($config, $target),
-            'call.webhook'     => static::actionCallWebhook($config, $target),
-            default            => throw new \RuntimeException("Unknown action type: {$type}"),
+            'send.email' => static::actionSendEmail($config, $target),
+            'create.ticket' => static::actionCreateTicket($config, $target),
+            'suspend.service' => static::actionSuspendService($config, $target),
+            'add.credit' => static::actionAddCredit($config, $target),
+            'call.webhook' => static::actionCallWebhook($config, $target),
+            default => throw new \RuntimeException("Unknown action type: {$type}"),
         };
     }
 
     private static function actionSendEmail(array $config, Model $target): void
     {
-        $to      = $config['to'] ?? null;
+        $to = $config['to'] ?? null;
         $subject = $config['subject'] ?? 'Notification';
-        $body    = $config['body'] ?? '';
+        $body = $config['body'] ?? '';
 
         // Resolve recipient: 'client' means the user associated with the target
         if ($to === 'client') {
             $user = match (true) {
                 $target instanceof Invoice => $target->user,
                 $target instanceof Service => $target->user,
-                $target instanceof User    => $target,
-                default                    => null,
+                $target instanceof User => $target,
+                default => null,
             };
             $to = $user?->email;
         }
@@ -188,8 +196,8 @@ class WorkflowEngine
         $user = match (true) {
             $target instanceof Invoice => $target->user,
             $target instanceof Service => $target->user,
-            $target instanceof User    => $target,
-            default                    => null,
+            $target instanceof User => $target,
+            default => null,
         };
 
         if (! $user) {
@@ -197,15 +205,15 @@ class WorkflowEngine
         }
 
         $deptName = $config['department'] ?? 'General';
-        $dept = \App\Models\Department::where('name', $deptName)->first();
+        $dept = Department::where('name', $deptName)->first();
 
-        \App\Models\SupportTicket::create([
-            'user_id'       => $user->id,
-            'subject'       => $config['subject'] ?? 'Automated Ticket',
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'subject' => $config['subject'] ?? 'Automated Ticket',
             'department_id' => $dept?->id,
-            'department'    => $dept?->name ?? $deptName,
-            'priority'      => $config['priority'] ?? 'medium',
-            'status'        => 'open',
+            'department' => $dept?->name ?? $deptName,
+            'priority' => $config['priority'] ?? 'medium',
+            'status' => 'open',
             'last_reply_at' => now(),
         ]);
     }
@@ -226,25 +234,25 @@ class WorkflowEngine
         $user = match (true) {
             $target instanceof Invoice => $target->user,
             $target instanceof Service => $target->user,
-            $target instanceof User    => $target,
-            default                    => null,
+            $target instanceof User => $target,
+            default => null,
         };
 
         if (! $user) {
             throw new \RuntimeException('add.credit: no user resolved');
         }
 
-        $amount      = (float) ($config['amount'] ?? 0);
+        $amount = (float) ($config['amount'] ?? 0);
         $description = $config['description'] ?? 'Automated credit';
 
         if ($amount <= 0) {
             throw new \RuntimeException('add.credit: amount must be positive');
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $amount, $description) {
-            \App\Models\ClientCredit::create([
-                'user_id'     => $user->id,
-                'amount'      => $amount,
+        DB::transaction(function () use ($user, $amount, $description) {
+            ClientCredit::create([
+                'user_id' => $user->id,
+                'amount' => $amount,
                 'description' => $description,
             ]);
             $user->increment('credit_balance', $amount);
@@ -260,8 +268,8 @@ class WorkflowEngine
         }
 
         $payload = array_merge($config['payload'] ?? [], [
-            'trigger'     => class_basename($target),
-            'target_id'   => $target->getKey(),
+            'trigger' => class_basename($target),
+            'target_id' => $target->getKey(),
             'target_type' => class_basename($target),
         ]);
 

@@ -26,22 +26,22 @@ class ModuleController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            'type'      => ['required', 'in:cpanel,plesk,directadmin,vestacp,cyberpanel,generic'],
-            'hostname'  => ['required', 'string'],
-            'port'      => ['required', 'integer', 'min:1', 'max:65535'],
-            'username'  => ['required', 'string'],
+            'name' => ['required', 'string', 'max:255'],
+            'type' => ['required', 'in:cpanel,plesk,directadmin,vestacp,cyberpanel,generic'],
+            'hostname' => ['required', 'string'],
+            'port' => ['required', 'integer', 'min:1', 'max:65535'],
+            'username' => ['required', 'string'],
             'api_token' => ['nullable', 'string'],
-            'password'  => ['nullable', 'string'],
-            'ssl'       => ['boolean'],
-            'active'    => ['boolean'],
+            'password' => ['nullable', 'string'],
+            'ssl' => ['boolean'],
+            'active' => ['boolean'],
             'max_accounts' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $module = Module::create([
             ...$data,
             'api_token_enc' => isset($data['api_token']) ? encrypt($data['api_token']) : null,
-            'password_enc'  => isset($data['password'])  ? encrypt($data['password'])  : null,
+            'password_enc' => isset($data['password']) ? encrypt($data['password']) : null,
         ]);
 
         return redirect()->route('admin.modules.index')
@@ -56,12 +56,12 @@ class ModuleController extends Controller
     public function update(Request $request, Module $module): RedirectResponse
     {
         $data = $request->validate([
-            'name'         => ['required', 'string', 'max:255'],
-            'hostname'     => ['required', 'string'],
-            'port'         => ['required', 'integer', 'min:1', 'max:65535'],
-            'username'     => ['required', 'string'],
-            'ssl'          => ['boolean'],
-            'active'       => ['boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'hostname' => ['required', 'string'],
+            'port' => ['required', 'integer', 'min:1', 'max:65535'],
+            'username' => ['required', 'string'],
+            'ssl' => ['boolean'],
+            'active' => ['boolean'],
             'max_accounts' => ['nullable', 'integer', 'min:1'],
         ]);
 

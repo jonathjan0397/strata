@@ -21,9 +21,9 @@ class StripeWebhookController extends Controller
     {
         Stripe::setApiKey(config('services.stripe.secret'));
 
-        $payload   = $request->getContent();
+        $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
-        $secret    = config('services.stripe.webhook_secret');
+        $secret = config('services.stripe.webhook_secret');
 
         if ($secret) {
             try {
@@ -42,8 +42,8 @@ class StripeWebhookController extends Controller
 
         match ($event->type) {
             'checkout.session.completed' => $this->handleCheckoutCompleted($event),
-            'checkout.session.expired'   => $this->handleCheckoutExpired($event),
-            default                      => null,
+            'checkout.session.expired' => $this->handleCheckoutExpired($event),
+            default => null,
         };
 
         return response('', 200);
@@ -51,7 +51,7 @@ class StripeWebhookController extends Controller
 
     private function handleCheckoutCompleted(Event $event): void
     {
-        $session   = $event->data->object;
+        $session = $event->data->object;
         $invoiceId = $session->metadata->invoice_id ?? null;
 
         if (! $invoiceId) {
@@ -69,28 +69,28 @@ class StripeWebhookController extends Controller
 
         if ($payment) {
             $payment->update([
-                'status'           => 'completed',
+                'status' => 'completed',
                 'gateway_response' => (array) $session,
-                'paid_at'          => now(),
+                'paid_at' => now(),
             ]);
         } else {
             // Fallback: create payment record if it was somehow missed
             Payment::create([
-                'invoice_id'     => $invoice->id,
-                'user_id'        => $invoice->user_id,
-                'gateway'        => 'stripe',
+                'invoice_id' => $invoice->id,
+                'user_id' => $invoice->user_id,
+                'gateway' => 'stripe',
                 'transaction_id' => $session->id,
-                'amount'         => $invoice->amount_due,
-                'currency'       => strtoupper($session->currency ?? 'usd'),
-                'status'         => 'completed',
+                'amount' => $invoice->amount_due,
+                'currency' => strtoupper($session->currency ?? 'usd'),
+                'status' => 'completed',
                 'gateway_response' => (array) $session,
-                'paid_at'        => now(),
+                'paid_at' => now(),
             ]);
         }
 
         // Mark invoice paid
         $invoice->update([
-            'status'  => 'paid',
+            'status' => 'paid',
             'paid_at' => now(),
         ]);
 
@@ -100,15 +100,15 @@ class StripeWebhookController extends Controller
         try {
             OrderProvisioner::handleInvoicePaid($invoice);
         } catch (\Throwable $e) {
-            Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+            Log::error("on_payment provisioning failed for invoice #{$invoice->id}: ".$e->getMessage());
         }
 
         try {
             Mail::to($invoice->user->email)->send(new TemplateMailable('invoice.paid', [
-                'name'        => $invoice->user->name,
-                'app_name'    => config('app.name'),
-                'invoice_id'  => $invoice->id,
-                'amount'      => number_format((float) $invoice->total, 2),
+                'name' => $invoice->user->name,
+                'app_name' => config('app.name'),
+                'invoice_id' => $invoice->id,
+                'amount' => number_format((float) $invoice->total, 2),
                 'invoice_url' => route('client.invoices.show', $invoice->id),
             ]));
         } catch (\Throwable) {

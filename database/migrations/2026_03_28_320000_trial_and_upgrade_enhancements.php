@@ -10,7 +10,7 @@ return new class extends Migration
     {
         // Trial days on products
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'trial_days')) {
+            if (! Schema::hasColumn('products', 'trial_days')) {
                 $table->unsignedSmallInteger('trial_days')
                     ->nullable()
                     ->default(null)
@@ -21,7 +21,7 @@ return new class extends Migration
 
         // Trial end date on services
         Schema::table('services', function (Blueprint $table) {
-            if (!Schema::hasColumn('services', 'trial_ends_at')) {
+            if (! Schema::hasColumn('services', 'trial_ends_at')) {
                 $table->date('trial_ends_at')
                     ->nullable()
                     ->after('scheduled_cancel_at')

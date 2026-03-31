@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Install;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -20,36 +22,36 @@ class UpgradeController extends Controller
     {
         abort_unless(file_exists(storage_path('installed.lock')), 404, 'Strata is not installed.');
 
-        $lock           = json_decode(file_get_contents(storage_path('installed.lock')), true) ?? [];
+        $lock = json_decode(file_get_contents(storage_path('installed.lock')), true) ?? [];
         $currentVersion = $lock['version'] ?? 'unknown';
-        $codeVersion    = $this->appVersion();
+        $codeVersion = $this->appVersion();
 
         // Pre-flight checks
         $checks = [
             [
-                'label'  => 'PHP >= 8.3',
-                'pass'   => version_compare(PHP_VERSION, '8.3.0', '>='),
+                'label' => 'PHP >= 8.3',
+                'pass' => version_compare(PHP_VERSION, '8.3.0', '>='),
                 'detail' => PHP_VERSION,
             ],
             [
-                'label'  => 'PHP ext-zip (file extraction)',
-                'pass'   => extension_loaded('zip'),
+                'label' => 'PHP ext-zip (file extraction)',
+                'pass' => extension_loaded('zip'),
                 'detail' => extension_loaded('zip') ? 'available' : 'missing — upload files via FTP and use "files already uploaded" mode',
-                'warn'   => true, // Not a hard failure — wizard can skip extraction
+                'warn' => true, // Not a hard failure — wizard can skip extraction
             ],
             [
-                'label'  => 'App root writable',
-                'pass'   => is_writable(base_path()),
+                'label' => 'App root writable',
+                'pass' => is_writable(base_path()),
                 'detail' => base_path(),
             ],
             [
-                'label'  => 'Storage writable',
-                'pass'   => is_writable(storage_path()),
+                'label' => 'Storage writable',
+                'pass' => is_writable(storage_path()),
                 'detail' => storage_path(),
             ],
             [
-                'label'  => 'Bootstrap cache writable',
-                'pass'   => is_writable(base_path('bootstrap/cache')),
+                'label' => 'Bootstrap cache writable',
+                'pass' => is_writable(base_path('bootstrap/cache')),
                 'detail' => base_path('bootstrap/cache'),
             ],
         ];
@@ -60,13 +62,13 @@ class UpgradeController extends Controller
 
         return Inertia::render('Install/Upgrade', [
             'currentVersion' => $currentVersion,
-            'codeVersion'    => $codeVersion,
+            'codeVersion' => $codeVersion,
             'alreadyUpdated' => $currentVersion !== $codeVersion,
-            'hasZipExtension'=> extension_loaded('zip'),
-            'checks'         => $checks,
-            'hardFail'       => $hardFail,
-            'installedAt'    => $lock['installed_at'] ?? null,
-            'lastUpgradedAt' => $lock['upgraded_at']  ?? null,
+            'hasZipExtension' => extension_loaded('zip'),
+            'checks' => $checks,
+            'hardFail' => $hardFail,
+            'installedAt' => $lock['installed_at'] ?? null,
+            'lastUpgradedAt' => $lock['upgraded_at'] ?? null,
         ]);
     }
 
@@ -74,7 +76,7 @@ class UpgradeController extends Controller
 
     public function verify(Request $request): JsonResponse
     {
-        $email    = trim((string) $request->input('email', ''));
+        $email = trim((string) $request->input('email', ''));
         $password = base64_decode((string) $request->input('password', ''));
 
         if (! $email || ! $password) {
@@ -82,7 +84,7 @@ class UpgradeController extends Controller
         }
 
         try {
-            $user = \App\Models\User::where('email', $email)
+            $user = User::where('email', $email)
                 ->whereHas('roles', fn ($q) => $q->where('name', 'super-admin'))
                 ->first();
 
@@ -92,7 +94,7 @@ class UpgradeController extends Controller
 
             return response()->json(['valid' => true]);
         } catch (Throwable $e) {
-            return response()->json(['valid' => false, 'error' => 'Database error: ' . $e->getMessage()], 500);
+            return response()->json(['valid' => false, 'error' => 'Database error: '.$e->getMessage()], 500);
         }
     }
 
@@ -108,7 +110,7 @@ class UpgradeController extends Controller
             return response()->json(['success' => false, 'error' => 'PHP ext-zip not available.'], 500);
         }
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($request->file('zip')->getRealPath()) !== true) {
             return response()->json(['success' => false, 'error' => 'Invalid or corrupted ZIP file.'], 422);
         }
@@ -122,7 +124,7 @@ class UpgradeController extends Controller
 
         $decoded = json_decode($composerJson, true);
         $version = $decoded['version'] ?? null;
-        $name    = $decoded['name']    ?? null;
+        $name = $decoded['name'] ?? null;
 
         if (! $version || ! str_contains((string) $name, 'strata')) {
             return response()->json(['success' => false, 'error' => 'Could not detect Strata version from ZIP. Ensure you are uploading an official Strata release package.'], 422);
@@ -141,11 +143,11 @@ class UpgradeController extends Controller
         @set_time_limit(0);
 
         // Re-verify credentials every time — no session trust
-        $email    = trim((string) $request->input('email', ''));
+        $email = trim((string) $request->input('email', ''));
         $password = base64_decode((string) $request->input('password', ''));
 
         try {
-            $user = \App\Models\User::where('email', $email)
+            $user = User::where('email', $email)
                 ->whereHas('roles', fn ($q) => $q->where('name', 'super-admin'))
                 ->first();
 
@@ -158,7 +160,7 @@ class UpgradeController extends Controller
                 $user->forceFill(['email_verified_at' => now()])->save();
             }
         } catch (Throwable $e) {
-            return response()->json(['success' => false, 'error' => 'Auth error: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'error' => 'Auth error: '.$e->getMessage()], 500);
         }
 
         $log = [];
@@ -170,12 +172,12 @@ class UpgradeController extends Controller
                     throw new \RuntimeException('PHP ext-zip is not available. Upload files via FTP instead and re-run without a ZIP.');
                 }
 
-                $zip = new ZipArchive();
+                $zip = new ZipArchive;
                 if ($zip->open($request->file('zip')->getRealPath()) !== true) {
                     throw new \RuntimeException('ZIP file could not be opened. It may be corrupted.');
                 }
 
-                $dest  = rtrim(base_path(), '/');
+                $dest = rtrim(base_path(), '/');
                 $count = 0;
 
                 for ($i = 0; $i < $zip->numFiles; $i++) {
@@ -185,7 +187,7 @@ class UpgradeController extends Controller
                         continue;
                     }
 
-                    $target = $dest . '/' . $name;
+                    $target = $dest.'/'.$name;
 
                     if (str_ends_with($name, '/')) {
                         if (! is_dir($target)) {
@@ -212,7 +214,7 @@ class UpgradeController extends Controller
             // ── 2. Run database migrations ────────────────────────────────────
             Artisan::call('migrate', ['--force' => true, '--no-interaction' => true]);
             $migrateOutput = trim(Artisan::output());
-            $log[] = 'Migrations: ' . ($migrateOutput ?: 'Nothing to migrate.');
+            $log[] = 'Migrations: '.($migrateOutput ?: 'Nothing to migrate.');
 
             // ── 3. Clear all caches ───────────────────────────────────────────
             foreach (['config:clear', 'route:clear', 'view:clear', 'cache:clear', 'event:clear'] as $cmd) {
@@ -233,16 +235,16 @@ class UpgradeController extends Controller
             }
 
             // ── 4. Update installed.lock with new version ─────────────────────
-            $lockPath   = storage_path('installed.lock');
-            $lock       = json_decode(file_get_contents($lockPath), true) ?? [];
+            $lockPath = storage_path('installed.lock');
+            $lock = json_decode(file_get_contents($lockPath), true) ?? [];
             $newVersion = $this->appVersion();
 
-            $lock['version']     = $newVersion;
+            $lock['version'] = $newVersion;
             $lock['upgraded_at'] = now()->toIso8601String();
 
             // Backfill install_token and install_secret for installs that pre-date their introduction
             if (empty($lock['install_token'])) {
-                $lock['install_token'] = \Illuminate\Support\Str::uuid()->toString();
+                $lock['install_token'] = Str::uuid()->toString();
             }
             if (empty($lock['install_secret'])) {
                 $lock['install_secret'] = bin2hex(random_bytes(32));
@@ -252,16 +254,16 @@ class UpgradeController extends Controller
             $log[] = "Lock file updated → {$newVersion}.";
 
             return response()->json([
-                'success'     => true,
+                'success' => true,
                 'new_version' => $newVersion,
-                'log'         => $log,
+                'log' => $log,
             ]);
 
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
-                'error'   => $e->getMessage(),
-                'log'     => $log,
+                'error' => $e->getMessage(),
+                'log' => $log,
             ], 500);
         }
     }
@@ -291,6 +293,7 @@ class UpgradeController extends Controller
                 return $decoded['version'];
             }
         }
+
         return '1.0-RC1';
     }
 }

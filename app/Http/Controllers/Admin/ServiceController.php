@@ -22,10 +22,9 @@ class ServiceController extends Controller
     {
         $services = Service::with(['user', 'product'])
             ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->when($request->search, fn ($q, $s) =>
-                $q->where('domain', 'like', "%{$s}%")
-                  ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")
-                                                     ->orWhere('email', 'like', "%{$s}%"))
+            ->when($request->search, fn ($q, $s) => $q->where('domain', 'like', "%{$s}%")
+                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%"))
             )
             ->latest()
             ->paginate(25)
@@ -33,7 +32,7 @@ class ServiceController extends Controller
 
         return Inertia::render('Admin/Services/Index', [
             'services' => $services,
-            'filters'  => $request->only('search', 'status'),
+            'filters' => $request->only('search', 'status'),
         ]);
     }
 
@@ -42,8 +41,8 @@ class ServiceController extends Controller
         $service->load(['user', 'product', 'invoiceItems.invoice', 'orderItem.order', 'serviceAddons.addon']);
 
         return Inertia::render('Admin/Services/Show', [
-            'service'          => $service,
-            'availableAddons'  => Addon::where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'price', 'billing_cycle']),
+            'service' => $service,
+            'availableAddons' => Addon::where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'price', 'billing_cycle']),
         ]);
     }
 
@@ -55,10 +54,10 @@ class ServiceController extends Controller
 
         DB::transaction(function () use ($service, $addon) {
             $sa = ServiceAddon::create([
-                'service_id'    => $service->id,
-                'addon_id'      => $addon->id,
-                'status'        => 'active',
-                'amount'        => $addon->price,
+                'service_id' => $service->id,
+                'addon_id' => $addon->id,
+                'status' => 'active',
+                'amount' => $addon->price,
                 'billing_cycle' => $addon->billing_cycle,
                 'next_due_date' => $this->nextDueDate($addon->billing_cycle),
             ]);
@@ -66,36 +65,36 @@ class ServiceController extends Controller
             $lineTotal = (float) $addon->price + (float) $addon->setup_fee;
             if ($lineTotal > 0) {
                 $inv = Invoice::create([
-                    'user_id'    => $service->user_id,
-                    'status'     => 'unpaid',
-                    'subtotal'   => $lineTotal,
-                    'tax_rate'   => 0,
-                    'tax'        => 0,
-                    'total'      => $lineTotal,
+                    'user_id' => $service->user_id,
+                    'status' => 'unpaid',
+                    'subtotal' => $lineTotal,
+                    'tax_rate' => 0,
+                    'tax' => 0,
+                    'total' => $lineTotal,
                     'amount_due' => $lineTotal,
-                    'date'       => now()->toDateString(),
-                    'due_date'   => now()->addDays(7)->toDateString(),
-                    'notes'      => "Addon: {$addon->name} on service #{$service->id}",
+                    'date' => now()->toDateString(),
+                    'due_date' => now()->addDays(7)->toDateString(),
+                    'notes' => "Addon: {$addon->name} on service #{$service->id}",
                 ]);
 
                 if ((float) $addon->setup_fee > 0) {
                     $inv->items()->create([
-                        'service_id'      => $service->id,
-                        'service_addon_id'=> $sa->id,
-                        'description'     => "Setup Fee — {$addon->name}",
-                        'quantity'        => 1,
-                        'unit_price'      => $addon->setup_fee,
-                        'total'           => $addon->setup_fee,
+                        'service_id' => $service->id,
+                        'service_addon_id' => $sa->id,
+                        'description' => "Setup Fee — {$addon->name}",
+                        'quantity' => 1,
+                        'unit_price' => $addon->setup_fee,
+                        'total' => $addon->setup_fee,
                     ]);
                 }
 
                 $inv->items()->create([
-                    'service_id'      => $service->id,
-                    'service_addon_id'=> $sa->id,
-                    'description'     => $addon->name,
-                    'quantity'        => 1,
-                    'unit_price'      => $addon->price,
-                    'total'           => $addon->price,
+                    'service_id' => $service->id,
+                    'service_addon_id' => $sa->id,
+                    'description' => $addon->name,
+                    'quantity' => 1,
+                    'unit_price' => $addon->price,
+                    'total' => $addon->price,
                 ]);
             }
         });
@@ -123,7 +122,7 @@ class ServiceController extends Controller
         try {
             OrderProvisioner::provision($service);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Provisioning failed: ' . $e->getMessage());
+            return back()->with('error', 'Provisioning failed: '.$e->getMessage());
         }
 
         return back()->with('success', 'Service approved and activated.');
@@ -149,7 +148,7 @@ class ServiceController extends Controller
     public function terminate(Service $service): RedirectResponse
     {
         $service->update([
-            'status'           => 'terminated',
+            'status' => 'terminated',
             'termination_date' => now(),
         ]);
 
@@ -163,7 +162,7 @@ class ServiceController extends Controller
         if ($service->cancellation_type === 'end_of_period' && $service->next_due_date) {
             // Service stays active until the current period ends
             $service->update([
-                'status'              => 'active',
+                'status' => 'active',
                 'scheduled_cancel_at' => $service->next_due_date,
             ]);
 
@@ -172,7 +171,7 @@ class ServiceController extends Controller
 
         // Immediate cancellation
         $service->update([
-            'status'           => 'cancelled',
+            'status' => 'cancelled',
             'termination_date' => now(),
         ]);
 
@@ -185,13 +184,13 @@ class ServiceController extends Controller
     private function nextDueDate(string $cycle): string
     {
         $days = match ($cycle) {
-            'monthly'     => 30,
-            'quarterly'   => 91,
+            'monthly' => 30,
+            'quarterly' => 91,
             'semi_annual' => 182,
-            'annual'      => 365,
-            'biennial'    => 730,
-            'triennial'   => 1095,
-            default       => 30,
+            'annual' => 365,
+            'biennial' => 730,
+            'triennial' => 1095,
+            default => 30,
         };
 
         return now()->addDays($days)->toDateString();
@@ -202,11 +201,11 @@ class ServiceController extends Controller
         abort_unless($service->status === 'cancellation_requested', 422);
 
         $service->update([
-            'status'                    => 'active',
-            'cancellation_reason'       => null,
+            'status' => 'active',
+            'cancellation_reason' => null,
             'cancellation_requested_at' => null,
-            'cancellation_type'         => null,
-            'scheduled_cancel_at'       => null,
+            'cancellation_type' => null,
+            'scheduled_cancel_at' => null,
         ]);
 
         return back()->with('success', 'Cancellation request rejected — service restored to active.');

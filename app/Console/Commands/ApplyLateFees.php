@@ -8,22 +8,24 @@ use Illuminate\Console\Command;
 
 class ApplyLateFees extends Command
 {
-    protected $signature   = 'billing:apply-late-fees';
+    protected $signature = 'billing:apply-late-fees';
+
     protected $description = 'Apply late fees to overdue invoices past the configured threshold';
 
     public function handle(): int
     {
-        $feeType   = Setting::get('late_fee_type', 'fixed');   // 'fixed' | 'percent'
+        $feeType = Setting::get('late_fee_type', 'fixed');   // 'fixed' | 'percent'
         $feeAmount = (float) Setting::get('late_fee_amount', 0);
-        $feeDays   = (int) Setting::get('late_fee_days', 7);   // days past due before fee applies
+        $feeDays = (int) Setting::get('late_fee_days', 7);   // days past due before fee applies
 
         if ($feeAmount <= 0) {
             $this->info('Late fees disabled (late_fee_amount = 0).');
+
             return self::SUCCESS;
         }
 
         $cutoff = now()->subDays($feeDays)->startOfDay();
-        $count  = 0;
+        $count = 0;
 
         $invoices = Invoice::where('status', 'overdue')
             ->where('due_date', '<=', $cutoff)
@@ -41,9 +43,9 @@ class ApplyLateFees extends Command
 
             $invoice->items()->create([
                 'description' => 'Late Fee',
-                'quantity'    => 1,
-                'unit_price'  => $fee,
-                'total'       => $fee,
+                'quantity' => 1,
+                'unit_price' => $fee,
+                'total' => $fee,
             ]);
 
             $invoice->increment('total', $fee);

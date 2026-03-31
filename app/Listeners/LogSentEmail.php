@@ -13,9 +13,9 @@ class LogSentEmail
         $message = $event->message;
 
         $toAddresses = array_keys($message->getTo() ?? []);
-        $to          = implode(', ', $toAddresses);
-        $subject     = $message->getSubject() ?? '(no subject)';
-        $body        = $message->getHtmlBody() ?? $message->getTextBody();
+        $to = implode(', ', $toAddresses);
+        $subject = $message->getSubject() ?? '(no subject)';
+        $body = $message->getHtmlBody() ?? $message->getTextBody();
 
         // Try to resolve a user_id from the recipient email
         $userId = null;
@@ -24,10 +24,10 @@ class LogSentEmail
         }
 
         EmailLog::create([
-            'to'      => $to,
+            'to' => $to,
             'subject' => $subject,
-            'body'    => $body,
-            'mailer'  => config('mail.default', 'smtp'),
+            'body' => $body,
+            'mailer' => config('mail.default', 'smtp'),
             'user_id' => $userId,
             'sent_at' => now(),
         ]);

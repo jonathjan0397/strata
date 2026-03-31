@@ -24,7 +24,7 @@ class GatewayService
             throw new InvalidArgumentException("Unknown payment gateway: {$slug}");
         }
 
-        return new static::$drivers[$slug]();
+        return new static::$drivers[$slug];
     }
 
     /**

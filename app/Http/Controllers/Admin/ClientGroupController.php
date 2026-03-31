@@ -24,9 +24,9 @@ class ClientGroupController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name'           => ['required', 'string', 'max:100', 'unique:client_groups'],
-            'description'    => ['nullable', 'string', 'max:500'],
-            'discount_type'  => ['required', 'in:none,percent,fixed'],
+            'name' => ['required', 'string', 'max:100', 'unique:client_groups'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'discount_type' => ['required', 'in:none,percent,fixed'],
             'discount_value' => ['required', 'numeric', 'min:0'],
         ]);
 
@@ -38,9 +38,9 @@ class ClientGroupController extends Controller
     public function update(Request $request, ClientGroup $clientGroup): RedirectResponse
     {
         $request->validate([
-            'name'           => ['required', 'string', 'max:100', 'unique:client_groups,name,'.$clientGroup->id],
-            'description'    => ['nullable', 'string', 'max:500'],
-            'discount_type'  => ['required', 'in:none,percent,fixed'],
+            'name' => ['required', 'string', 'max:100', 'unique:client_groups,name,'.$clientGroup->id],
+            'description' => ['nullable', 'string', 'max:500'],
+            'discount_type' => ['required', 'in:none,percent,fixed'],
             'discount_value' => ['required', 'numeric', 'min:0'],
         ]);
 

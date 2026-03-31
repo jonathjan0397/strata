@@ -9,9 +9,6 @@ use App\Models\OrderItem;
 use App\Models\Service;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Services\AuditLogger;
-use App\Services\DomainRegistrarService;
-use App\Services\WorkflowEngine;
 
 class OrderProvisioner
 {
@@ -28,7 +25,7 @@ class OrderProvisioner
     {
         $service->loadMissing(['user', 'product']);
 
-        $product     = $service->product;
+        $product = $service->product;
         $credentials = [];
 
         // Attempt auto-provisioning if a supported module is configured
@@ -37,15 +34,15 @@ class OrderProvisioner
 
             if ($module) {
                 $driver = ProvisionerService::forModule($module);
-                $plan   = $product->module_config['plan'] ?? null;
+                $plan = $product->module_config['plan'] ?? null;
                 $result = $driver->createAccount($service->domain ?? '', $plan);
 
                 $credentials = [
-                    'username'        => $result['username'],
-                    'password_enc'    => encrypt($result['password']),
+                    'username' => $result['username'],
+                    'password_enc' => encrypt($result['password']),
                     'server_hostname' => $module->hostname,
-                    'server_port'     => $module->port,
-                    'module_data'     => ['module_id' => $module->id, 'provisioned_at' => now()->toIso8601String()],
+                    'server_port' => $module->port,
+                    'module_data' => ['module_id' => $module->id, 'provisioned_at' => now()->toIso8601String()],
                 ];
 
                 $module->increment('current_accounts');
@@ -101,8 +98,9 @@ class OrderProvisioner
                 try {
                     static::handleDomainService($service);
                 } catch (\Throwable $e) {
-                    Log::error("Domain service handling failed for service #{$service->id}: " . $e->getMessage());
+                    Log::error("Domain service handling failed for service #{$service->id}: ".$e->getMessage());
                 }
+
                 continue;
             }
 
@@ -113,7 +111,7 @@ class OrderProvisioner
             try {
                 static::provision($service);
             } catch (\Throwable $e) {
-                Log::error("Auto-provisioning failed for service #{$service->id}: " . $e->getMessage());
+                Log::error("Auto-provisioning failed for service #{$service->id}: ".$e->getMessage());
             }
         }
     }
@@ -130,7 +128,7 @@ class OrderProvisioner
         }
 
         $registrarData = $domain->registrar_data ?? [];
-        $driver        = DomainRegistrarService::driver($domain->registrar);
+        $driver = DomainRegistrarService::driver($domain->registrar);
 
         if ($domain->status === 'pending') {
             // New registration
@@ -139,14 +137,14 @@ class OrderProvisioner
             $result = $driver->registerDomain($domain->name, $years, $registrarData);
 
             $domain->update([
-                'status'         => 'active',
-                'registered_at'  => now(),
-                'expires_at'     => now()->addYears($years),
+                'status' => 'active',
+                'registered_at' => now(),
+                'expires_at' => now()->addYears($years),
                 'registrar_data' => array_merge($registrarData, $result['registrar_data'] ?? []),
             ]);
 
             $service->update([
-                'status'            => 'active',
+                'status' => 'active',
                 'registration_date' => now(),
             ]);
 
@@ -160,9 +158,9 @@ class OrderProvisioner
             $result = $driver->transferDomain($domain->name, $authCode);
 
             $domain->update([
-                'status'         => 'transferring',
+                'status' => 'transferring',
                 'registrar_data' => array_merge($registrarData, [
-                    'transfer_id'           => $result['transfer_id'] ?? null,
+                    'transfer_id' => $result['transfer_id'] ?? null,
                     'transfer_initiated_at' => now()->toIso8601String(),
                 ]),
             ]);
@@ -181,14 +179,14 @@ class OrderProvisioner
 
     private static function sendDomainEmail(Service $service, Domain $domain): void
     {
-        $user      = $service->user ?? $service->loadMissing('user')->user;
+        $user = $service->user ?? $service->loadMissing('user')->user;
         $isTransfer = $domain->status === 'transferring';
 
         $vars = [
-            'name'       => $user->name,
-            'app_name'   => config('app.name'),
-            'domain'     => $domain->name,
-            'registrar'  => $domain->registrar,
+            'name' => $user->name,
+            'app_name' => config('app.name'),
+            'domain' => $domain->name,
+            'registrar' => $domain->registrar,
             'expires_at' => $domain->expires_at?->format('M d, Y') ?? '—',
             'portal_url' => route('client.domains.show', $domain->id),
         ];
@@ -204,23 +202,23 @@ class OrderProvisioner
 
     private static function sendActivationEmail(Service $service, ?string $password): void
     {
-        $user    = $service->user;
+        $user = $service->user;
         $product = $service->product;
 
-        $ns1 = $service->server_hostname ? 'ns1.' . $service->server_hostname : '—';
-        $ns2 = $service->server_hostname ? 'ns2.' . $service->server_hostname : '—';
+        $ns1 = $service->server_hostname ? 'ns1.'.$service->server_hostname : '—';
+        $ns2 = $service->server_hostname ? 'ns2.'.$service->server_hostname : '—';
 
         $vars = [
-            'name'         => $user->name,
-            'app_name'     => config('app.name'),
+            'name' => $user->name,
+            'app_name' => config('app.name'),
             'service_name' => $product?->name ?? 'Service',
-            'domain'       => $service->domain ?? '—',
-            'username'     => $service->username ?? '—',
-            'password'     => $password ?? '—',
-            'server'       => $service->server_hostname ?? '—',
-            'nameserver1'  => $ns1,
-            'nameserver2'  => $ns2,
-            'portal_url'   => route('client.services.show', $service->id),
+            'domain' => $service->domain ?? '—',
+            'username' => $service->username ?? '—',
+            'password' => $password ?? '—',
+            'server' => $service->server_hostname ?? '—',
+            'nameserver1' => $ns1,
+            'nameserver2' => $ns2,
+            'portal_url' => route('client.services.show', $service->id),
         ];
 
         try {

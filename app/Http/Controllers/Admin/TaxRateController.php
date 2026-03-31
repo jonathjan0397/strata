@@ -21,12 +21,12 @@ class TaxRateController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name'       => ['required', 'string', 'max:100'],
-            'rate'       => ['required', 'numeric', 'min:0', 'max:100'],
-            'country'    => ['nullable', 'string', 'size:2'],
-            'state'      => ['nullable', 'string', 'max:10'],
+            'name' => ['required', 'string', 'max:100'],
+            'rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'country' => ['nullable', 'string', 'size:2'],
+            'state' => ['nullable', 'string', 'max:10'],
             'is_default' => ['boolean'],
-            'active'     => ['boolean'],
+            'active' => ['boolean'],
         ]);
 
         // Only one default at a time
@@ -42,12 +42,12 @@ class TaxRateController extends Controller
     public function update(Request $request, TaxRate $taxRate): RedirectResponse
     {
         $request->validate([
-            'name'       => ['required', 'string', 'max:100'],
-            'rate'       => ['required', 'numeric', 'min:0', 'max:100'],
-            'country'    => ['nullable', 'string', 'size:2'],
-            'state'      => ['nullable', 'string', 'max:10'],
+            'name' => ['required', 'string', 'max:100'],
+            'rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'country' => ['nullable', 'string', 'size:2'],
+            'state' => ['nullable', 'string', 'max:10'],
             'is_default' => ['boolean'],
-            'active'     => ['boolean'],
+            'active' => ['boolean'],
         ]);
 
         if ($request->boolean('is_default')) {

@@ -9,7 +9,8 @@ use Illuminate\Console\Command;
 
 class ProcessScheduledCancellations extends Command
 {
-    protected $signature   = 'billing:process-cancellations';
+    protected $signature = 'billing:process-cancellations';
+
     protected $description = 'Cancel services whose end-of-period cancellation date has passed.';
 
     public function handle(): int
@@ -22,6 +23,7 @@ class ProcessScheduledCancellations extends Command
 
         if ($services->isEmpty()) {
             $this->info('No scheduled cancellations due.');
+
             return self::SUCCESS;
         }
 
@@ -29,19 +31,21 @@ class ProcessScheduledCancellations extends Command
 
         foreach ($services as $service) {
             $service->update([
-                'status'              => 'cancelled',
-                'termination_date'    => now(),
+                'status' => 'cancelled',
+                'termination_date' => now(),
                 'scheduled_cancel_at' => null,
             ]);
 
             AuditLogger::log('service.cancelled', $service, ['reason' => 'end_of_period']);
             WorkflowEngine::fire('service.cancelled', $service);
 
-            $this->line("Cancelled service #{$service->id} ({$service->domain ?? $service->product?->name})");
+            $label = $service->domain ?? $service->product?->name ?? '';
+            $this->line("Cancelled service #{$service->id} ({$label})");
             $count++;
         }
 
         $this->info("Cancelled {$count} service(s).");
+
         return self::SUCCESS;
     }
 }

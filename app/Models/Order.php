@@ -19,12 +19,12 @@ class Order extends Model
     protected function casts(): array
     {
         return [
-            'subtotal'     => 'decimal:2',
-            'tax'          => 'decimal:2',
-            'total'        => 'decimal:2',
-            'discount'     => 'decimal:2',
-            'fraud_score'  => 'decimal:2',
-            'fraud_flags'  => 'array',
+            'subtotal' => 'decimal:2',
+            'tax' => 'decimal:2',
+            'total' => 'decimal:2',
+            'discount' => 'decimal:2',
+            'fraud_score' => 'decimal:2',
+            'fraud_flags' => 'array',
         ];
     }
 

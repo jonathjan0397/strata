@@ -24,10 +24,10 @@ class MailSettingsServiceProvider extends ServiceProvider
         Config::set('mail.default', $mailer);
 
         Config::set('mail.from.address', $s['mail_from_address'] ?? config('mail.from.address'));
-        Config::set('mail.from.name',    $s['mail_from_name']    ?? config('mail.from.name'));
+        Config::set('mail.from.name', $s['mail_from_name'] ?? config('mail.from.name'));
 
         if ($mailer === 'smtp') {
-            $port       = (int) ($s['mail_port'] ?? 25);
+            $port = (int) ($s['mail_port'] ?? 25);
             $encryption = $s['mail_encryption'] ?? 'auto';
 
             // Resolve 'auto' to the correct Symfony Mailer scheme based on port.
@@ -37,9 +37,9 @@ class MailSettingsServiceProvider extends ServiceProvider
             // anything else on 'auto' → null (let Symfony negotiate)
             if ($encryption === 'auto') {
                 $scheme = match ($port) {
-                    465       => 'smtps',
+                    465 => 'smtps',
                     587, 2525 => 'smtp',
-                    default   => null,
+                    default => null,
                 };
             } elseif ($encryption === 'ssl') {
                 $scheme = 'smtps';
@@ -49,11 +49,11 @@ class MailSettingsServiceProvider extends ServiceProvider
                 $scheme = null; // 'none' / plain
             }
 
-            Config::set('mail.mailers.smtp.host',     $s['mail_host']   ?? '127.0.0.1');
-            Config::set('mail.mailers.smtp.port',     $port);
+            Config::set('mail.mailers.smtp.host', $s['mail_host'] ?? '127.0.0.1');
+            Config::set('mail.mailers.smtp.port', $port);
             Config::set('mail.mailers.smtp.username', $s['mail_username'] ?? null);
             Config::set('mail.mailers.smtp.password', $s['mail_password'] ?? null);
-            Config::set('mail.mailers.smtp.scheme',   $scheme);
+            Config::set('mail.mailers.smtp.scheme', $scheme);
         }
 
         if ($mailer === 'sendmail') {

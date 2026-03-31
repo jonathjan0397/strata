@@ -27,12 +27,12 @@ class KbController extends Controller
     public function storeCategory(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'sort_order'  => ['integer', 'min:0'],
+            'sort_order' => ['integer', 'min:0'],
         ]);
 
-        $data['slug']   = Str::slug($data['name']);
+        $data['slug'] = Str::slug($data['name']);
         $data['active'] = true;
 
         KbCategory::create($data);
@@ -43,10 +43,10 @@ class KbController extends Controller
     public function updateCategory(Request $request, KbCategory $kbCategory): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'sort_order'  => ['integer', 'min:0'],
-            'active'      => ['boolean'],
+            'sort_order' => ['integer', 'min:0'],
+            'active' => ['boolean'],
         ]);
 
         if (isset($data['name'])) {
@@ -78,16 +78,16 @@ class KbController extends Controller
             ->withQueryString();
 
         return Inertia::render('Admin/KB/Index', [
-            'articles'   => $articles,
+            'articles' => $articles,
             'categories' => KbCategory::orderBy('name')->get(['id', 'name']),
-            'filters'    => $request->only('search', 'category', 'published'),
+            'filters' => $request->only('search', 'category', 'published'),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Admin/KB/Edit', [
-            'article'    => null,
+            'article' => null,
             'categories' => KbCategory::active()->get(['id', 'name']),
         ]);
     }
@@ -96,13 +96,13 @@ class KbController extends Controller
     {
         $data = $request->validate([
             'kb_category_id' => ['required', 'exists:kb_categories,id'],
-            'title'          => ['required', 'string', 'max:255'],
-            'body'           => ['required', 'string'],
-            'published'      => ['boolean'],
-            'sort_order'     => ['integer', 'min:0'],
+            'title' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string'],
+            'published' => ['boolean'],
+            'sort_order' => ['integer', 'min:0'],
         ]);
 
-        $data['slug']      = $this->uniqueSlug(Str::slug($data['title']));
+        $data['slug'] = $this->uniqueSlug(Str::slug($data['title']));
         $data['author_id'] = $request->user()->id;
 
         $article = KbArticle::create($data);
@@ -114,7 +114,7 @@ class KbController extends Controller
     public function edit(KbArticle $kbArticle): Response
     {
         return Inertia::render('Admin/KB/Edit', [
-            'article'    => $kbArticle->load('category'),
+            'article' => $kbArticle->load('category'),
             'categories' => KbCategory::active()->get(['id', 'name']),
         ]);
     }
@@ -123,10 +123,10 @@ class KbController extends Controller
     {
         $data = $request->validate([
             'kb_category_id' => ['required', 'exists:kb_categories,id'],
-            'title'          => ['required', 'string', 'max:255'],
-            'body'           => ['required', 'string'],
-            'published'      => ['boolean'],
-            'sort_order'     => ['integer', 'min:0'],
+            'title' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string'],
+            'published' => ['boolean'],
+            'sort_order' => ['integer', 'min:0'],
         ]);
 
         if ($kbArticle->title !== $data['title']) {
@@ -148,7 +148,7 @@ class KbController extends Controller
 
     private function uniqueSlug(string $base, ?int $excludeId = null): string
     {
-        $slug    = $base;
+        $slug = $base;
         $counter = 2;
 
         while (

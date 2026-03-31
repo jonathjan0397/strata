@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('website', 255)->nullable()->after('phone');
             $table->string('lead_source', 100)->nullable()->after('website');
             $table->enum('client_status', ['prospect', 'active', 'inactive', 'at_risk', 'churned'])
-                  ->default('active')->after('lead_source');
+                ->default('active')->after('lead_source');
         });
     }
 

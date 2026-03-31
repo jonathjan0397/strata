@@ -29,14 +29,14 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
@@ -46,8 +46,8 @@ class RegisteredUserController extends Controller
 
         try {
             Mail::to($user->email)->send(new TemplateMailable('auth.welcome', [
-                'name'      => $user->name,
-                'app_name'  => config('app.name'),
+                'name' => $user->name,
+                'app_name' => config('app.name'),
                 'login_url' => route('login'),
             ]));
         } catch (\Throwable) {
@@ -63,11 +63,11 @@ class RegisteredUserController extends Controller
 
             if ($affiliate) {
                 AffiliateReferral::create([
-                    'affiliate_id'     => $affiliate->id,
+                    'affiliate_id' => $affiliate->id,
                     'referred_user_id' => $user->id,
-                    'amount'           => 0,
-                    'commission'       => 0,
-                    'status'           => 'pending',
+                    'amount' => 0,
+                    'commission' => 0,
+                    'status' => 'pending',
                 ]);
             }
         }

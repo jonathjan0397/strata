@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\AuditLogger;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -19,42 +19,42 @@ class SettingController extends Controller
     {
         return Inertia::render('Admin/Settings/Index', [
             'settings' => Setting::allKeyed(),
-            'appUrl'   => rtrim(config('app.url'), '/'),
+            'appUrl' => rtrim(config('app.url'), '/'),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'site_title'        => ['nullable', 'string', 'max:255'],
-            'company_name'      => ['nullable', 'string', 'max:255'],
-            'timezone'          => ['nullable', 'string', 'max:100'],
-            'date_format'       => ['nullable', 'string', 'max:50'],
-            'company_email'     => ['nullable', 'email', 'max:255'],
-            'company_phone'     => ['nullable', 'string', 'max:50'],
-            'company_address'   => ['nullable', 'string', 'max:255'],
-            'company_city'      => ['nullable', 'string', 'max:100'],
-            'company_state'     => ['nullable', 'string', 'max:100'],
-            'company_zip'       => ['nullable', 'string', 'max:20'],
-            'company_country'   => ['nullable', 'string', 'max:100'],
-            'currency'          => ['nullable', 'string', 'max:10'],
-            'currency_symbol'   => ['nullable', 'string', 'max:5'],
-            'invoice_prefix'    => ['nullable', 'string', 'max:20'],
-            'invoice_due_days'  => ['nullable', 'integer', 'min:0', 'max:365'],
+            'site_title' => ['nullable', 'string', 'max:255'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'timezone' => ['nullable', 'string', 'max:100'],
+            'date_format' => ['nullable', 'string', 'max:50'],
+            'company_email' => ['nullable', 'email', 'max:255'],
+            'company_phone' => ['nullable', 'string', 'max:50'],
+            'company_address' => ['nullable', 'string', 'max:255'],
+            'company_city' => ['nullable', 'string', 'max:100'],
+            'company_state' => ['nullable', 'string', 'max:100'],
+            'company_zip' => ['nullable', 'string', 'max:20'],
+            'company_country' => ['nullable', 'string', 'max:100'],
+            'currency' => ['nullable', 'string', 'max:10'],
+            'currency_symbol' => ['nullable', 'string', 'max:5'],
+            'invoice_prefix' => ['nullable', 'string', 'max:20'],
+            'invoice_due_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'grace_period_days' => ['nullable', 'integer', 'min:0', 'max:365'],
-            'tax_rate'          => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'tax_name'          => ['nullable', 'string', 'max:50'],
-            'tagline'            => ['nullable', 'string', 'max:255'],
-            'portal_theme'       => ['nullable', 'in:blue,red,green,lightblue'],
+            'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'tax_name' => ['nullable', 'string', 'max:50'],
+            'tagline' => ['nullable', 'string', 'max:255'],
+            'portal_theme' => ['nullable', 'in:blue,red,green,lightblue'],
             'domain_search_tlds' => ['nullable', 'string', 'max:500'],
             // Two-Factor Authentication
-            'otp_enabled'                => ['nullable', 'boolean'],
-            'otp_lifetime'               => ['nullable', 'integer', 'min:0', 'max:1440'],
-            'otp_keep_alive'             => ['nullable', 'boolean'],
+            'otp_enabled' => ['nullable', 'boolean'],
+            'otp_lifetime' => ['nullable', 'integer', 'min:0', 'max:1440'],
+            'otp_keep_alive' => ['nullable', 'boolean'],
             // Bank Transfer
             'bank_transfer_instructions' => ['nullable', 'string', 'max:2000'],
             // Affiliate defaults
-            'affiliate_default_commission_type'  => ['nullable', 'in:percent,fixed'],
+            'affiliate_default_commission_type' => ['nullable', 'in:percent,fixed'],
             'affiliate_default_commission_value' => ['nullable', 'numeric', 'min:0'],
             'affiliate_default_payout_threshold' => ['nullable', 'numeric', 'min:0'],
         ]);
@@ -69,14 +69,14 @@ class SettingController extends Controller
     public function updateMail(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'mail_mailer'        => ['required', 'in:sendmail,smtp,log'],
-            'mail_from_address'  => ['required', 'email', 'max:255'],
-            'mail_from_name'     => ['required', 'string', 'max:255'],
-            'mail_host'          => ['nullable', 'string', 'max:255'],
-            'mail_port'          => ['nullable', 'integer', 'min:1', 'max:65535'],
-            'mail_username'      => ['nullable', 'string', 'max:255'],
-            'mail_password'      => ['nullable', 'string', 'max:255'],
-            'mail_encryption'    => ['nullable', 'in:auto,tls,ssl,'],
+            'mail_mailer' => ['required', 'in:sendmail,smtp,log'],
+            'mail_from_address' => ['required', 'email', 'max:255'],
+            'mail_from_name' => ['required', 'string', 'max:255'],
+            'mail_host' => ['nullable', 'string', 'max:255'],
+            'mail_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'mail_username' => ['nullable', 'string', 'max:255'],
+            'mail_password' => ['nullable', 'string', 'max:255'],
+            'mail_encryption' => ['nullable', 'in:auto,tls,ssl,'],
             'mail_sendmail_path' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -95,22 +95,22 @@ class SettingController extends Controller
 
         set_time_limit(15);
 
-        $mailer  = Setting::get('mail_mailer', config('mail.default'));
-        $from    = Setting::get('mail_from_address', config('mail.from.address'));
-        $to      = $request->input('to');
+        $mailer = Setting::get('mail_mailer', config('mail.default'));
+        $from = Setting::get('mail_from_address', config('mail.from.address'));
+        $to = $request->input('to');
 
         // For sendmail: bypass Laravel's mail system and call the binary directly
         // so we can detect hangs and return a clean error.
         if ($mailer === 'sendmail') {
             $path = Setting::get('mail_sendmail_path', '/usr/sbin/sendmail -t -i');
-            $bin  = explode(' ', $path)[0];
+            $bin = explode(' ', $path)[0];
 
             if (! file_exists($bin) || ! is_executable($bin)) {
                 return response()->json(['success' => false, 'message' => "sendmail binary not found or not executable: {$bin}"], 422);
             }
 
             $siteName = Setting::get('site_title', Setting::get('company_name', config('app.name')));
-            $message  = "To: {$to}\r\nFrom: {$from}\r\nSubject: {$siteName} - Mail Test\r\n\r\n";
+            $message = "To: {$to}\r\nFrom: {$from}\r\nSubject: {$siteName} - Mail Test\r\n\r\n";
             $message .= "This is a test email from {$siteName}. Your mail configuration is working.\r\n";
 
             $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
@@ -151,50 +151,50 @@ class SettingController extends Controller
     {
         $data = $request->validate([
             // Google OAuth
-            'integration_google_client_id'            => ['nullable', 'string', 'max:255'],
-            'integration_google_client_secret'        => ['nullable', 'string', 'max:500'],
+            'integration_google_client_id' => ['nullable', 'string', 'max:255'],
+            'integration_google_client_secret' => ['nullable', 'string', 'max:500'],
             // Microsoft OAuth
-            'integration_microsoft_client_id'         => ['nullable', 'string', 'max:255'],
-            'integration_microsoft_client_secret'     => ['nullable', 'string', 'max:500'],
-            'integration_microsoft_tenant'            => ['nullable', 'string', 'max:100'],
+            'integration_microsoft_client_id' => ['nullable', 'string', 'max:255'],
+            'integration_microsoft_client_secret' => ['nullable', 'string', 'max:500'],
+            'integration_microsoft_tenant' => ['nullable', 'string', 'max:100'],
             // Stripe
-            'integration_stripe_key'                  => ['nullable', 'string', 'max:255'],
-            'integration_stripe_secret'               => ['nullable', 'string', 'max:255'],
-            'integration_stripe_webhook_secret'       => ['nullable', 'string', 'max:255'],
+            'integration_stripe_key' => ['nullable', 'string', 'max:255'],
+            'integration_stripe_secret' => ['nullable', 'string', 'max:255'],
+            'integration_stripe_webhook_secret' => ['nullable', 'string', 'max:255'],
             // PayPal
-            'integration_paypal_client_id'            => ['nullable', 'string', 'max:255'],
-            'integration_paypal_client_secret'        => ['nullable', 'string', 'max:255'],
-            'integration_paypal_mode'                 => ['nullable', 'in:sandbox,live'],
+            'integration_paypal_client_id' => ['nullable', 'string', 'max:255'],
+            'integration_paypal_client_secret' => ['nullable', 'string', 'max:255'],
+            'integration_paypal_mode' => ['nullable', 'in:sandbox,live'],
             // Authorize.Net
-            'integration_authorizenet_login_id'       => ['nullable', 'string', 'max:100'],
-            'integration_authorizenet_transaction_key'=> ['nullable', 'string', 'max:100'],
-            'integration_authorizenet_client_key'     => ['nullable', 'string', 'max:255'],
-            'integration_authorizenet_sandbox'        => ['nullable', 'boolean'],
+            'integration_authorizenet_login_id' => ['nullable', 'string', 'max:100'],
+            'integration_authorizenet_transaction_key' => ['nullable', 'string', 'max:100'],
+            'integration_authorizenet_client_key' => ['nullable', 'string', 'max:255'],
+            'integration_authorizenet_sandbox' => ['nullable', 'boolean'],
             // Fraud check (MaxMind minFraud)
-            'fraud_check_enabled'                     => ['nullable', 'boolean'],
-            'fraud_maxmind_account_id'                => ['nullable', 'string', 'max:20'],
-            'fraud_maxmind_license_key'               => ['nullable', 'string', 'max:255'],
-            'fraud_score_threshold'                   => ['nullable', 'integer', 'min:1', 'max:100'],
-            'fraud_action'                            => ['nullable', 'in:flag,reject'],
+            'fraud_check_enabled' => ['nullable', 'boolean'],
+            'fraud_maxmind_account_id' => ['nullable', 'string', 'max:20'],
+            'fraud_maxmind_license_key' => ['nullable', 'string', 'max:255'],
+            'fraud_score_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'fraud_action' => ['nullable', 'in:flag,reject'],
             // Domain registrar
-            'integration_registrar_driver'               => ['nullable', 'in:namecheap,enom,opensrs,hexonet'],
+            'integration_registrar_driver' => ['nullable', 'in:namecheap,enom,opensrs,hexonet'],
             // Namecheap
-            'integration_namecheap_api_user'             => ['nullable', 'string', 'max:100'],
-            'integration_namecheap_api_key'              => ['nullable', 'string', 'max:255'],
-            'integration_namecheap_client_ip'            => ['nullable', 'ip'],
-            'integration_namecheap_sandbox'              => ['nullable', 'boolean'],
+            'integration_namecheap_api_user' => ['nullable', 'string', 'max:100'],
+            'integration_namecheap_api_key' => ['nullable', 'string', 'max:255'],
+            'integration_namecheap_client_ip' => ['nullable', 'ip'],
+            'integration_namecheap_sandbox' => ['nullable', 'boolean'],
             // eNom
-            'integration_enom_uid'                       => ['nullable', 'string', 'max:100'],
-            'integration_enom_pw'                        => ['nullable', 'string', 'max:255'],
-            'integration_enom_sandbox'                   => ['nullable', 'boolean'],
+            'integration_enom_uid' => ['nullable', 'string', 'max:100'],
+            'integration_enom_pw' => ['nullable', 'string', 'max:255'],
+            'integration_enom_sandbox' => ['nullable', 'boolean'],
             // OpenSRS
-            'integration_opensrs_api_key'                => ['nullable', 'string', 'max:255'],
-            'integration_opensrs_reseller_username'      => ['nullable', 'string', 'max:100'],
-            'integration_opensrs_sandbox'                => ['nullable', 'boolean'],
+            'integration_opensrs_api_key' => ['nullable', 'string', 'max:255'],
+            'integration_opensrs_reseller_username' => ['nullable', 'string', 'max:100'],
+            'integration_opensrs_sandbox' => ['nullable', 'boolean'],
             // Hexonet
-            'integration_hexonet_login'                  => ['nullable', 'string', 'max:100'],
-            'integration_hexonet_password'               => ['nullable', 'string', 'max:255'],
-            'integration_hexonet_sandbox'                => ['nullable', 'boolean'],
+            'integration_hexonet_login' => ['nullable', 'string', 'max:100'],
+            'integration_hexonet_password' => ['nullable', 'string', 'max:255'],
+            'integration_hexonet_sandbox' => ['nullable', 'boolean'],
         ]);
 
         Setting::setMany($data);

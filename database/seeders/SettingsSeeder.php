@@ -11,27 +11,27 @@ class SettingsSeeder extends Seeder
     {
         $defaults = [
             // General
-            'company_name'       => config('app.name', 'Strata'),
-            'timezone'           => 'UTC',
-            'date_format'        => 'M d, Y',
+            'company_name' => config('app.name', 'Strata'),
+            'timezone' => 'UTC',
+            'date_format' => 'M d, Y',
 
             // Company contact
-            'company_email'      => '',
-            'company_phone'      => '',
-            'company_address'    => '',
-            'company_city'       => '',
-            'company_state'      => '',
-            'company_zip'        => '',
-            'company_country'    => '',
+            'company_email' => '',
+            'company_phone' => '',
+            'company_address' => '',
+            'company_city' => '',
+            'company_state' => '',
+            'company_zip' => '',
+            'company_country' => '',
 
             // Billing
-            'currency'           => 'USD',
-            'currency_symbol'    => '$',
-            'invoice_prefix'     => 'INV-',
-            'invoice_due_days'   => '7',
-            'grace_period_days'  => '3',
-            'tax_rate'           => '0',
-            'tax_name'           => 'Tax',
+            'currency' => 'USD',
+            'currency_symbol' => '$',
+            'invoice_prefix' => 'INV-',
+            'invoice_due_days' => '7',
+            'grace_period_days' => '3',
+            'tax_rate' => '0',
+            'tax_name' => 'Tax',
         ];
 
         foreach ($defaults as $key => $value) {

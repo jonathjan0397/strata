@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Middleware\CheckInstalled;
+use App\Http\Middleware\EnsureAdminCan;
+use App\Http\Middleware\EnsureIsAdmin;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequireTwoFactor;
+use App\Http\Middleware\TrackAffiliateReferral;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,14 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \App\Http\Middleware\CheckInstalled::class,
-            \App\Http\Middleware\TrackAffiliateReferral::class,
+            HandleInertiaRequests::class,
+            CheckInstalled::class,
+            TrackAffiliateReferral::class,
         ]);
         $middleware->alias([
-            'admin'        => \App\Http\Middleware\EnsureIsAdmin::class,
-            'admin.can'    => \App\Http\Middleware\EnsureAdminCan::class,
-            'require.2fa'  => \App\Http\Middleware\RequireTwoFactor::class,
+            'admin' => EnsureIsAdmin::class,
+            'admin.can' => EnsureAdminCan::class,
+            'require.2fa' => RequireTwoFactor::class,
         ]);
         $middleware->validateCsrfTokens(except: [
             'stripe/webhook',

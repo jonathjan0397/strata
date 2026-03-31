@@ -8,13 +8,14 @@ use App\Models\KbArticle;
 use App\Models\KbCategory;
 use App\Models\Product;
 use App\Models\Setting;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PortalController extends Controller
 {
     /** Public home: hero + featured products + latest KB + announcements */
-    public function home(): \Illuminate\Http\RedirectResponse|Response
+    public function home(): RedirectResponse|Response
     {
         if (auth()->check()) {
             return auth()->user()->isAdmin()
@@ -39,11 +40,11 @@ class PortalController extends Controller
             ->get(['id', 'name', 'slug', 'description']);
 
         return Inertia::render('Portal/Home', [
-            'products'            => $products,
-            'announcements'       => $announcements,
-            'categories'          => $categories,
-            'siteName'            => Setting::get('company_name', config('app.name')),
-            'tagline'             => Setting::get('tagline', 'Professional hosting & services'),
+            'products' => $products,
+            'announcements' => $announcements,
+            'categories' => $categories,
+            'siteName' => Setting::get('company_name', config('app.name')),
+            'tagline' => Setting::get('tagline', 'Professional hosting & services'),
             'registrarConfigured' => (bool) Setting::get('integration_registrar_driver'),
         ]);
     }
@@ -71,7 +72,7 @@ class PortalController extends Controller
 
         return Inertia::render('Portal/KB/Index', [
             'categories' => $categories,
-            'siteName'   => Setting::get('company_name', config('app.name')),
+            'siteName' => Setting::get('company_name', config('app.name')),
         ]);
     }
 
@@ -92,8 +93,8 @@ class PortalController extends Controller
             ->get(['id', 'title', 'slug']);
 
         return Inertia::render('Portal/KB/Show', [
-            'article'  => $article,
-            'related'  => $related,
+            'article' => $article,
+            'related' => $related,
             'siteName' => Setting::get('company_name', config('app.name')),
         ]);
     }
@@ -107,7 +108,7 @@ class PortalController extends Controller
 
         return Inertia::render('Portal/Announcements', [
             'announcements' => $announcements,
-            'siteName'      => Setting::get('company_name', config('app.name')),
+            'siteName' => Setting::get('company_name', config('app.name')),
         ]);
     }
 }

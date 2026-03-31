@@ -22,11 +22,11 @@ class TldPrice extends Model
 
     protected $casts = [
         'register_cost' => 'float',
-        'renew_cost'    => 'float',
+        'renew_cost' => 'float',
         'transfer_cost' => 'float',
-        'markup_value'  => 'float',
-        'is_active'     => 'boolean',
-        'last_synced_at'=> 'datetime',
+        'markup_value' => 'float',
+        'is_active' => 'boolean',
+        'last_synced_at' => 'datetime',
     ];
 
     /** Final register price after markup. */
@@ -64,7 +64,8 @@ class TldPrice extends Model
     /** Find the pricing row for a given full domain name (extracts TLD). */
     public static function forDomain(string $domain): ?static
     {
-        $tld = '.' . implode('.', array_slice(explode('.', $domain), 1));
+        $tld = '.'.implode('.', array_slice(explode('.', $domain), 1));
+
         return static::where('tld', $tld)->where('is_active', true)->first();
     }
 }

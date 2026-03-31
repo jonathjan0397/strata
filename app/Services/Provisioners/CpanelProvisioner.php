@@ -11,13 +11,14 @@ use RuntimeException;
 class CpanelProvisioner implements ProvisionerDriver
 {
     private string $baseUrl;
+
     private string $token;
 
     public function __construct(private readonly Module $module)
     {
-        $scheme        = $module->ssl ? 'https' : 'http';
+        $scheme = $module->ssl ? 'https' : 'http';
         $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/json-api";
-        $this->token   = decrypt($module->api_token_enc);
+        $this->token = decrypt($module->api_token_enc);
     }
 
     public function slug(): string
@@ -39,11 +40,11 @@ class CpanelProvisioner implements ProvisionerDriver
         $password = Str::password(16, symbols: false);
 
         $params = [
-            'username'     => $username,
-            'domain'       => $domain,
-            'password'     => $password,
+            'username' => $username,
+            'domain' => $domain,
+            'password' => $password,
             'contactemail' => '',
-            'savepwd'      => 0,
+            'savepwd' => 0,
         ];
 
         if ($plan) {
@@ -59,7 +60,7 @@ class CpanelProvisioner implements ProvisionerDriver
             throw new RuntimeException("WHM API HTTP error: {$response->status()}");
         }
 
-        $data   = $response->json();
+        $data = $response->json();
         $result = $data['result'][0] ?? $data['result'] ?? null;
 
         if (! $result || ($result['status'] ?? 0) != 1) {
@@ -70,7 +71,7 @@ class CpanelProvisioner implements ProvisionerDriver
         return [
             'username' => $username,
             'password' => $password,
-            'domain'   => $domain,
+            'domain' => $domain,
         ];
     }
 
@@ -80,7 +81,7 @@ class CpanelProvisioner implements ProvisionerDriver
             ->withOptions(['verify' => $this->module->ssl])
             ->timeout(15)
             ->get("{$this->baseUrl}/suspendacct", [
-                'user'   => $username,
+                'user' => $username,
                 'reason' => $reason,
             ]);
 
@@ -118,6 +119,7 @@ class CpanelProvisioner implements ProvisionerDriver
         $base = preg_replace('/\.[^.]+$/', '', $domain);
         $base = preg_replace('/[^a-z0-9]/', '', strtolower($base));
         $base = substr($base, 0, 6);
-        return $base . Str::lower(Str::random(2));
+
+        return $base.Str::lower(Str::random(2));
     }
 }

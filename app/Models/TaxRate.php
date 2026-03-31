@@ -11,9 +11,9 @@ class TaxRate extends Model
     protected function casts(): array
     {
         return [
-            'rate'       => 'decimal:2',
+            'rate' => 'decimal:2',
             'is_default' => 'boolean',
-            'active'     => 'boolean',
+            'active' => 'boolean',
         ];
     }
 
@@ -36,7 +36,9 @@ class TaxRate extends Model
                 ->where('country', $user->country)
                 ->where('state', $user->state)
                 ->first();
-            if ($match) return $match;
+            if ($match) {
+                return $match;
+            }
         }
 
         // Try country only
@@ -45,7 +47,9 @@ class TaxRate extends Model
                 ->where('country', $user->country)
                 ->whereNull('state')
                 ->first();
-            if ($match) return $match;
+            if ($match) {
+                return $match;
+            }
         }
 
         // Fall back to default rate

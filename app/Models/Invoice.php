@@ -21,16 +21,16 @@ class Invoice extends Model
     protected function casts(): array
     {
         return [
-            'subtotal'       => 'decimal:2',
-            'tax_rate'       => 'decimal:2',
-            'tax'            => 'decimal:2',
-            'total'          => 'decimal:2',
+            'subtotal' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
+            'tax' => 'decimal:2',
+            'total' => 'decimal:2',
             'credit_applied' => 'decimal:2',
-            'amount_due'     => 'decimal:2',
-            'date'           => 'date',
-            'due_date'       => 'date',
-            'paid_at'                  => 'datetime',
-            'dunning_last_attempt_at'  => 'datetime',
+            'amount_due' => 'decimal:2',
+            'date' => 'date',
+            'due_date' => 'date',
+            'paid_at' => 'datetime',
+            'dunning_last_attempt_at' => 'datetime',
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Mail\TemplateMailable;
 use App\Models\Department;
 use App\Models\MailboxPipe;
+use App\Models\Setting;
 use App\Models\SupportReply;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -29,15 +30,16 @@ class EmailPipeProcessor
         $parsed = $this->parseEmail($rawEmail);
 
         $fromEmail = $parsed['from_email'] ?? null;
-        $fromName  = $parsed['from_name']  ?? null;
-        $subject   = $parsed['subject']    ?? '(No Subject)';
-        $body      = $parsed['body']       ?? '';
+        $fromName = $parsed['from_name'] ?? null;
+        $subject = $parsed['subject'] ?? '(No Subject)';
+        $body = $parsed['body'] ?? '';
         $messageId = $parsed['message_id'] ?? null;
         $inReplyTo = $parsed['in_reply_to'] ?? null;
         $references = $parsed['references'] ?? null;
 
         if (! $fromEmail) {
             Log::warning("[MailPipe:{$pipe->id}] Could not determine sender — dropping message.");
+
             return;
         }
 
@@ -47,6 +49,7 @@ class EmailPipeProcessor
         if (! $user) {
             if ($pipe->reject_unknown_senders || ! $pipe->create_client_if_not_exists) {
                 Log::info("[MailPipe:{$pipe->id}] Unknown sender {$fromEmail} — dropping (reject_unknown or no auto-create).");
+
                 return;
             }
 
@@ -84,22 +87,22 @@ class EmailPipeProcessor
         $dept = $pipe->department_id ? Department::find($pipe->department_id) : null;
 
         $ticket = SupportTicket::create([
-            'user_id'       => $user->id,
-            'subject'       => mb_substr($subject, 0, 255),
+            'user_id' => $user->id,
+            'subject' => mb_substr($subject, 0, 255),
             'department_id' => $pipe->department_id,
-            'department'    => $dept?->name ?? 'General',
-            'priority'      => $pipe->default_priority,
-            'assigned_to'   => $pipe->auto_assign_to,
-            'status'        => 'open',
+            'department' => $dept?->name ?? 'General',
+            'priority' => $pipe->default_priority,
+            'assigned_to' => $pipe->auto_assign_to,
+            'status' => 'open',
             'last_reply_at' => now(),
         ]);
 
         SupportReply::create([
             'ticket_id' => $ticket->id,
-            'user_id'   => $user->id,
-            'message'   => $body ?: '(empty message)',
-            'is_staff'  => false,
-            'internal'  => false,
+            'user_id' => $user->id,
+            'message' => $body ?: '(empty message)',
+            'is_staff' => false,
+            'internal' => false,
         ]);
 
         WorkflowEngine::fire('ticket.opened', $ticket);
@@ -115,14 +118,14 @@ class EmailPipeProcessor
     {
         SupportReply::create([
             'ticket_id' => $ticket->id,
-            'user_id'   => $user->id,
-            'message'   => $body ?: '(empty message)',
-            'is_staff'  => $user->hasAnyRole(['super-admin', 'admin', 'staff']),
-            'internal'  => false,
+            'user_id' => $user->id,
+            'message' => $body ?: '(empty message)',
+            'is_staff' => $user->hasAnyRole(['super-admin', 'admin', 'staff']),
+            'internal' => false,
         ]);
 
         $ticket->update([
-            'status'        => 'customer_reply',
+            'status' => 'customer_reply',
             'last_reply_at' => now(),
         ]);
     }
@@ -130,8 +133,8 @@ class EmailPipeProcessor
     private function createClientFromEmail(string $email, ?string $name): User
     {
         return User::create([
-            'name'     => $name ?: explode('@', $email)[0],
-            'email'    => $email,
+            'name' => $name ?: explode('@', $email)[0],
+            'email' => $email,
             'password' => Hash::make(Str::random(32)),
         ])->assignRole('client');
     }
@@ -143,10 +146,10 @@ class EmailPipeProcessor
      *   2. Subject line containing [Ticket #N]
      */
     private function resolveExistingTicket(
-        string  $subject,
+        string $subject,
         ?string $inReplyTo,
         ?string $references,
-        User    $user
+        User $user
     ): ?SupportTicket {
         // Check subject for [Ticket #123] marker
         if (preg_match('/\[Ticket\s*#?(\d+)\]/i', $subject, $m)) {
@@ -160,7 +163,7 @@ class EmailPipeProcessor
         }
 
         // Check In-Reply-To / References for same pattern
-        $headers = trim(($inReplyTo ?? '') . ' ' . ($references ?? ''));
+        $headers = trim(($inReplyTo ?? '').' '.($references ?? ''));
         if (preg_match('/ticket[_\-]?(\d+)/i', $headers, $m)) {
             $ticket = SupportTicket::where('id', (int) $m[1])
                 ->whereNotIn('status', ['closed'])
@@ -184,15 +187,15 @@ class EmailPipeProcessor
 
         try {
             Mail::to($user->email)->send(new TemplateMailable('ticket.auto_reply', [
-                'name'           => $user->name,
-                'app_name'       => \App\Models\Setting::get('site_title', config('app.name')),
-                'ticket_id'      => $ticket->id,
+                'name' => $user->name,
+                'app_name' => Setting::get('site_title', config('app.name')),
+                'ticket_id' => $ticket->id,
                 'ticket_subject' => $ticket->subject,
-                'reply_body'     => $body,
-                'ticket_url'     => route('client.support.show', $ticket->id),
+                'reply_body' => $body,
+                'ticket_url' => route('client.support.show', $ticket->id),
             ]));
         } catch (\Throwable $e) {
-            Log::warning("[MailPipe:{$pipe->id}] Auto-reply failed for ticket #{$ticket->id}: " . $e->getMessage());
+            Log::warning("[MailPipe:{$pipe->id}] Auto-reply failed for ticket #{$ticket->id}: ".$e->getMessage());
         }
     }
 
@@ -216,17 +219,17 @@ class EmailPipeProcessor
         }
 
         $headerBlock = substr($raw, 0, $headerEnd);
-        $bodyBlock   = substr($raw, $headerEnd + 2);
+        $bodyBlock = substr($raw, $headerEnd + 2);
 
         $headers = $this->parseHeaders($headerBlock);
 
-        $from      = $headers['from']       ?? '';
-        $subject   = $this->decodeHeader($headers['subject'] ?? '(No Subject)');
+        $from = $headers['from'] ?? '';
+        $subject = $this->decodeHeader($headers['subject'] ?? '(No Subject)');
         $messageId = $headers['message-id'] ?? null;
         $inReplyTo = $headers['in-reply-to'] ?? null;
         $references = $headers['references'] ?? null;
         $contentType = $headers['content-type'] ?? 'text/plain';
-        $encoding    = strtolower($headers['content-transfer-encoding'] ?? '');
+        $encoding = strtolower($headers['content-transfer-encoding'] ?? '');
 
         [$fromEmail, $fromName] = $this->parseFromHeader($from);
 
@@ -235,12 +238,12 @@ class EmailPipeProcessor
 
         return [
             'from_email' => $fromEmail,
-            'from_name'  => $fromName,
-            'subject'    => $subject,
-            'body'       => $body,
+            'from_name' => $fromName,
+            'subject' => $subject,
+            'body' => $body,
             'message_id' => $messageId,
             'in_reply_to' => $inReplyTo,
-            'references'  => $references,
+            'references' => $references,
         ];
     }
 
@@ -251,7 +254,7 @@ class EmailPipeProcessor
     {
         // Unfold multi-line headers (continuation lines start with whitespace)
         $unfolded = preg_replace("/\n[ \t]+/", ' ', $block);
-        $headers  = [];
+        $headers = [];
 
         foreach (explode("\n", $unfolded) as $line) {
             if (! str_contains($line, ':')) {
@@ -284,13 +287,15 @@ class EmailPipeProcessor
         $from = trim($from);
 
         if (preg_match('/^(.*?)<([^>]+)>/', $from, $m)) {
-            $name  = trim(trim($m[1]), '"\'');
+            $name = trim(trim($m[1]), '"\'');
             $email = strtolower(trim($m[2]));
+
             return [$email ?: null, $name ?: null];
         }
 
         // Bare address
         $email = strtolower(filter_var($from, FILTER_VALIDATE_EMAIL) ? $from : '');
+
         return [$email ?: null, null];
     }
 
@@ -311,14 +316,14 @@ class EmailPipeProcessor
             }
 
             $boundary = $bm[1];
-            $parts    = preg_split('/--' . preg_quote($boundary, '/') . '(?:--)?/m', $body);
+            $parts = preg_split('/--'.preg_quote($boundary, '/').'(?:--)?/m', $body);
 
             // Remove preamble (first element) and epilogue (last element)
             array_shift($parts);
             array_pop($parts);
 
             $plainText = null;
-            $htmlText  = null;
+            $htmlText = null;
 
             foreach ($parts as $part) {
                 $part = ltrim($part, "\r\n");
@@ -327,9 +332,9 @@ class EmailPipeProcessor
                     continue;
                 }
 
-                $partHeaders  = $this->parseHeaders(substr($part, 0, $partHeaderEnd));
-                $partBody     = substr($part, $partHeaderEnd + 2);
-                $partCt       = $partHeaders['content-type'] ?? 'text/plain';
+                $partHeaders = $this->parseHeaders(substr($part, 0, $partHeaderEnd));
+                $partBody = substr($part, $partHeaderEnd + 2);
+                $partCt = $partHeaders['content-type'] ?? 'text/plain';
                 $partEncoding = strtolower($partHeaders['content-transfer-encoding'] ?? '');
 
                 $decoded = $this->decodeBody($partBody, $partEncoding);
@@ -371,9 +376,9 @@ class EmailPipeProcessor
     private function decodeBody(string $body, string $encoding): string
     {
         return match ($encoding) {
-            'base64'           => base64_decode(preg_replace('/\s+/', '', $body)) ?: $body,
+            'base64' => base64_decode(preg_replace('/\s+/', '', $body)) ?: $body,
             'quoted-printable' => quoted_printable_decode($body),
-            default            => $body,
+            default => $body,
         };
     }
 

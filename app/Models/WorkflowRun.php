@@ -20,7 +20,7 @@ class WorkflowRun extends Model
     ];
 
     protected $casts = [
-        'log'    => 'array',
+        'log' => 'array',
         'ran_at' => 'datetime',
     ];
 

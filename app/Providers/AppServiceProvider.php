@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
             // and Ziggy generate correct absolute URLs regardless of which
             // subdirectory the app is installed in.
             if (! app()->runningInConsole()) {
-                $detected = request()->getSchemeAndHttpHost() . request()->getBaseUrl();
+                $detected = request()->getSchemeAndHttpHost().request()->getBaseUrl();
                 URL::forceRootUrl($detected);
             }
         }

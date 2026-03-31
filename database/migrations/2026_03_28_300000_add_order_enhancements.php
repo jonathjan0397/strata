@@ -11,7 +11,7 @@ return new class extends Migration
     {
         // Add autosetup trigger to products
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'autosetup')) {
+            if (! Schema::hasColumn('products', 'autosetup')) {
                 $table->enum('autosetup', ['on_order', 'on_payment', 'manual', 'never'])
                     ->default('manual')
                     ->after('module');
@@ -20,10 +20,10 @@ return new class extends Migration
 
         // Add order number and client notes to orders
         Schema::table('orders', function (Blueprint $table) {
-            if (!Schema::hasColumn('orders', 'order_number')) {
+            if (! Schema::hasColumn('orders', 'order_number')) {
                 $table->string('order_number', 30)->nullable()->unique()->after('user_id');
             }
-            if (!Schema::hasColumn('orders', 'client_notes')) {
+            if (! Schema::hasColumn('orders', 'client_notes')) {
                 $table->text('client_notes')->nullable()->after('notes');
             }
         });

@@ -15,25 +15,25 @@ return new class extends Migration
                 ->default('percent')
                 ->change();
 
-            if (!Schema::hasColumn('promo_codes', 'starts_at')) {
+            if (! Schema::hasColumn('promo_codes', 'starts_at')) {
                 $table->timestamp('starts_at')->nullable()->after('expires_at');
             }
-            if (!Schema::hasColumn('promo_codes', 'recurring_cycles')) {
+            if (! Schema::hasColumn('promo_codes', 'recurring_cycles')) {
                 $table->smallInteger('recurring_cycles')->nullable()->after('starts_at');
             }
-            if (!Schema::hasColumn('promo_codes', 'new_clients_only')) {
+            if (! Schema::hasColumn('promo_codes', 'new_clients_only')) {
                 $table->boolean('new_clients_only')->default(false)->after('recurring_cycles');
             }
         });
 
         // ── Service cancellation type ─────────────────────────────────────────
         Schema::table('services', function (Blueprint $table) {
-            if (!Schema::hasColumn('services', 'cancellation_type')) {
+            if (! Schema::hasColumn('services', 'cancellation_type')) {
                 $table->enum('cancellation_type', ['immediate', 'end_of_period'])
                     ->nullable()
                     ->after('cancellation_requested_at');
             }
-            if (!Schema::hasColumn('services', 'scheduled_cancel_at')) {
+            if (! Schema::hasColumn('services', 'scheduled_cancel_at')) {
                 $table->date('scheduled_cancel_at')->nullable()->after('cancellation_type');
             }
         });

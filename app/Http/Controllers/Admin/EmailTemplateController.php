@@ -28,11 +28,11 @@ class EmailTemplateController extends Controller
     public function update(Request $request, EmailTemplate $emailTemplate): RedirectResponse
     {
         $request->validate([
-            'name'       => ['required', 'string', 'max:100'],
-            'subject'    => ['required', 'string', 'max:255'],
-            'body_html'  => ['required', 'string'],
+            'name' => ['required', 'string', 'max:100'],
+            'subject' => ['required', 'string', 'max:255'],
+            'body_html' => ['required', 'string'],
             'body_plain' => ['nullable', 'string'],
-            'active'     => ['boolean'],
+            'active' => ['boolean'],
         ]);
 
         $emailTemplate->update($request->only('name', 'subject', 'body_html', 'body_plain', 'active'));

@@ -14,7 +14,7 @@ class Announcement extends Model
     protected function casts(): array
     {
         return [
-            'published'    => 'boolean',
+            'published' => 'boolean',
             'published_at' => 'datetime',
         ];
     }

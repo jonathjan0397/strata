@@ -24,14 +24,14 @@ class Service extends Model
     protected function casts(): array
     {
         return [
-            'amount'                      => 'decimal:2',
-            'registration_date'           => 'date',
-            'next_due_date'               => 'date',
-            'termination_date'            => 'date',
-            'cancellation_requested_at'   => 'datetime',
-            'scheduled_cancel_at'         => 'date',
-            'trial_ends_at'               => 'date',
-            'module_data'                 => 'array',
+            'amount' => 'decimal:2',
+            'registration_date' => 'date',
+            'next_due_date' => 'date',
+            'termination_date' => 'date',
+            'cancellation_requested_at' => 'datetime',
+            'scheduled_cancel_at' => 'date',
+            'trial_ends_at' => 'date',
+            'module_data' => 'array',
         ];
     }
 
@@ -62,7 +62,7 @@ class Service extends Model
         return $this->hasOne(OrderItem::class);
     }
 
-    public function serviceAddons(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function serviceAddons(): HasMany
     {
         return $this->hasMany(ServiceAddon::class);
     }

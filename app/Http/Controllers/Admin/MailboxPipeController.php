@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\EmailPipeProcessor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,30 +18,29 @@ class MailboxPipeController extends Controller
     public function index(): Response
     {
         return Inertia::render('Admin/Settings/MailPipes', [
-            'pipes'       => MailboxPipe::with(['department', 'assignee'])->orderBy('name')->get(),
+            'pipes' => MailboxPipe::with(['department', 'assignee'])->orderBy('name')->get(),
             'departments' => Department::active()->get(['id', 'name']),
-            'staff'       => User::whereHas('roles', fn ($q) =>
-                $q->whereIn('name', ['super-admin', 'admin', 'staff'])
+            'staff' => User::whereHas('roles', fn ($q) => $q->whereIn('name', ['super-admin', 'admin', 'staff'])
             )->get(['id', 'name']),
-            'appUrl'      => rtrim(config('app.url'), '/'),
+            'appUrl' => rtrim(config('app.url'), '/'),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'                        => ['required', 'string', 'max:100'],
-            'email_address'               => ['nullable', 'email', 'max:255'],
-            'department_id'               => ['nullable', 'exists:departments,id'],
-            'auto_assign_to'              => ['nullable', 'exists:users,id'],
-            'default_priority'            => ['required', 'in:low,medium,high,urgent'],
+            'name' => ['required', 'string', 'max:100'],
+            'email_address' => ['nullable', 'email', 'max:255'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'auto_assign_to' => ['nullable', 'exists:users,id'],
+            'default_priority' => ['required', 'in:low,medium,high,urgent'],
             'create_client_if_not_exists' => ['boolean'],
-            'strip_signature'             => ['boolean'],
-            'auto_reply_enabled'          => ['boolean'],
-            'auto_reply_subject'          => ['nullable', 'string', 'max:255'],
-            'auto_reply_body'             => ['nullable', 'string', 'max:5000'],
-            'reject_unknown_senders'      => ['boolean'],
-            'is_active'                   => ['boolean'],
+            'strip_signature' => ['boolean'],
+            'auto_reply_enabled' => ['boolean'],
+            'auto_reply_subject' => ['nullable', 'string', 'max:255'],
+            'auto_reply_body' => ['nullable', 'string', 'max:5000'],
+            'reject_unknown_senders' => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $data['pipe_token'] = MailboxPipe::generateToken();
@@ -53,18 +53,18 @@ class MailboxPipeController extends Controller
     public function update(Request $request, MailboxPipe $mailboxPipe): RedirectResponse
     {
         $data = $request->validate([
-            'name'                        => ['required', 'string', 'max:100'],
-            'email_address'               => ['nullable', 'email', 'max:255'],
-            'department_id'               => ['nullable', 'exists:departments,id'],
-            'auto_assign_to'              => ['nullable', 'exists:users,id'],
-            'default_priority'            => ['required', 'in:low,medium,high,urgent'],
+            'name' => ['required', 'string', 'max:100'],
+            'email_address' => ['nullable', 'email', 'max:255'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'auto_assign_to' => ['nullable', 'exists:users,id'],
+            'default_priority' => ['required', 'in:low,medium,high,urgent'],
             'create_client_if_not_exists' => ['boolean'],
-            'strip_signature'             => ['boolean'],
-            'auto_reply_enabled'          => ['boolean'],
-            'auto_reply_subject'          => ['nullable', 'string', 'max:255'],
-            'auto_reply_body'             => ['nullable', 'string', 'max:5000'],
-            'reject_unknown_senders'      => ['boolean'],
-            'is_active'                   => ['boolean'],
+            'strip_signature' => ['boolean'],
+            'auto_reply_enabled' => ['boolean'],
+            'auto_reply_subject' => ['nullable', 'string', 'max:255'],
+            'auto_reply_body' => ['nullable', 'string', 'max:5000'],
+            'reject_unknown_senders' => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $mailboxPipe->update($data);
@@ -109,7 +109,8 @@ class MailboxPipeController extends Controller
         try {
             $processor->process($pipe, $raw);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("[MailPipe:{$pipe->id}] HTTP pipe error: " . $e->getMessage());
+            Log::error("[MailPipe:{$pipe->id}] HTTP pipe error: ".$e->getMessage());
+
             return response()->json(['error' => 'Processing failed.'], 500);
         }
 

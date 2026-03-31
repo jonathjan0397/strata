@@ -9,18 +9,21 @@ use RuntimeException;
 class NamecheapDriver implements RegistrarDriver
 {
     private string $apiUser;
+
     private string $apiKey;
+
     private string $clientIp;
+
     private string $baseUrl;
 
     public function __construct()
     {
         $sandbox = config('registrars.namecheap.sandbox', true);
 
-        $this->apiUser  = config('registrars.namecheap.api_user');
-        $this->apiKey   = config('registrars.namecheap.api_key');
+        $this->apiUser = config('registrars.namecheap.api_user');
+        $this->apiKey = config('registrars.namecheap.api_key');
         $this->clientIp = config('registrars.namecheap.client_ip', '127.0.0.1');
-        $this->baseUrl  = $sandbox
+        $this->baseUrl = $sandbox
             ? 'https://api.sandbox.namecheap.com/xml.response'
             : 'https://api.namecheap.com/xml.response';
     }
@@ -49,7 +52,7 @@ class NamecheapDriver implements RegistrarDriver
         $params = array_merge(
             [
                 'DomainName' => $domain,
-                'Years'      => $years,
+                'Years' => $years,
             ],
             $this->buildContactParams('Registrant', $contact),
             $this->buildContactParams('Tech', $contact),
@@ -69,10 +72,10 @@ class NamecheapDriver implements RegistrarDriver
         }
 
         return [
-            'success'       => true,
+            'success' => true,
             'registrar_data' => [
-                'domain_id'   => (string) $result['DomainID'],
-                'order_id'    => (string) $result['OrderID'],
+                'domain_id' => (string) $result['DomainID'],
+                'order_id' => (string) $result['OrderID'],
                 'transaction' => (string) $result['TransactionID'],
             ],
         ];
@@ -84,7 +87,7 @@ class NamecheapDriver implements RegistrarDriver
 
         $xml = $this->call('namecheap.domains.renew', [
             'DomainName' => $domain,
-            'Years'      => $years,
+            'Years' => $years,
         ]);
 
         $result = $xml->CommandResponse->DomainRenewResult;
@@ -93,7 +96,7 @@ class NamecheapDriver implements RegistrarDriver
         }
 
         return [
-            'success'    => true,
+            'success' => true,
             'expires_at' => (string) $result['DomainDetails']['ExpiredDate'],
         ];
     }
@@ -102,14 +105,14 @@ class NamecheapDriver implements RegistrarDriver
     {
         $xml = $this->call('namecheap.domains.transfer.create', [
             'DomainName' => $domain,
-            'EPPCode'    => $authCode,
-            'Years'      => 1,
+            'EPPCode' => $authCode,
+            'Years' => 1,
         ]);
 
         $result = $xml->CommandResponse->DomainTransferCreateResult;
 
         return [
-            'success'     => true,
+            'success' => true,
             'transfer_id' => (string) $result['TransferID'],
         ];
     }
@@ -136,8 +139,8 @@ class NamecheapDriver implements RegistrarDriver
         [$sld, $tld] = $this->splitDomain($domain);
 
         $this->call('namecheap.domains.dns.setCustom', [
-            'SLD'         => $sld,
-            'TLD'         => $tld,
+            'SLD' => $sld,
+            'TLD' => $tld,
             'Nameservers' => implode(',', $nameservers),
         ]);
     }
@@ -148,17 +151,17 @@ class NamecheapDriver implements RegistrarDriver
 
         $info = $xml->CommandResponse->DomainGetInfoResult;
         $details = $info->DomainDetails;
-        $modifs  = $info->Modificationrights;
-        $ns      = [];
+        $modifs = $info->Modificationrights;
+        $ns = [];
 
         foreach ($info->DnsDetails->Nameserver as $n) {
             $ns[] = (string) $n;
         }
 
         return [
-            'expires_at'  => (string) $details->ExpiredDate,
-            'locked'      => strtolower((string) $info['IsLocked']) === 'true',
-            'privacy'     => strtolower((string) $info->Whoisguard['Enabled']) === 'true',
+            'expires_at' => (string) $details->ExpiredDate,
+            'locked' => strtolower((string) $info['IsLocked']) === 'true',
+            'privacy' => strtolower((string) $info->Whoisguard['Enabled']) === 'true',
             'nameservers' => $ns,
         ];
     }
@@ -174,7 +177,7 @@ class NamecheapDriver implements RegistrarDriver
     public function setPrivacy(string $domain, bool $enabled): void
     {
         $this->call('namecheap.whoisguard.enable', [
-            'DomainName'    => $domain,
+            'DomainName' => $domain,
             'ForwardedToMail' => '',
         ]);
 
@@ -196,13 +199,13 @@ class NamecheapDriver implements RegistrarDriver
             try {
                 $xml = $this->call('namecheap.users.getPricing', [
                     'ProductType' => 'DOMAIN',
-                    'ActionName'  => $action,
+                    'ActionName' => $action,
                 ]);
 
                 foreach ($xml->CommandResponse->UserGetPricingResult->ProductType ?? [] as $productType) {
                     foreach ($productType->ProductCategory as $category) {
                         foreach ($category->Product as $product) {
-                            $tld  = strtolower((string) $product['Name']);
+                            $tld = strtolower((string) $product['Name']);
                             $price = null;
                             foreach ($product->Price as $p) {
                                 if ((int) $p['Duration'] === 1 && (string) $p['DurationType'] === 'YEAR') {
@@ -210,7 +213,7 @@ class NamecheapDriver implements RegistrarDriver
                                     break;
                                 }
                             }
-                            $pricing[$tld][$key]       = $price;
+                            $pricing[$tld][$key] = $price;
                             $pricing[$tld]['currency'] = 'USD';
                         }
                     }
@@ -228,11 +231,11 @@ class NamecheapDriver implements RegistrarDriver
     private function call(string $command, array $params = []): \SimpleXMLElement
     {
         $response = Http::get($this->baseUrl, array_merge([
-            'ApiUser'   => $this->apiUser,
-            'ApiKey'    => $this->apiKey,
-            'UserName'  => $this->apiUser,
-            'Command'   => $command,
-            'ClientIp'  => $this->clientIp,
+            'ApiUser' => $this->apiUser,
+            'ApiKey' => $this->apiKey,
+            'UserName' => $this->apiUser,
+            'Command' => $command,
+            'ClientIp' => $this->clientIp,
         ], $params));
 
         $xml = simplexml_load_string($response->body());
@@ -248,21 +251,22 @@ class NamecheapDriver implements RegistrarDriver
     private function splitDomain(string $domain): array
     {
         $parts = explode('.', $domain, 2);
+
         return [$parts[0], $parts[1] ?? ''];
     }
 
     private function buildContactParams(string $type, array $c): array
     {
         return [
-            "{$type}FirstName"   => $c['registrant_first'],
-            "{$type}LastName"    => $c['registrant_last'],
-            "{$type}EmailAddress"=> $c['registrant_email'],
-            "{$type}Phone"       => $c['registrant_phone'],
-            "{$type}Address1"    => $c['registrant_address'],
-            "{$type}City"        => $c['registrant_city'],
-            "{$type}StateProvince"=> $c['registrant_state'],
-            "{$type}PostalCode"  => $c['registrant_zip'],
-            "{$type}Country"     => $c['registrant_country'],
+            "{$type}FirstName" => $c['registrant_first'],
+            "{$type}LastName" => $c['registrant_last'],
+            "{$type}EmailAddress" => $c['registrant_email'],
+            "{$type}Phone" => $c['registrant_phone'],
+            "{$type}Address1" => $c['registrant_address'],
+            "{$type}City" => $c['registrant_city'],
+            "{$type}StateProvince" => $c['registrant_state'],
+            "{$type}PostalCode" => $c['registrant_zip'],
+            "{$type}Country" => $c['registrant_country'],
         ];
     }
 }

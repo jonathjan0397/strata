@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -42,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                 return $composer['version'];
             }
         }
+
         return '1.0-RC1';
     }
 
@@ -57,15 +60,15 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'success' => fn () => $request->hasSession() ? $request->session()->get('success') : null,
-                'error'   => fn () => $request->hasSession() ? $request->session()->get('error') : null,
+                'error' => fn () => $request->hasSession() ? $request->session()->get('error') : null,
             ],
             'twoFactorWarning' => fn () => $request->user()?->hasAnyRole(['super-admin', 'admin', 'staff'])
                 && ! ($request->user()->two_factor_enabled && $request->user()->two_factor_confirmed_at),
-            'stripeKey'    => config('services.stripe.key'),
-            'siteName'    => fn () => \App\Models\Setting::get('site_title', \App\Models\Setting::get('company_name', config('app.name'))),
-            'logoUrl'     => fn () => ($p = \App\Models\Setting::get('logo_path')) ? \Illuminate\Support\Facades\Storage::disk('public')->url($p) : null,
-            'portalTheme' => fn () => \App\Models\Setting::get('portal_theme', 'blue'),
-            'appVersion'  => fn () => $this->resolveVersion(),
+            'stripeKey' => config('services.stripe.key'),
+            'siteName' => fn () => Setting::get('site_title', Setting::get('company_name', config('app.name'))),
+            'logoUrl' => fn () => ($p = Setting::get('logo_path')) ? Storage::disk('public')->url($p) : null,
+            'portalTheme' => fn () => Setting::get('portal_theme', 'blue'),
+            'appVersion' => fn () => $this->resolveVersion(),
         ]);
     }
 }

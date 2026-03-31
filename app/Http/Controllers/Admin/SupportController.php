@@ -21,20 +21,19 @@ class SupportController extends Controller
     public function index(Request $request): Response
     {
         $tickets = SupportTicket::with(['user', 'assignedTo', 'department'])
-            ->when($request->status,      fn ($q, $s) => $q->where('status', $s))
-            ->when($request->priority,    fn ($q, $p) => $q->where('priority', $p))
-            ->when($request->department,  fn ($q, $d) => $q->where('department_id', $d))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
+            ->when($request->priority, fn ($q, $p) => $q->where('priority', $p))
+            ->when($request->department, fn ($q, $d) => $q->where('department_id', $d))
             ->when($request->assigned_to, function ($q, $a) use ($request) {
                 $a === 'me'
                     ? $q->where('assigned_to', $request->user()->id)
                     : $q->where('assigned_to', $a);
             })
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(function ($sub) use ($s) {
-                    $sub->where('subject', 'like', "%{$s}%")
-                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"))
-                        ->orWhereHas('replies', fn ($r) => $r->where('message', 'like', "%{$s}%"));
-                })
+            ->when($request->search, fn ($q, $s) => $q->where(function ($sub) use ($s) {
+                $sub->where('subject', 'like', "%{$s}%")
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"))
+                    ->orWhereHas('replies', fn ($r) => $r->where('message', 'like', "%{$s}%"));
+            })
             )
             ->orderByRaw("FIELD(status, 'open', 'customer_reply', 'answered', 'on_hold', 'closed')")
             ->orderByRaw("FIELD(priority, 'urgent', 'high', 'medium', 'low')")
@@ -42,12 +41,11 @@ class SupportController extends Controller
             ->withQueryString();
 
         return Inertia::render('Admin/Support/Index', [
-            'tickets'     => $tickets,
+            'tickets' => $tickets,
             'departments' => Department::active()->get(['id', 'name']),
-            'staff'       => User::whereHas('roles', fn ($q) =>
-                $q->whereIn('name', ['super-admin', 'admin', 'staff'])
+            'staff' => User::whereHas('roles', fn ($q) => $q->whereIn('name', ['super-admin', 'admin', 'staff'])
             )->get(['id', 'name']),
-            'filters'     => $request->only('search', 'status', 'priority', 'department', 'assigned_to'),
+            'filters' => $request->only('search', 'status', 'priority', 'department', 'assigned_to'),
         ]);
     }
 
@@ -56,10 +54,9 @@ class SupportController extends Controller
         $ticket->load(['user', 'assignedTo', 'department', 'replies.user', 'replies.attachments']);
 
         return Inertia::render('Admin/Support/Show', [
-            'ticket'          => $ticket,
-            'departments'     => Department::active()->get(['id', 'name']),
-            'staff'           => User::whereHas('roles', fn ($q) =>
-                $q->whereIn('name', ['super-admin', 'admin', 'staff'])
+            'ticket' => $ticket,
+            'departments' => Department::active()->get(['id', 'name']),
+            'staff' => User::whereHas('roles', fn ($q) => $q->whereIn('name', ['super-admin', 'admin', 'staff'])
             )->get(['id', 'name']),
             'cannedResponses' => CannedResponse::with('department')
                 ->orderBy('title')
@@ -71,23 +68,22 @@ class SupportController extends Controller
     {
         return Inertia::render('Admin/Support/Create', [
             'departments' => Department::active()->get(['id', 'name']),
-            'staff'       => User::whereHas('roles', fn ($q) =>
-                $q->whereIn('name', ['super-admin', 'admin', 'staff'])
+            'staff' => User::whereHas('roles', fn ($q) => $q->whereIn('name', ['super-admin', 'admin', 'staff'])
             )->get(['id', 'name']),
-            'clients'     => User::role('client')->orderBy('name')->get(['id', 'name', 'email']),
+            'clients' => User::role('client')->orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'user_id'       => ['required', 'exists:users,id'],
-            'subject'       => ['required', 'string', 'max:255'],
+            'user_id' => ['required', 'exists:users,id'],
+            'subject' => ['required', 'string', 'max:255'],
             'department_id' => ['nullable', 'exists:departments,id'],
-            'priority'      => ['required', 'in:low,medium,high,urgent'],
-            'message'       => ['required', 'string'],
-            'assigned_to'   => ['nullable', 'exists:users,id'],
-            'internal'      => ['boolean'],
+            'priority' => ['required', 'in:low,medium,high,urgent'],
+            'message' => ['required', 'string'],
+            'assigned_to' => ['nullable', 'exists:users,id'],
+            'internal' => ['boolean'],
         ]);
 
         $dept = $data['department_id']
@@ -95,22 +91,22 @@ class SupportController extends Controller
             : null;
 
         $ticket = SupportTicket::create([
-            'user_id'       => $data['user_id'],
-            'subject'       => $data['subject'],
+            'user_id' => $data['user_id'],
+            'subject' => $data['subject'],
             'department_id' => $data['department_id'] ?? null,
-            'department'    => $dept?->name ?? 'General',
-            'priority'      => $data['priority'],
-            'assigned_to'   => $data['assigned_to'] ?? null,
-            'status'        => 'open',
+            'department' => $dept?->name ?? 'General',
+            'priority' => $data['priority'],
+            'assigned_to' => $data['assigned_to'] ?? null,
+            'status' => 'open',
             'last_reply_at' => now(),
         ]);
 
         SupportReply::create([
             'ticket_id' => $ticket->id,
-            'user_id'   => $request->user()->id,
-            'message'   => $data['message'],
-            'is_staff'  => true,
-            'internal'  => $data['internal'] ?? false,
+            'user_id' => $request->user()->id,
+            'message' => $data['message'],
+            'is_staff' => true,
+            'internal' => $data['internal'] ?? false,
         ]);
 
         return redirect()->route('admin.support.show', $ticket)
@@ -120,17 +116,17 @@ class SupportController extends Controller
     public function reply(Request $request, SupportTicket $ticket): RedirectResponse
     {
         $data = $request->validate([
-            'message'         => ['required', 'string'],
-            'internal'        => ['boolean'],
-            'attachments'     => ['nullable', 'array', 'max:5'],
-            'attachments.*'   => ['file', 'max:10240'],
+            'message' => ['required', 'string'],
+            'internal' => ['boolean'],
+            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments.*' => ['file', 'max:10240'],
         ]);
 
         $isInternal = (bool) ($data['internal'] ?? false);
 
         $reply = $ticket->replies()->create([
-            'user_id'  => $request->user()->id,
-            'message'  => $data['message'],
+            'user_id' => $request->user()->id,
+            'message' => $data['message'],
             'is_staff' => true,
             'internal' => $isInternal,
         ]);
@@ -140,10 +136,10 @@ class SupportController extends Controller
                 $path = $file->store("ticket-attachments/{$ticket->id}", 'public');
                 $reply->attachments()->create([
                     'ticket_id' => $ticket->id,
-                    'user_id'   => $request->user()->id,
-                    'filename'  => $file->getClientOriginalName(),
-                    'path'      => $path,
-                    'size'      => $file->getSize(),
+                    'user_id' => $request->user()->id,
+                    'filename' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'size' => $file->getSize(),
                     'mime_type' => $file->getMimeType(),
                 ]);
             }
@@ -151,7 +147,7 @@ class SupportController extends Controller
 
         if (! $isInternal) {
             $updates = [
-                'status'        => 'answered',
+                'status' => 'answered',
                 'last_reply_at' => now(),
             ];
 
@@ -164,12 +160,12 @@ class SupportController extends Controller
             $ticket->load('user');
             try {
                 Mail::to($ticket->user->email)->send(new TemplateMailable('support.reply', [
-                    'name'           => $ticket->user->name,
-                    'app_name'       => config('app.name'),
-                    'ticket_id'      => $ticket->id,
+                    'name' => $ticket->user->name,
+                    'app_name' => config('app.name'),
+                    'ticket_id' => $ticket->id,
                     'ticket_subject' => $ticket->subject,
-                    'reply_body'     => $data['message'],
-                    'ticket_url'     => route('client.support.show', $ticket->id),
+                    'reply_body' => $data['message'],
+                    'ticket_url' => route('client.support.show', $ticket->id),
                 ]));
             } catch (\Throwable) {
                 // mail failure must not block support reply
@@ -195,13 +191,14 @@ class SupportController extends Controller
             if ($assignee) {
                 try {
                     Mail::to($assignee->email)->send(new TemplateMailable('support.assigned', [
-                        'name'           => $assignee->name,
-                        'app_name'       => config('app.name'),
-                        'ticket_id'      => $ticket->id,
+                        'name' => $assignee->name,
+                        'app_name' => config('app.name'),
+                        'ticket_id' => $ticket->id,
                         'ticket_subject' => $ticket->subject,
-                        'ticket_url'     => route('admin.support.show', $ticket->id),
+                        'ticket_url' => route('admin.support.show', $ticket->id),
                     ]));
-                } catch (\Throwable) {}
+                } catch (\Throwable) {
+                }
             }
         }
 
@@ -237,12 +234,12 @@ class SupportController extends Controller
         $dept = Department::find($request->department_id);
         $ticket->update([
             'department_id' => $dept->id,
-            'department'    => $dept->name,
+            'department' => $dept->name,
         ]);
 
         $ticket->replies()->create([
-            'user_id'  => $request->user()->id,
-            'message'  => "Ticket transferred to department: {$dept->name}",
+            'user_id' => $request->user()->id,
+            'message' => "Ticket transferred to department: {$dept->name}",
             'is_staff' => true,
             'internal' => true,
         ]);
@@ -270,16 +267,16 @@ class SupportController extends Controller
 
         // Internal note on target
         $ticket->replies()->create([
-            'user_id'  => $request->user()->id,
-            'message'  => "Ticket #{$source->id} merged into this ticket. (Original subject: {$source->subject})",
+            'user_id' => $request->user()->id,
+            'message' => "Ticket #{$source->id} merged into this ticket. (Original subject: {$source->subject})",
             'is_staff' => true,
             'internal' => true,
         ]);
 
         // Close source with note
         $source->replies()->create([
-            'user_id'  => $request->user()->id,
-            'message'  => "This ticket was merged into Ticket #{$ticket->id}.",
+            'user_id' => $request->user()->id,
+            'message' => "This ticket was merged into Ticket #{$ticket->id}.",
             'is_staff' => true,
             'internal' => true,
         ]);
@@ -293,9 +290,9 @@ class SupportController extends Controller
     {
         $data = $request->validate([
             'action' => ['required', 'in:close,reopen,assign,delete'],
-            'ids'    => ['required', 'array', 'min:1'],
-            'ids.*'  => ['integer', 'exists:support_tickets,id'],
-            'value'  => ['nullable', 'string'],
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:support_tickets,id'],
+            'value' => ['nullable', 'string'],
         ]);
 
         $count = count($data['ids']);

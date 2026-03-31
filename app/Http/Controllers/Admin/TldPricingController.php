@@ -15,31 +15,31 @@ class TldPricingController extends Controller
 {
     public function index(): Response
     {
-        $prices = TldPrice::orderBy('tld')->get()->map(fn($t) => [
-            'id'             => $t->id,
-            'tld'            => $t->tld,
-            'register_cost'  => $t->register_cost,
-            'renew_cost'     => $t->renew_cost,
-            'transfer_cost'  => $t->transfer_cost,
-            'markup_type'    => $t->markup_type,
-            'markup_value'   => $t->markup_value,
+        $prices = TldPrice::orderBy('tld')->get()->map(fn ($t) => [
+            'id' => $t->id,
+            'tld' => $t->tld,
+            'register_cost' => $t->register_cost,
+            'renew_cost' => $t->renew_cost,
+            'transfer_cost' => $t->transfer_cost,
+            'markup_type' => $t->markup_type,
+            'markup_value' => $t->markup_value,
             'register_price' => $t->register_price,
-            'renew_price'    => $t->renew_price,
+            'renew_price' => $t->renew_price,
             'transfer_price' => $t->transfer_price,
-            'currency'       => $t->currency,
-            'is_active'      => $t->is_active,
+            'currency' => $t->currency,
+            'is_active' => $t->is_active,
             'last_synced_at' => $t->last_synced_at?->toDateTimeString(),
         ]);
 
         try {
-            $driver    = config('registrars.default', 'namecheap');
+            $driver = config('registrars.default', 'namecheap');
             $canImport = method_exists(DomainRegistrarService::driver($driver), 'getPricing');
         } catch (\Throwable) {
             $canImport = false;
         }
 
         return Inertia::render('Admin/TldPricing/Index', [
-            'prices'    => $prices,
+            'prices' => $prices,
             'canImport' => $canImport,
         ]);
     }
@@ -47,17 +47,17 @@ class TldPricingController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'tld'           => ['required', 'string', 'max:32', 'regex:/^\.[a-z0-9.]+$/i'],
+            'tld' => ['required', 'string', 'max:32', 'regex:/^\.[a-z0-9.]+$/i'],
             'register_cost' => ['nullable', 'numeric', 'min:0'],
-            'renew_cost'    => ['nullable', 'numeric', 'min:0'],
+            'renew_cost' => ['nullable', 'numeric', 'min:0'],
             'transfer_cost' => ['nullable', 'numeric', 'min:0'],
-            'markup_type'   => ['required', 'in:fixed,percent'],
-            'markup_value'  => ['required', 'numeric', 'min:0'],
-            'currency'      => ['required', 'string', 'size:3'],
-            'is_active'     => ['boolean'],
+            'markup_type' => ['required', 'in:fixed,percent'],
+            'markup_value' => ['required', 'numeric', 'min:0'],
+            'currency' => ['required', 'string', 'size:3'],
+            'is_active' => ['boolean'],
         ]);
 
-        $data['tld'] = '.' . ltrim($data['tld'], '.');
+        $data['tld'] = '.'.ltrim($data['tld'], '.');
 
         TldPrice::updateOrCreate(['tld' => $data['tld']], $data);
 
@@ -68,12 +68,12 @@ class TldPricingController extends Controller
     {
         $data = $request->validate([
             'register_cost' => ['nullable', 'numeric', 'min:0'],
-            'renew_cost'    => ['nullable', 'numeric', 'min:0'],
+            'renew_cost' => ['nullable', 'numeric', 'min:0'],
             'transfer_cost' => ['nullable', 'numeric', 'min:0'],
-            'markup_type'   => ['required', 'in:fixed,percent'],
-            'markup_value'  => ['required', 'numeric', 'min:0'],
-            'currency'      => ['required', 'string', 'size:3'],
-            'is_active'     => ['boolean'],
+            'markup_type' => ['required', 'in:fixed,percent'],
+            'markup_value' => ['required', 'numeric', 'min:0'],
+            'currency' => ['required', 'string', 'size:3'],
+            'is_active' => ['boolean'],
         ]);
 
         $tldPrice->update($data);
@@ -106,27 +106,27 @@ class TldPricingController extends Controller
 
             $synced = 0;
             foreach ($pricing as $tld => $prices) {
-                $tld = '.' . ltrim($tld, '.');
+                $tld = '.'.ltrim($tld, '.');
                 $existing = TldPrice::where('tld', $tld)->first();
 
                 if ($existing) {
                     $existing->update([
-                        'register_cost'  => $prices['register']  ?? $existing->register_cost,
-                        'renew_cost'     => $prices['renew']      ?? $existing->renew_cost,
-                        'transfer_cost'  => $prices['transfer']   ?? $existing->transfer_cost,
-                        'currency'       => $prices['currency']   ?? $existing->currency,
+                        'register_cost' => $prices['register'] ?? $existing->register_cost,
+                        'renew_cost' => $prices['renew'] ?? $existing->renew_cost,
+                        'transfer_cost' => $prices['transfer'] ?? $existing->transfer_cost,
+                        'currency' => $prices['currency'] ?? $existing->currency,
                         'last_synced_at' => now(),
                     ]);
                 } else {
                     TldPrice::create([
-                        'tld'            => $tld,
-                        'register_cost'  => $prices['register']  ?? null,
-                        'renew_cost'     => $prices['renew']      ?? null,
-                        'transfer_cost'  => $prices['transfer']   ?? null,
-                        'currency'       => $prices['currency']   ?? 'USD',
-                        'markup_type'    => 'percent',
-                        'markup_value'   => 0,
-                        'is_active'      => true,
+                        'tld' => $tld,
+                        'register_cost' => $prices['register'] ?? null,
+                        'renew_cost' => $prices['renew'] ?? null,
+                        'transfer_cost' => $prices['transfer'] ?? null,
+                        'currency' => $prices['currency'] ?? 'USD',
+                        'markup_type' => 'percent',
+                        'markup_value' => 0,
+                        'is_active' => true,
                         'last_synced_at' => now(),
                     ]);
                 }
@@ -136,8 +136,9 @@ class TldPricingController extends Controller
             return back()->with('flash', ['success' => "Imported pricing for {$synced} TLDs."]);
 
         } catch (\Throwable $e) {
-            Log::error('TLD price import failed: ' . $e->getMessage());
-            return back()->with('flash', ['error' => 'Import failed: ' . $e->getMessage()]);
+            Log::error('TLD price import failed: '.$e->getMessage());
+
+            return back()->with('flash', ['error' => 'Import failed: '.$e->getMessage()]);
         }
     }
 }

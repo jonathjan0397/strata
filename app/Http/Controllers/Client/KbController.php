@@ -18,9 +18,8 @@ class KbController extends Controller
         if ($search) {
             $articles = KbArticle::with('category')
                 ->published()
-                ->where(fn ($q) =>
-                    $q->where('title', 'like', "%{$search}%")
-                      ->orWhere('body', 'like', "%{$search}%")
+                ->where(fn ($q) => $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('body', 'like', "%{$search}%")
                 )
                 ->orderBy('views', 'desc')
                 ->limit(20)
@@ -28,8 +27,8 @@ class KbController extends Controller
 
             return Inertia::render('Client/KB/Index', [
                 'categories' => [],
-                'articles'   => $articles,
-                'search'     => $search,
+                'articles' => $articles,
+                'search' => $search,
             ]);
         }
 
@@ -39,8 +38,8 @@ class KbController extends Controller
 
         return Inertia::render('Client/KB/Index', [
             'categories' => $categories,
-            'articles'   => [],
-            'search'     => '',
+            'articles' => [],
+            'search' => '',
         ]);
     }
 

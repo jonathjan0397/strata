@@ -19,7 +19,7 @@ class TwoFactorChallengeController extends Controller
 
     public function __construct()
     {
-        $this->google2fa = new Google2FA();
+        $this->google2fa = new Google2FA;
     }
 
     public function create(Request $request): Response|RedirectResponse
@@ -41,7 +41,7 @@ class TwoFactorChallengeController extends Controller
             return redirect()->route('login');
         }
 
-        $user   = User::findOrFail($userId);
+        $user = User::findOrFail($userId);
         $secret = decrypt($user->two_factor_secret);
 
         $valid = $this->google2fa->verifyKey($secret, $request->code);

@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Domain;
-use App\Models\Invoice;
 use App\Services\DomainRegistrarService;
 use Illuminate\Console\Command;
 
@@ -24,6 +23,7 @@ class RenewExpiringDomains extends Command
 
         if ($domains->isEmpty()) {
             $this->info('No domains due for renewal.');
+
             return self::SUCCESS;
         }
 
@@ -33,7 +33,7 @@ class RenewExpiringDomains extends Command
                 $result = $driver->renewDomain($domain->name, 1);
 
                 $domain->update([
-                    'status'     => 'active',
+                    'status' => 'active',
                     'expires_at' => $result['expires_at'] ?: $domain->expires_at?->addYear(),
                 ]);
 

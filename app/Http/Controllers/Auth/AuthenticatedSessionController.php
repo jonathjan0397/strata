@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
-use PragmaRX\Google2FA\Google2FA;
 
 class AuthenticatedSessionController extends Controller
 {

@@ -17,7 +17,7 @@ class AuditLogController extends Controller
             ->latest('created_at');
 
         if ($request->filled('action')) {
-            $query->where('action', 'like', '%' . $request->action . '%');
+            $query->where('action', 'like', '%'.$request->action.'%');
         }
 
         if ($request->filled('user_id')) {
@@ -48,8 +48,8 @@ class AuditLogController extends Controller
             ->get();
 
         return Inertia::render('Admin/AuditLog/Index', [
-            'logs'    => $logs,
-            'staff'   => $staff,
+            'logs' => $logs,
+            'staff' => $staff,
             'filters' => $request->only(['action', 'user_id', 'target_type', 'from', 'to', 'actor_type']),
         ]);
     }

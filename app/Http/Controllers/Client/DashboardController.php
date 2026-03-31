@@ -17,8 +17,8 @@ class DashboardController extends Controller
             'stats' => [
                 'active_services' => $user->services()->where('status', 'active')->count(),
                 'unpaid_invoices' => $user->invoices()->where('status', 'unpaid')->count(),
-                'open_tickets'    => $user->tickets()->whereIn('status', ['open', 'customer_reply'])->count(),
-                'active_domains'  => $user->domains()->where('status', 'active')->count(),
+                'open_tickets' => $user->tickets()->whereIn('status', ['open', 'customer_reply'])->count(),
+                'active_domains' => $user->domains()->where('status', 'active')->count(),
             ],
             'services_due' => $user->services()
                 ->with('product')

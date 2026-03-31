@@ -13,15 +13,17 @@ use RuntimeException;
 class EnomDriver implements RegistrarDriver
 {
     private string $uid;
+
     private string $pw;
+
     private string $baseUrl;
 
     public function __construct()
     {
         $sandbox = config('registrars.enom.sandbox', true);
 
-        $this->uid     = config('registrars.enom.uid');
-        $this->pw      = config('registrars.enom.pw');
+        $this->uid = config('registrars.enom.uid');
+        $this->pw = config('registrars.enom.pw');
         $this->baseUrl = $sandbox
             ? 'https://resellertest.enom.com/interface.asp'
             : 'https://reseller.enom.com/interface.asp';
@@ -51,10 +53,10 @@ class EnomDriver implements RegistrarDriver
 
         $params = array_merge(
             [
-                'SLD'       => $sld,
-                'TLD'       => $tld,
-                'NumYears'  => $years,
-                'UseDNS'    => empty($nameservers) ? 'default' : 'custom',
+                'SLD' => $sld,
+                'TLD' => $tld,
+                'NumYears' => $years,
+                'UseDNS' => empty($nameservers) ? 'default' : 'custom',
             ],
             $this->buildContactParams('Registrant', $contact),
             $this->buildContactParams('Tech', $contact),
@@ -63,7 +65,7 @@ class EnomDriver implements RegistrarDriver
         );
 
         foreach (array_values($nameservers) as $i => $ns) {
-            $params['NS' . ($i + 1)] = $ns;
+            $params['NS'.($i + 1)] = $ns;
         }
 
         $data = $this->call('Purchase', $params);
@@ -74,7 +76,7 @@ class EnomDriver implements RegistrarDriver
         }
 
         return [
-            'success'        => true,
+            'success' => true,
             'registrar_data' => [
                 'order_id' => $data['OrderID'] ?? null,
             ],
@@ -86,17 +88,17 @@ class EnomDriver implements RegistrarDriver
         [$sld, $tld] = $this->splitDomain($domain);
 
         $data = $this->call('Extend', [
-            'SLD'      => $sld,
-            'TLD'      => $tld,
+            'SLD' => $sld,
+            'TLD' => $tld,
             'NumYears' => $years,
         ]);
 
         if (! isset($data['RRPCode']) || (string) $data['RRPCode'] !== '200') {
-            throw new RuntimeException('Enom renewal failed: ' . ($data['RRPText'] ?? 'Unknown'));
+            throw new RuntimeException('Enom renewal failed: '.($data['RRPText'] ?? 'Unknown'));
         }
 
         return [
-            'success'    => true,
+            'success' => true,
             'expires_at' => $data['ExpirationDate'] ?? '',
         ];
     }
@@ -106,14 +108,14 @@ class EnomDriver implements RegistrarDriver
         [$sld, $tld] = $this->splitDomain($domain);
 
         $data = $this->call('TP_CreateOrder', [
-            'SLD'      => $sld,
-            'TLD'      => $tld,
+            'SLD' => $sld,
+            'TLD' => $tld,
             'AuthInfo' => $authCode,
             'NumYears' => 1,
         ]);
 
         return [
-            'success'     => true,
+            'success' => true,
             'transfer_id' => $data['TransferOrderDetailID'] ?? '',
         ];
     }
@@ -141,7 +143,7 @@ class EnomDriver implements RegistrarDriver
 
         $params = ['SLD' => $sld, 'TLD' => $tld];
         foreach (array_values($nameservers) as $i => $ns) {
-            $params['NS' . ($i + 1)] = $ns;
+            $params['NS'.($i + 1)] = $ns;
         }
 
         $this->call('ModifyNS', $params);
@@ -162,9 +164,9 @@ class EnomDriver implements RegistrarDriver
         }
 
         return [
-            'expires_at'  => $data['expiration'] ?? '',
-            'locked'      => isset($data['registrarlock']) && $data['registrarlock'] === '1',
-            'privacy'     => false, // Enom uses separate WhoIsGuard product
+            'expires_at' => $data['expiration'] ?? '',
+            'locked' => isset($data['registrarlock']) && $data['registrarlock'] === '1',
+            'privacy' => false, // Enom uses separate WhoIsGuard product
             'nameservers' => $ns,
         ];
     }
@@ -174,8 +176,8 @@ class EnomDriver implements RegistrarDriver
         [$sld, $tld] = $this->splitDomain($domain);
 
         $this->call('SetRegLock', [
-            'SLD'          => $sld,
-            'TLD'          => $tld,
+            'SLD' => $sld,
+            'TLD' => $tld,
             'UnlockRegistrar' => $locked ? '0' : '1',
         ]);
     }
@@ -191,10 +193,10 @@ class EnomDriver implements RegistrarDriver
     private function call(string $command, array $params = []): array
     {
         $response = Http::get($this->baseUrl, array_merge([
-            'uid'            => $this->uid,
-            'pw'             => $this->pw,
-            'command'        => $command,
-            'responsetype'   => 'xml',
+            'uid' => $this->uid,
+            'pw' => $this->pw,
+            'command' => $command,
+            'responsetype' => 'xml',
         ], $params));
 
         $xml = simplexml_load_string($response->body());
@@ -224,22 +226,23 @@ class EnomDriver implements RegistrarDriver
     private function splitDomain(string $domain): array
     {
         $parts = explode('.', $domain, 2);
+
         return [$parts[0], $parts[1] ?? ''];
     }
 
     private function buildContactParams(string $type, array $c): array
     {
         return [
-            "{$type}FirstName"  => $c['registrant_first'],
-            "{$type}LastName"   => $c['registrant_last'],
-            "{$type}Email"      => $c['registrant_email'],
-            "{$type}Phone"      => $c['registrant_phone'],
-            "{$type}Address1"   => $c['registrant_address'],
-            "{$type}City"       => $c['registrant_city'],
+            "{$type}FirstName" => $c['registrant_first'],
+            "{$type}LastName" => $c['registrant_last'],
+            "{$type}Email" => $c['registrant_email'],
+            "{$type}Phone" => $c['registrant_phone'],
+            "{$type}Address1" => $c['registrant_address'],
+            "{$type}City" => $c['registrant_city'],
             "{$type}StateProvinceChoice" => 'S',
-            "{$type}StateProvince"       => $c['registrant_state'],
-            "{$type}PostalCode"          => $c['registrant_zip'],
-            "{$type}Country"             => $c['registrant_country'],
+            "{$type}StateProvince" => $c['registrant_state'],
+            "{$type}PostalCode" => $c['registrant_zip'],
+            "{$type}Country" => $c['registrant_country'],
         ];
     }
 
@@ -255,18 +258,18 @@ class EnomDriver implements RegistrarDriver
 
         $actions = [
             'REGISTER' => 'register',
-            'RENEW'    => 'renew',
+            'RENEW' => 'renew',
             'TRANSFER' => 'transfer',
         ];
 
         foreach ($actions as $enomAction => $key) {
             try {
                 $raw = Http::get($this->baseUrl, [
-                    'uid'             => $this->uid,
-                    'pw'              => $this->pw,
-                    'command'         => 'PE_GetProductList',
-                    'responsetype'    => 'xml',
-                    'ProductType'     => 'Domain',
+                    'uid' => $this->uid,
+                    'pw' => $this->pw,
+                    'command' => 'PE_GetProductList',
+                    'responsetype' => 'xml',
+                    'ProductType' => 'Domain',
                     'ProductCategory' => strtoupper($enomAction),
                 ]);
 
@@ -276,14 +279,14 @@ class EnomDriver implements RegistrarDriver
                 }
 
                 foreach ($xml->ProductList->Product ?? [] as $product) {
-                    $tld   = strtolower(ltrim((string) $product->TLD, '.'));
+                    $tld = strtolower(ltrim((string) $product->TLD, '.'));
                     $price = isset($product->Price) ? (float) $product->Price : null;
 
                     if ($tld === '') {
                         continue;
                     }
 
-                    $pricing[$tld][$key]       = $price;
+                    $pricing[$tld][$key] = $price;
                     $pricing[$tld]['currency'] = 'USD';
                 }
             } catch (\Throwable) {

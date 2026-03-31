@@ -15,7 +15,7 @@ class ServiceAddon extends Model
     protected function casts(): array
     {
         return [
-            'amount'        => 'decimal:2',
+            'amount' => 'decimal:2',
             'next_due_date' => 'date',
         ];
     }

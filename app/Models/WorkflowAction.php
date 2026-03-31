@@ -18,7 +18,7 @@ class WorkflowAction extends Model
     ];
 
     protected $casts = [
-        'config'        => 'array',
+        'config' => 'array',
         'delay_minutes' => 'integer',
     ];
 

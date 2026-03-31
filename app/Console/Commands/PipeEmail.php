@@ -29,6 +29,7 @@ class PipeEmail extends Command
 
         if (! $pipe) {
             $this->error("No active mail pipe found for token: {$token}");
+
             return self::FAILURE;
         }
 
@@ -40,6 +41,7 @@ class PipeEmail extends Command
 
         if (empty(trim($raw))) {
             $this->warn('No email data received on STDIN.');
+
             return self::SUCCESS;
         }
 
@@ -47,7 +49,8 @@ class PipeEmail extends Command
             $processor->process($pipe, $raw);
             $this->line("Email processed via pipe '{$pipe->name}'.");
         } catch (\Throwable $e) {
-            $this->error("Failed to process email: " . $e->getMessage());
+            $this->error('Failed to process email: '.$e->getMessage());
+
             return self::FAILURE;
         }
 

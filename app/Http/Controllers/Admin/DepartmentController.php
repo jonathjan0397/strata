@@ -21,11 +21,11 @@ class DepartmentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:100', 'unique:departments,name'],
+            'name' => ['required', 'string', 'max:100', 'unique:departments,name'],
             'description' => ['nullable', 'string', 'max:255'],
-            'email'       => ['nullable', 'email', 'max:255'],
-            'sort_order'  => ['nullable', 'integer', 'min:0'],
-            'active'      => ['boolean'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'active' => ['boolean'],
         ]);
 
         Department::create($data);
@@ -36,11 +36,11 @@ class DepartmentController extends Controller
     public function update(Request $request, Department $department): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:100', 'unique:departments,name,' . $department->id],
+            'name' => ['required', 'string', 'max:100', 'unique:departments,name,'.$department->id],
             'description' => ['nullable', 'string', 'max:255'],
-            'email'       => ['nullable', 'email', 'max:255'],
-            'sort_order'  => ['nullable', 'integer', 'min:0'],
-            'active'      => ['boolean'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'active' => ['boolean'],
         ]);
 
         $department->update($data);

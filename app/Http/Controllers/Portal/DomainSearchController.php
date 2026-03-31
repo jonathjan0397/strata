@@ -29,36 +29,36 @@ class DomainSearchController extends Controller
         }
 
         $tldString = Setting::get('domain_search_tlds', '.com,.net,.org,.io');
-        $tlds = array_filter(array_map(fn($t) => trim($t), explode(',', $tldString)));
+        $tlds = array_filter(array_map(fn ($t) => trim($t), explode(',', $tldString)));
 
         $results = [];
         foreach ($tlds as $tld) {
-            $tld = '.' . ltrim($tld, '.');
-            $domain = $sld . $tld;
+            $tld = '.'.ltrim($tld, '.');
+            $domain = $sld.$tld;
             try {
-                $check    = DomainRegistrarService::checkAvailability($domain);
+                $check = DomainRegistrarService::checkAvailability($domain);
                 $tldPrice = TldPrice::where('tld', $tld)->where('is_active', true)->first();
 
                 $results[] = [
-                    'domain'    => $domain,
+                    'domain' => $domain,
                     'available' => $check['available'] ?? false,
-                    'price'     => $tldPrice ? $tldPrice->register_price : ($check['price'] ?? null),
-                    'currency'  => $tldPrice ? $tldPrice->currency : ($check['currency'] ?? 'USD'),
+                    'price' => $tldPrice ? $tldPrice->register_price : ($check['price'] ?? null),
+                    'currency' => $tldPrice ? $tldPrice->currency : ($check['currency'] ?? 'USD'),
                 ];
             } catch (\Throwable $e) {
                 $results[] = [
-                    'domain'    => $domain,
+                    'domain' => $domain,
                     'available' => null,
-                    'error'     => 'Could not check availability.',
+                    'error' => 'Could not check availability.',
                 ];
             }
         }
 
         return response()->json([
-            'results'   => $results,
+            'results' => $results,
             'register_url' => route('register'),
         ], 200, [
-            'Access-Control-Allow-Origin'  => '*',
+            'Access-Control-Allow-Origin' => '*',
             'Access-Control-Allow-Methods' => 'GET, OPTIONS',
         ]);
     }

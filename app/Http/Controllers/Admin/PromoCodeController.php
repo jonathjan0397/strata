@@ -26,7 +26,7 @@ class PromoCodeController extends Controller
     public function create(): Response
     {
         return Inertia::render('Admin/PromoCodes/Edit', [
-            'code'     => null,
+            'code' => null,
             'products' => Product::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -43,7 +43,7 @@ class PromoCodeController extends Controller
     public function edit(PromoCode $promoCode): Response
     {
         return Inertia::render('Admin/PromoCodes/Edit', [
-            'code'     => $promoCode,
+            'code' => $promoCode,
             'products' => Product::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -67,17 +67,17 @@ class PromoCodeController extends Controller
     private function rules(?int $ignoreId = null): array
     {
         return [
-            'code'             => ['required', 'string', 'max:64', 'unique:promo_codes,code'.($ignoreId ? ",{$ignoreId}" : '')],
-            'type'             => ['required', 'in:percent,fixed,free_setup'],
-            'value'            => ['nullable', 'numeric', 'min:0', 'required_unless:type,free_setup'],
-            'product_id'       => ['nullable', 'exists:products,id'],
-            'max_uses'         => ['nullable', 'integer', 'min:1'],
-            'applies_once'     => ['boolean'],
+            'code' => ['required', 'string', 'max:64', 'unique:promo_codes,code'.($ignoreId ? ",{$ignoreId}" : '')],
+            'type' => ['required', 'in:percent,fixed,free_setup'],
+            'value' => ['nullable', 'numeric', 'min:0', 'required_unless:type,free_setup'],
+            'product_id' => ['nullable', 'exists:products,id'],
+            'max_uses' => ['nullable', 'integer', 'min:1'],
+            'applies_once' => ['boolean'],
             'new_clients_only' => ['boolean'],
             'recurring_cycles' => ['nullable', 'integer', 'min:-1'],
-            'is_active'        => ['boolean'],
-            'starts_at'        => ['nullable', 'date'],
-            'expires_at'       => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'is_active' => ['boolean'],
+            'starts_at' => ['nullable', 'date'],
+            'expires_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
         ];
     }
 }

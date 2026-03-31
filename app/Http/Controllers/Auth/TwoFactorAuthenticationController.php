@@ -18,7 +18,7 @@ class TwoFactorAuthenticationController extends Controller
 
     public function __construct()
     {
-        $this->google2fa = new Google2FA();
+        $this->google2fa = new Google2FA;
     }
 
     /** Generate a new secret and store it (unconfirmed). */
@@ -27,8 +27,8 @@ class TwoFactorAuthenticationController extends Controller
         $secret = $this->google2fa->generateSecretKey();
 
         $request->user()->forceFill([
-            'two_factor_secret'       => encrypt($secret),
-            'two_factor_enabled'      => false,
+            'two_factor_secret' => encrypt($secret),
+            'two_factor_enabled' => false,
             'two_factor_confirmed_at' => null,
         ])->save();
 
@@ -38,7 +38,7 @@ class TwoFactorAuthenticationController extends Controller
     /** Return the QR code SVG for the current user's unconfirmed secret. */
     public function qrCode(Request $request): JsonResponse
     {
-        $user   = $request->user();
+        $user = $request->user();
         $secret = decrypt($user->two_factor_secret);
 
         $url = $this->google2fa->getQRCodeUrl(
@@ -47,11 +47,11 @@ class TwoFactorAuthenticationController extends Controller
             $secret
         );
 
-        $renderer = new ImageRenderer(new RendererStyle(192), new SvgImageBackEnd());
-        $svg      = (new Writer($renderer))->writeString($url);
+        $renderer = new ImageRenderer(new RendererStyle(192), new SvgImageBackEnd);
+        $svg = (new Writer($renderer))->writeString($url);
 
         return response()->json([
-            'svg'    => $svg,
+            'svg' => $svg,
             'secret' => $secret,
         ]);
     }
@@ -61,7 +61,7 @@ class TwoFactorAuthenticationController extends Controller
     {
         $request->validate(['code' => ['required', 'string', 'digits:6']]);
 
-        $user   = $request->user();
+        $user = $request->user();
         $secret = decrypt($user->two_factor_secret);
 
         $valid = $this->google2fa->verifyKey($secret, $request->code);
@@ -71,7 +71,7 @@ class TwoFactorAuthenticationController extends Controller
         }
 
         $user->forceFill([
-            'two_factor_enabled'      => true,
+            'two_factor_enabled' => true,
             'two_factor_confirmed_at' => now(),
         ])->save();
 
@@ -82,8 +82,8 @@ class TwoFactorAuthenticationController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $request->user()->forceFill([
-            'two_factor_secret'       => null,
-            'two_factor_enabled'      => false,
+            'two_factor_secret' => null,
+            'two_factor_enabled' => false,
             'two_factor_confirmed_at' => null,
         ])->save();
 

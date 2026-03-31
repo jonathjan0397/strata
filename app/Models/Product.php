@@ -20,12 +20,12 @@ class Product extends Model
     protected function casts(): array
     {
         return [
-            'price'                 => 'decimal:2',
-            'setup_fee'             => 'decimal:2',
-            'module_config'         => 'array',
-            'configurable_options'  => 'array',
-            'hidden'                => 'boolean',
-            'taxable'               => 'boolean',
+            'price' => 'decimal:2',
+            'setup_fee' => 'decimal:2',
+            'module_config' => 'array',
+            'configurable_options' => 'array',
+            'hidden' => 'boolean',
+            'taxable' => 'boolean',
         ];
     }
 

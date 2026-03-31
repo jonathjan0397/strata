@@ -14,7 +14,7 @@ class AffiliatePayout extends Model
     protected function casts(): array
     {
         return [
-            'amount'       => 'decimal:2',
+            'amount' => 'decimal:2',
             'processed_at' => 'datetime',
         ];
     }

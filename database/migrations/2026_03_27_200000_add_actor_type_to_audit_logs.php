@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->enum('actor_type', ['admin', 'client', 'system'])
-                  ->default('system')
-                  ->after('user_id');
+                ->default('system')
+                ->after('user_id');
         });
     }
 

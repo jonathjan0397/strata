@@ -17,14 +17,16 @@ use RuntimeException;
 class AuthorizeNetGateway implements PaymentGateway
 {
     private string $loginId;
+
     private string $transactionKey;
+
     private string $endpoint;
 
     public function __construct()
     {
-        $this->loginId        = config('services.authorizenet.login_id', '');
+        $this->loginId = config('services.authorizenet.login_id', '');
         $this->transactionKey = config('services.authorizenet.transaction_key', '');
-        $this->endpoint       = config('services.authorizenet.sandbox', true)
+        $this->endpoint = config('services.authorizenet.sandbox', true)
             ? 'https://apitest.authorize.net/xml/v1/request.api'
             : 'https://api.authorize.net/xml/v1/request.api';
     }
@@ -54,13 +56,13 @@ class AuthorizeNetGateway implements PaymentGateway
             $paymentNode = [
                 'opaqueData' => [
                     'dataDescriptor' => $options['opaque_descriptor'] ?? 'COMMON.ACCEPT.INAPP.PAYMENT',
-                    'dataValue'      => $options['opaque_value'],
+                    'dataValue' => $options['opaque_value'],
                 ],
             ];
         } elseif (isset($options['customer_profile_id'])) {
             $paymentNode = [
                 'profile' => [
-                    'customerProfileId'        => $options['customer_profile_id'],
+                    'customerProfileId' => $options['customer_profile_id'],
                     'customerPaymentProfileId' => $options['customer_payment_id'],
                 ],
             ];
@@ -71,10 +73,10 @@ class AuthorizeNetGateway implements PaymentGateway
         $payload = [
             'createTransactionRequest' => [
                 'merchantAuthentication' => $this->auth(),
-                'transactionRequest'     => array_merge([
+                'transactionRequest' => array_merge([
                     'transactionType' => 'authCaptureTransaction',
-                    'amount'          => number_format($amount, 2, '.', ''),
-                    'payment'         => $paymentNode,
+                    'amount' => number_format($amount, 2, '.', ''),
+                    'payment' => $paymentNode,
                 ], $options['extra'] ?? []),
             ],
         ];
@@ -90,9 +92,9 @@ class AuthorizeNetGateway implements PaymentGateway
         }
 
         return [
-            'id'     => $result['transId'] ?? '',
+            'id' => $result['transId'] ?? '',
             'status' => 'succeeded',
-            'raw'    => $result,
+            'raw' => $result,
         ];
     }
 
@@ -108,12 +110,12 @@ class AuthorizeNetGateway implements PaymentGateway
         $payload = [
             'createTransactionRequest' => [
                 'merchantAuthentication' => $this->auth(),
-                'transactionRequest'     => [
+                'transactionRequest' => [
                     'transactionType' => 'refundTransaction',
-                    'amount'          => $amount ? number_format($amount, 2, '.', '') : null,
-                    'payment'         => [
+                    'amount' => $amount ? number_format($amount, 2, '.', '') : null,
+                    'payment' => [
                         'creditCard' => [
-                            'cardNumber'     => '0000', // Authorize.Net requires last 4 for refunds
+                            'cardNumber' => '0000', // Authorize.Net requires last 4 for refunds
                             'expirationDate' => 'XXXX',
                         ],
                     ],
@@ -123,7 +125,7 @@ class AuthorizeNetGateway implements PaymentGateway
         ];
 
         $response = $this->post($payload);
-        $result   = $response['transactionResponse'] ?? [];
+        $result = $response['transactionResponse'] ?? [];
 
         if (($result['responseCode'] ?? null) !== '1') {
             $message = $result['errors'][0]['errorText'] ?? 'Refund failed';
@@ -131,16 +133,16 @@ class AuthorizeNetGateway implements PaymentGateway
         }
 
         return [
-            'id'     => $result['transId'] ?? '',
+            'id' => $result['transId'] ?? '',
             'status' => 'refunded',
-            'raw'    => $result,
+            'raw' => $result,
         ];
     }
 
     private function auth(): array
     {
         return [
-            'name'           => $this->loginId,
+            'name' => $this->loginId,
             'transactionKey' => $this->transactionKey,
         ];
     }

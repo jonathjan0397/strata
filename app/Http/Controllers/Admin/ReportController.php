@@ -54,9 +54,9 @@ class ReportController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $key = $now->copy()->subMonths($i)->format('Y-m');
             $months[] = [
-                'month'         => $key,
-                'label'         => $now->copy()->subMonths($i)->format('M Y'),
-                'revenue'       => (float) ($revenueByMonth[$key]->revenue ?? 0),
+                'month' => $key,
+                'label' => $now->copy()->subMonths($i)->format('M Y'),
+                'revenue' => (float) ($revenueByMonth[$key]->revenue ?? 0),
                 'invoice_count' => (int) ($revenueByMonth[$key]->invoice_count ?? 0),
             ];
         }
@@ -78,14 +78,14 @@ class ReportController extends Controller
             : null;
 
         // ── Outstanding / overdue ─────────────────────────────────────────────
-        $unpaidTotal   = Invoice::where('status', 'unpaid')->sum('amount_due');
-        $overdueTotal  = Invoice::where('status', 'overdue')->sum('amount_due');
-        $unpaidCount   = Invoice::where('status', 'unpaid')->count();
-        $overdueCount  = Invoice::where('status', 'overdue')->count();
+        $unpaidTotal = Invoice::where('status', 'unpaid')->sum('amount_due');
+        $overdueTotal = Invoice::where('status', 'overdue')->sum('amount_due');
+        $unpaidCount = Invoice::where('status', 'unpaid')->count();
+        $overdueCount = Invoice::where('status', 'overdue')->count();
 
         // ── Client stats ─────────────────────────────────────────────────────
-        $totalClients  = User::role('client')->count();
-        $newThisMonth  = User::role('client')
+        $totalClients = User::role('client')->count();
+        $newThisMonth = User::role('client')
             ->where('created_at', '>=', $now->copy()->startOfMonth())
             ->count();
         $activeClients = Service::where('status', 'active')
@@ -122,9 +122,9 @@ class ReportController extends Controller
             ->limit(10)
             ->get()
             ->map(fn ($r) => [
-                'user'             => $r->user,
+                'user' => $r->user,
                 'lifetime_revenue' => (float) $r->lifetime_revenue,
-                'invoice_count'    => $r->invoice_count,
+                'invoice_count' => $r->invoice_count,
             ]);
 
         // ── Service status breakdown ──────────────────────────────────────────
@@ -133,7 +133,7 @@ class ReportController extends Controller
             ->pluck('count', 'status');
 
         // ── Support stats ─────────────────────────────────────────────────────
-        $openTickets    = SupportTicket::where('status', 'open')->count();
+        $openTickets = SupportTicket::where('status', 'open')->count();
         $avgResolutionHours = SupportTicket::where('status', 'closed')
             ->whereNotNull('updated_at')
             ->select(DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))
@@ -166,8 +166,8 @@ class ReportController extends Controller
             ->with('assignedTo:id,name')
             ->get()
             ->map(fn ($r) => [
-                'staff'        => $r->assignedTo?->name ?? 'Unassigned',
-                'avg_rating'   => round((float) $r->avg_rating, 1),
+                'staff' => $r->assignedTo?->name ?? 'Unassigned',
+                'avg_rating' => round((float) $r->avg_rating, 1),
                 'ticket_count' => (int) $r->ticket_count,
             ])
             ->sortByDesc('avg_rating')
@@ -176,28 +176,28 @@ class ReportController extends Controller
         $totalRated = $ratedTickets->clone()->count();
 
         return Inertia::render('Admin/Reports/Index', [
-            'mrr'              => round($mrr, 2),
-            'arr'              => round($arr, 2),
-            'revenueByMonth'   => $months,
-            'thisMonth'        => round($thisMonth, 2),
-            'lastMonth'        => round($lastMonth, 2),
-            'revenueGrowth'    => $revenueGrowth,
-            'unpaidTotal'      => round($unpaidTotal, 2),
-            'overdueTotal'     => round($overdueTotal, 2),
-            'unpaidCount'      => $unpaidCount,
-            'overdueCount'     => $overdueCount,
-            'totalClients'     => $totalClients,
-            'newThisMonth'     => $newThisMonth,
-            'activeClients'    => $activeClients,
-            'clientsByMonth'   => $clientMonths,
-            'topClients'       => $topClients,
-            'serviceStats'     => $serviceStats,
-            'openTickets'        => $openTickets,
+            'mrr' => round($mrr, 2),
+            'arr' => round($arr, 2),
+            'revenueByMonth' => $months,
+            'thisMonth' => round($thisMonth, 2),
+            'lastMonth' => round($lastMonth, 2),
+            'revenueGrowth' => $revenueGrowth,
+            'unpaidTotal' => round($unpaidTotal, 2),
+            'overdueTotal' => round($overdueTotal, 2),
+            'unpaidCount' => $unpaidCount,
+            'overdueCount' => $overdueCount,
+            'totalClients' => $totalClients,
+            'newThisMonth' => $newThisMonth,
+            'activeClients' => $activeClients,
+            'clientsByMonth' => $clientMonths,
+            'topClients' => $topClients,
+            'serviceStats' => $serviceStats,
+            'openTickets' => $openTickets,
             'avgResolutionHours' => $avgResolutionHours ? round($avgResolutionHours, 1) : null,
-            'avgRating'          => $avgRating ? round((float) $avgRating, 2) : null,
-            'ratingDist'         => $ratingDist,
-            'totalRated'         => $totalRated,
-            'ratingsByStaff'     => $perStaff,
+            'avgRating' => $avgRating ? round((float) $avgRating, 2) : null,
+            'ratingDist' => $ratingDist,
+            'totalRated' => $totalRated,
+            'ratingsByStaff' => $perStaff,
         ]);
     }
 }

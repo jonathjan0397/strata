@@ -21,19 +21,19 @@ class InvoiceMail extends Mailable
         $this->invoice->loadMissing(['user', 'items', 'payments']);
 
         $this->settings = [
-            'company_name'    => Setting::get('company_name', config('app.name')),
+            'company_name' => Setting::get('company_name', config('app.name')),
             'company_address' => Setting::get('company_address', ''),
             'currency_symbol' => Setting::get('currency_symbol', '$'),
-            'logo_path'       => Setting::get('logo_path'),
+            'logo_path' => Setting::get('logo_path'),
         ];
     }
 
     public function envelope(): Envelope
     {
         $prefix = match ($this->invoice->status) {
-            'paid'    => 'Receipt',
+            'paid' => 'Receipt',
             'overdue' => 'OVERDUE: Invoice',
-            default   => 'Invoice',
+            default => 'Invoice',
         };
 
         $company = $this->settings['company_name'];
@@ -48,8 +48,8 @@ class InvoiceMail extends Mailable
         return new Content(
             view: 'emails.invoice',
             with: [
-                'invoice'        => $this->invoice,
-                'settings'       => $this->settings,
+                'invoice' => $this->invoice,
+                'settings' => $this->settings,
                 'currencySymbol' => $this->settings['currency_symbol'],
             ],
         );

@@ -19,8 +19,8 @@ class PaymentMethod extends Model
 
     protected $casts = [
         'is_default' => 'boolean',
-        'exp_month'  => 'integer',
-        'exp_year'   => 'integer',
+        'exp_month' => 'integer',
+        'exp_year' => 'integer',
     ];
 
     public function user(): BelongsTo
@@ -30,6 +30,6 @@ class PaymentMethod extends Model
 
     public function getExpiryAttribute(): string
     {
-        return str_pad($this->exp_month, 2, '0', STR_PAD_LEFT) . '/' . $this->exp_year;
+        return str_pad($this->exp_month, 2, '0', STR_PAD_LEFT).'/'.$this->exp_year;
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SupportTicket extends Model
@@ -21,9 +22,9 @@ class SupportTicket extends Model
     protected function casts(): array
     {
         return [
-            'last_reply_at'    => 'datetime',
+            'last_reply_at' => 'datetime',
             'first_replied_at' => 'datetime',
-            'closed_at'        => 'datetime',
+            'closed_at' => 'datetime',
         ];
     }
 
@@ -42,7 +43,7 @@ class SupportTicket extends Model
         return $this->hasMany(SupportReply::class, 'ticket_id');
     }
 
-    public function latestReply(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function latestReply(): HasOne
     {
         return $this->hasOne(SupportReply::class, 'ticket_id')->latestOfMany();
     }

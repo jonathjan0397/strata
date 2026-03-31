@@ -17,8 +17,8 @@ class Affiliate extends Model
     {
         return [
             'commission_value' => 'decimal:2',
-            'balance'          => 'decimal:2',
-            'total_earned'     => 'decimal:2',
+            'balance' => 'decimal:2',
+            'total_earned' => 'decimal:2',
             'payout_threshold' => 'decimal:2',
         ];
     }

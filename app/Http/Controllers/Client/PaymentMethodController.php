@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentMethod;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,13 +38,13 @@ class PaymentMethodController extends Controller
     /**
      * Return a Stripe SetupIntent client_secret so the frontend can collect card details.
      */
-    public function setupIntent(Request $request): \Illuminate\Http\JsonResponse
+    public function setupIntent(Request $request): JsonResponse
     {
         $user = $request->user();
         $this->ensureStripeCustomer($user);
 
         $intent = $this->stripe->setupIntents->create([
-            'customer'             => $user->stripe_customer_id,
+            'customer' => $user->stripe_customer_id,
             'payment_method_types' => ['card'],
         ]);
 
@@ -74,11 +76,11 @@ class PaymentMethodController extends Controller
         DB::transaction(function () use ($user, $pm, $isFirst) {
             $user->paymentMethods()->create([
                 'stripe_payment_method_id' => $pm->id,
-                'brand'                    => $pm->card->brand,
-                'last4'                    => $pm->card->last4,
-                'exp_month'                => $pm->card->exp_month,
-                'exp_year'                 => $pm->card->exp_year,
-                'is_default'               => $isFirst,
+                'brand' => $pm->card->brand,
+                'last4' => $pm->card->last4,
+                'exp_month' => $pm->card->exp_month,
+                'exp_year' => $pm->card->exp_year,
+                'is_default' => $isFirst,
             ]);
         });
 
@@ -120,7 +122,7 @@ class PaymentMethodController extends Controller
 
     // -----------------------------------------------------------------------
 
-    private function ensureStripeCustomer(\App\Models\User $user): void
+    private function ensureStripeCustomer(User $user): void
     {
         if ($user->stripe_customer_id) {
             return;
@@ -128,7 +130,7 @@ class PaymentMethodController extends Controller
 
         $customer = $this->stripe->customers->create([
             'email' => $user->email,
-            'name'  => $user->name,
+            'name' => $user->name,
         ]);
 
         $user->update(['stripe_customer_id' => $customer->id]);

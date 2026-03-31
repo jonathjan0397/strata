@@ -12,11 +12,11 @@
  */
 
 // Resolve the real public directory relative to this shim.
-$publicPath = __DIR__ . '/public';
+$publicPath = __DIR__.'/public';
 
 // Re-point Laravel's document root so that asset() and url() helpers
 // continue to generate correct paths.
 $_SERVER['DOCUMENT_ROOT'] = $publicPath;
 
 // Hand off to the real front controller.
-require $publicPath . '/index.php';
+require $publicPath.'/index.php';

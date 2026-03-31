@@ -21,14 +21,14 @@ class SessionController extends Controller
             ->orderByDesc('last_activity')
             ->get()
             ->map(fn ($session) => [
-                'id'            => $session->id,
-                'is_current'    => $session->id === $currentSessionId,
-                'ip_address'    => $session->ip_address,
-                'user_agent'    => $session->user_agent,
-                'device'        => $this->parseDevice($session->user_agent),
-                'browser'       => $this->parseBrowser($session->user_agent),
-                'last_active'   => Carbon::createFromTimestamp($session->last_activity)->diffForHumans(),
-                'last_active_ts'=> $session->last_activity,
+                'id' => $session->id,
+                'is_current' => $session->id === $currentSessionId,
+                'ip_address' => $session->ip_address,
+                'user_agent' => $session->user_agent,
+                'device' => $this->parseDevice($session->user_agent),
+                'browser' => $this->parseBrowser($session->user_agent),
+                'last_active' => Carbon::createFromTimestamp($session->last_activity)->diffForHumans(),
+                'last_active_ts' => $session->last_activity,
             ]);
 
         return Inertia::render('Profile/Sessions', [
@@ -68,12 +68,24 @@ class SessionController extends Controller
             return 'Unknown device';
         }
 
-        if (preg_match('/iPhone/i', $ua))   return 'iPhone';
-        if (preg_match('/iPad/i', $ua))     return 'iPad';
-        if (preg_match('/Android/i', $ua))  return 'Android';
-        if (preg_match('/Windows/i', $ua))  return 'Windows PC';
-        if (preg_match('/Macintosh/i', $ua)) return 'Mac';
-        if (preg_match('/Linux/i', $ua))    return 'Linux';
+        if (preg_match('/iPhone/i', $ua)) {
+            return 'iPhone';
+        }
+        if (preg_match('/iPad/i', $ua)) {
+            return 'iPad';
+        }
+        if (preg_match('/Android/i', $ua)) {
+            return 'Android';
+        }
+        if (preg_match('/Windows/i', $ua)) {
+            return 'Windows PC';
+        }
+        if (preg_match('/Macintosh/i', $ua)) {
+            return 'Mac';
+        }
+        if (preg_match('/Linux/i', $ua)) {
+            return 'Linux';
+        }
 
         return 'Unknown device';
     }
@@ -84,11 +96,21 @@ class SessionController extends Controller
             return 'Unknown browser';
         }
 
-        if (preg_match('/Edg\//i', $ua))     return 'Edge';
-        if (preg_match('/OPR\//i', $ua))     return 'Opera';
-        if (preg_match('/Chrome\//i', $ua))  return 'Chrome';
-        if (preg_match('/Firefox\//i', $ua)) return 'Firefox';
-        if (preg_match('/Safari\//i', $ua))  return 'Safari';
+        if (preg_match('/Edg\//i', $ua)) {
+            return 'Edge';
+        }
+        if (preg_match('/OPR\//i', $ua)) {
+            return 'Opera';
+        }
+        if (preg_match('/Chrome\//i', $ua)) {
+            return 'Chrome';
+        }
+        if (preg_match('/Firefox\//i', $ua)) {
+            return 'Firefox';
+        }
+        if (preg_match('/Safari\//i', $ua)) {
+            return 'Safari';
+        }
 
         return 'Unknown browser';
     }

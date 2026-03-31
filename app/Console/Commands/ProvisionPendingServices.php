@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class ProvisionPendingServices extends Command
 {
-    protected $signature   = 'provisioning:run';
+    protected $signature = 'provisioning:run';
+
     protected $description = 'Provision pending on_payment services whose invoices have been paid.';
 
     public function handle(): int
@@ -21,9 +22,8 @@ class ProvisionPendingServices extends Command
         // and at least one paid invoice linked via invoice items.
         $services = Service::with(['user', 'product'])
             ->where('status', 'pending')
-            ->whereHas('product', fn ($q) =>
-                $q->where('autosetup', 'on_payment')
-                  ->whereIn('module', $supportedTypes)
+            ->whereHas('product', fn ($q) => $q->where('autosetup', 'on_payment')
+                ->whereIn('module', $supportedTypes)
             )
             ->whereHas('invoiceItems.invoice', fn ($q) => $q->where('status', 'paid'))
             ->whereNotNull('domain')
@@ -31,6 +31,7 @@ class ProvisionPendingServices extends Command
 
         if ($services->isEmpty()) {
             $this->info('No pending services to provision.');
+
             return self::SUCCESS;
         }
 
@@ -45,12 +46,13 @@ class ProvisionPendingServices extends Command
                 $this->error("Failed to provision service #{$service->id}: {$e->getMessage()}");
                 Log::error('Provisioning failed', [
                     'service_id' => $service->id,
-                    'error'      => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
 
         $this->info("Provisioned {$count} service(s).");
+
         return self::SUCCESS;
     }
 }

@@ -13,7 +13,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -45,16 +45,16 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function casts(): array
     {
         return [
-            'email_verified_at'       => 'datetime',
-            'password'                => 'hashed',
-            'two_factor_enabled'      => 'boolean',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'two_factor_enabled' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
-            'credit_balance'          => 'decimal:2',
-            'tax_exempt'              => 'boolean',
+            'credit_balance' => 'decimal:2',
+            'tax_exempt' => 'boolean',
         ];
     }
 
-    public function tasks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function tasks(): HasMany
     {
         return $this->hasMany(ClientTask::class)->orderByRaw('completed_at IS NULL DESC, due_at ASC');
     }

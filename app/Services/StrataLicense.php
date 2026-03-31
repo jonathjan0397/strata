@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 class StrataLicense
 {
     private const CACHE_KEY = 'strata_license_payload';
+
     private const CACHE_TTL = 25 * 60 * 60; // 25 hours
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ class StrataLicense
         Cache::forget(static::CACHE_KEY);
         $payload = static::fetch();
         Cache::put(static::CACHE_KEY, $payload, static::CACHE_TTL);
+
         return $payload;
     }
 
@@ -71,8 +73,8 @@ class StrataLicense
             return $default;
         }
 
-        $lock          = json_decode(file_get_contents($lockPath), true) ?? [];
-        $installToken  = $lock['install_token']  ?? null;
+        $lock = json_decode(file_get_contents($lockPath), true) ?? [];
+        $installToken = $lock['install_token'] ?? null;
         $installSecret = $lock['install_secret'] ?? null;
 
         if (! $installToken || ! $installSecret) {
@@ -80,15 +82,15 @@ class StrataLicense
         }
 
         $version = $lock['version'] ?? 'unknown';
-        $appUrl  = config('app.url');
+        $appUrl = config('app.url');
 
         try {
             $response = Http::timeout(8)
-                ->post(rtrim($serverUrl, '/') . '/api/ping', [
-                    'install_token'  => $installToken,
+                ->post(rtrim($serverUrl, '/').'/api/ping', [
+                    'install_token' => $installToken,
                     'install_secret' => $installSecret,
-                    'version'        => $version,
-                    'app_url'        => $appUrl,
+                    'version' => $version,
+                    'app_url' => $appUrl,
                 ]);
 
             if (! $response->successful()) {
@@ -109,7 +111,7 @@ class StrataLicense
             unset($body['sig']);
 
             return [
-                'status'   => $body['status']   ?? 'active',
+                'status' => $body['status'] ?? 'active',
                 'features' => $body['features'] ?? [],
             ];
 

@@ -30,8 +30,8 @@ class AnnouncementController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'title'     => ['required', 'string', 'max:200'],
-            'body'      => ['required', 'string'],
+            'title' => ['required', 'string', 'max:200'],
+            'body' => ['required', 'string'],
             'published' => ['boolean'],
         ]);
 
@@ -52,8 +52,8 @@ class AnnouncementController extends Controller
     public function update(Request $request, Announcement $announcement): RedirectResponse
     {
         $data = $request->validate([
-            'title'     => ['required', 'string', 'max:200'],
-            'body'      => ['required', 'string'],
+            'title' => ['required', 'string', 'max:200'],
+            'body' => ['required', 'string'],
             'published' => ['boolean'],
         ]);
 

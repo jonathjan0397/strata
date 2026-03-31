@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Setting;
+
 if (! function_exists('setting')) {
     /**
      * Get a system setting value by key.
@@ -7,6 +9,6 @@ if (! function_exists('setting')) {
      */
     function setting(string $key, mixed $default = null): mixed
     {
-        return \App\Models\Setting::get($key, $default);
+        return Setting::get($key, $default);
     }
 }

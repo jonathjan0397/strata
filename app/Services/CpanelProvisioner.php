@@ -10,13 +10,14 @@ use RuntimeException;
 class CpanelProvisioner
 {
     private string $baseUrl;
+
     private string $token;
 
     public function __construct(private readonly Module $module)
     {
-        $scheme        = $module->ssl ? 'https' : 'http';
+        $scheme = $module->ssl ? 'https' : 'http';
         $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/json-api";
-        $this->token   = decrypt($module->api_token_enc);
+        $this->token = decrypt($module->api_token_enc);
     }
 
     /**
@@ -34,6 +35,7 @@ class CpanelProvisioner
      * Create a cPanel account via WHM API.
      *
      * @return array{username: string, password: string, domain: string}
+     *
      * @throws RuntimeException
      */
     public function createAccount(string $domain, ?string $plan = null): array
@@ -42,11 +44,11 @@ class CpanelProvisioner
         $password = Str::password(16, symbols: false);
 
         $params = [
-            'username'      => $username,
-            'domain'        => $domain,
-            'password'      => $password,
-            'contactemail'  => '',
-            'savepwd'       => 0,
+            'username' => $username,
+            'domain' => $domain,
+            'password' => $password,
+            'contactemail' => '',
+            'savepwd' => 0,
         ];
 
         if ($plan) {
@@ -74,7 +76,7 @@ class CpanelProvisioner
         return [
             'username' => $username,
             'password' => $password,
-            'domain'   => $domain,
+            'domain' => $domain,
         ];
     }
 
@@ -87,7 +89,7 @@ class CpanelProvisioner
             ->withOptions(['verify' => $this->module->ssl])
             ->timeout(15)
             ->get("{$this->baseUrl}/suspendacct", [
-                'user'   => $username,
+                'user' => $username,
                 'reason' => $reason,
             ]);
 

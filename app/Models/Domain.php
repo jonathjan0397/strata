@@ -20,11 +20,11 @@ class Domain extends Model
     protected function casts(): array
     {
         return [
-            'registered_at'  => 'date',
-            'expires_at'     => 'date',
-            'auto_renew'     => 'boolean',
-            'locked'         => 'boolean',
-            'privacy'        => 'boolean',
+            'registered_at' => 'date',
+            'expires_at' => 'date',
+            'auto_renew' => 'boolean',
+            'locked' => 'boolean',
+            'privacy' => 'boolean',
             'registrar_data' => 'array',
         ];
     }

@@ -25,15 +25,15 @@ class PromoCode extends Model
     protected function casts(): array
     {
         return [
-            'value'            => 'decimal:2',
-            'max_uses'         => 'integer',
-            'uses_count'       => 'integer',
-            'applies_once'     => 'boolean',
+            'value' => 'decimal:2',
+            'max_uses' => 'integer',
+            'uses_count' => 'integer',
+            'applies_once' => 'boolean',
             'new_clients_only' => 'boolean',
             'recurring_cycles' => 'integer',
-            'is_active'        => 'boolean',
-            'starts_at'        => 'datetime',
-            'expires_at'       => 'datetime',
+            'is_active' => 'boolean',
+            'starts_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 
@@ -94,17 +94,17 @@ class PromoCode extends Model
     /**
      * Calculate the discount amount.
      *
-     * @param float $price     The recurring product price (excl. setup fee)
-     * @param float $setupFee  The one-time setup fee
+     * @param  float  $price  The recurring product price (excl. setup fee)
+     * @param  float  $setupFee  The one-time setup fee
      */
     public function calculateDiscount(float $price, float $setupFee = 0): float
     {
         $subtotal = $price + $setupFee;
 
         return match ($this->type) {
-            'percent'    => round($subtotal * ((float) $this->value / 100), 2),
+            'percent' => round($subtotal * ((float) $this->value / 100), 2),
             'free_setup' => $setupFee,
-            default      => min((float) $this->value, $subtotal), // 'fixed'
+            default => min((float) $this->value, $subtotal), // 'fixed'
         };
     }
 

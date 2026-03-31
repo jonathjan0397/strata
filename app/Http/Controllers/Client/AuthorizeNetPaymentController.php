@@ -24,50 +24,50 @@ class AuthorizeNetPaymentController extends Controller
 
         $request->validate([
             'opaque_descriptor' => ['required', 'string'],
-            'opaque_value'      => ['required', 'string'],
+            'opaque_value' => ['required', 'string'],
         ]);
 
         try {
-            $gateway = new AuthorizeNetGateway();
+            $gateway = new AuthorizeNetGateway;
 
             $result = $gateway->charge((float) $invoice->amount_due, 'usd', [
                 'opaque_descriptor' => $request->opaque_descriptor,
-                'opaque_value'      => $request->opaque_value,
+                'opaque_value' => $request->opaque_value,
             ]);
 
             Payment::create([
-                'invoice_id'     => $invoice->id,
-                'user_id'        => $request->user()->id,
-                'gateway'        => 'authorizenet',
+                'invoice_id' => $invoice->id,
+                'user_id' => $request->user()->id,
+                'gateway' => 'authorizenet',
                 'transaction_id' => $result['id'],
-                'amount'         => $invoice->amount_due,
-                'currency'       => 'USD',
-                'status'         => 'completed',
-                'paid_at'        => now(),
+                'amount' => $invoice->amount_due,
+                'currency' => 'USD',
+                'status' => 'completed',
+                'paid_at' => now(),
             ]);
 
             $invoice->update([
-                'status'     => 'paid',
-                'paid_at'    => now(),
+                'status' => 'paid',
+                'paid_at' => now(),
                 'amount_due' => 0,
             ]);
 
             // Trigger on_payment provisioning
             try {
                 OrderProvisioner::handleInvoicePaid($invoice);
-            } catch (\Throwable $e) {
-                Log::error("on_payment provisioning failed for invoice #{$invoice->id}: " . $e->getMessage());
+            } catch (Throwable $e) {
+                Log::error("on_payment provisioning failed for invoice #{$invoice->id}: ".$e->getMessage());
             }
 
             try {
                 Mail::to($request->user()->email)->send(new TemplateMailable('invoice.paid', [
-                    'name'        => $request->user()->name,
-                    'app_name'    => config('app.name'),
-                    'invoice_id'  => $invoice->id,
-                    'amount'      => number_format((float) $invoice->total, 2),
+                    'name' => $request->user()->name,
+                    'app_name' => config('app.name'),
+                    'invoice_id' => $invoice->id,
+                    'amount' => number_format((float) $invoice->total, 2),
                     'invoice_url' => route('client.invoices.show', $invoice->id),
                 ]));
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // mail failure must not block payment confirmation
             }
 
