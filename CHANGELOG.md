@@ -18,6 +18,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **IMAP polling for mail pipes** — `FetchMailboxes` artisan command (`mail:fetch`) polls active IMAP-configured mail pipes every 5 minutes via the scheduler; connection string built from `imap_host`, `imap_port`, `imap_encryption`; fetches UNSEEN messages via `imap_search()`, processes each with `EmailPipeProcessor`, marks Seen, updates `imap_last_checked_at`; IMAP fields added to `MailboxPipeController::update()` validation; migration `2026_04_01_000010_add_imap_fields_to_mailbox_pipes`.
 - **Buy Me a Coffee links** — inconspicuous ☕ links added to admin layout footer, portal layout footer, strata-license app blade layout, and mailframe sidebar; shields.io badge added to the top of all public documentation files (README, ROADMAP, FEATURES, install guide, mailframe docs, strata-panel docs).
 
+### Added
+- **Active Sessions admin page** — `Admin/ActiveSessions` shows all currently logged-in users (clients, staff, admins) with role badges, device/browser detection, IP, last-active time, and per-session or per-user revoke capability; "You" badge on current admin's own session; counts bar with total, admin, staff, client tiles; tabs to filter by role group; backed by `ActiveSessionsController` with a single role-priority SQL sub-select query.
+
+### Changed
+- **Admin nav groups collapsed by default** — all administration nav groups now start collapsed for a cleaner first-look presentation; the active group (matching current URL) auto-expands as before.
+- **Dark mode readability** — comprehensive `app.css` overrides rewritten: `text-gray-400` corrected from slate-600 (invisible on dark) to slate-500; `text-gray-500` lifted to slate-400; full `slate-*` text/bg/border coverage added (admin pages use both `gray-*` and `slate-*`); semi-transparent card backgrounds (`bg-white/70`, `bg-gray-50/80`); hover states for all table rows, list items, and sidebar links; action-bar overrides for indigo, amber, green, red, blue patterns; placeholder color and input focus ring in dark.
+- **Buy Me a Coffee link visibility** — admin layout footer and portal layout footer link bumped from `text-xs opacity-20` to `text-sm opacity-60`; now readable in light mode without being obtrusive.
+
 ### Fixed
 - **cPanel auth header** — all WHM JSON API calls were using `Authorization: Bearer <token>` (Laravel `withToken()`) instead of the documented `Authorization: whm <username>:<token>` format; would have caused 401 on every cPanel operation.
 - **HestiaCP command parameter format** — all CRUD operations were passing named key-value params (`user=`, `password=`, etc.) instead of positional `arg1=`, `arg2=`, ... as the HestiaCP REST API requires; affected createAccount, suspendAccount, unsuspendAccount, terminateAccount.

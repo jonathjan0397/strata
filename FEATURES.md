@@ -129,13 +129,22 @@
 - **Rich text editor (Tiptap)** — full formatting toolbar with inline image uploads; stored as HTML; rendered in client portal and public portal with `prose` classes
 
 ### Servers
-- cPanel/WHM, Plesk, DirectAdmin, HestiaCP server CRUD
+- cPanel/WHM, Plesk, DirectAdmin, HestiaCP, CWP server CRUD
 - Credentials and API endpoint stored per server
 
 ### Domains
 - List with search and status filter
 - Detail: nameserver editor (up to 6), lock/privacy toggles, refresh from registrar
 - Auto-renew toggle per domain
+
+### Active Sessions
+- Admin view of all currently logged-in users (clients, staff, admins)
+- Summary tiles: total online, admin count, staff count, client count
+- Role-filtered tabs: All / Admins / Staff / Clients
+- Per-row: device icon (desktop or mobile), name/email, role badge, browser + device, IP address, last active (relative time)
+- "You" badge on the current admin's own session (revoke buttons hidden)
+- Revoke individual session or all sessions for a user (with confirmation)
+- Backed by single SQL query with role-priority sub-select (no N+1)
 
 ### Staff
 - List staff members with permission badges
@@ -395,14 +404,18 @@ Embed on any external website via `<div data-strata-widget="[type]"></div>`.
 
 | Panel | API |
 |-------|-----|
-| cPanel / WHM | WHM JSON API v1 — create, suspend, unsuspend, terminate |
-| Plesk | REST API v2 — subscription lifecycle |
-| DirectAdmin | HTTP API — full lifecycle |
-| HestiaCP | HestiaCP API — full lifecycle |
+| cPanel / WHM | WHM JSON API v1 — create, suspend, unsuspend, terminate, list packages |
+| Plesk | REST API v2 — subscription lifecycle, service plans |
+| DirectAdmin | HTTP API — full lifecycle, package management |
+| HestiaCP | HestiaCP API — full lifecycle, package management |
+| CWP (Control Web Panel) | CWP REST API v1 — full lifecycle, package management |
 
 - `ProvisionerDriver` contract + `ProvisionerService` factory; extensible driver pattern
 - Server selection by capacity
 - Service updated with credentials and `module_data` on provision
+- **Package sync** — admin can list all packages on any connected server, annotated with matching Strata products; import selected packages as hidden/$0 Strata products for use in the product catalog
+- **Auto-create packages** — product configuration exposes disk/bandwidth/auto-create fields; at provisioning time, if the package doesn't exist on the server it is created automatically before account setup
+- **Package push** — admin can create a new package directly on any panel from the Package Sync wizard
 
 ---
 
@@ -453,4 +466,4 @@ All of the following work on CWP/shared hosting without a queue worker:
 
 ---
 
-*Last updated: 2026-03-29*
+*Last updated: 2026-04-01*
