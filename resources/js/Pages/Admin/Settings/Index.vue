@@ -99,6 +99,32 @@ const testTo        = ref('')
 const testResult    = ref(null)
 const testLoading   = ref(false)
 
+// Email deliverability check
+const delivResult  = ref(null)
+const delivLoading = ref(false)
+const delivError   = ref(null)
+
+async function checkDeliverability() {
+    delivResult.value  = null
+    delivError.value   = null
+    delivLoading.value = true
+    try {
+        const xsrf = decodeURIComponent(document.cookie.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='))?.split('=')[1] ?? '')
+        const res = await fetch(route('admin.settings.mail.deliverability'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': xsrf },
+            body: JSON.stringify({}),
+        })
+        const data = await res.json()
+        if (data.error) { delivError.value = data.error } else { delivResult.value = data }
+    } catch {
+        delivError.value = 'Request failed — check your network connection.'
+    } finally {
+        delivLoading.value = false
+    }
+}
+
 async function sendTestMail() {
     testResult.value  = null
     testLoading.value = true
@@ -1016,6 +1042,110 @@ function syncLicense() {
                 <p v-if="testResult" :class="testResult.success ? 'text-green-600' : 'text-red-600'" class="text-sm">
                     {{ testResult.message }}
                 </p>
+            </div>
+
+            <!-- Email Deliverability Check -->
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-700">Email Deliverability (SPF / DKIM / DMARC)</p>
+                    <button type="button" @click="checkDeliverability" :disabled="delivLoading"
+                        class="px-3 py-1.5 bg-gray-800 text-white text-xs font-medium rounded-lg hover:bg-gray-900 disabled:opacity-50">
+                        {{ delivLoading ? 'Checking DNS…' : 'Check DNS Records' }}
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500">Verifies SPF, DKIM, and DMARC records exist for your sending domain. Missing records cause mail to land in spam or be rejected outright.</p>
+
+                <p v-if="delivError" class="text-sm text-red-600">{{ delivError }}</p>
+
+                <div v-if="delivResult" class="space-y-3 pt-1">
+                    <!-- Domain info -->
+                    <p class="text-xs text-gray-400">
+                        Checking <span class="font-mono text-gray-700">{{ delivResult.sending_domain }}</span>
+                        &nbsp;·&nbsp; server IP <span class="font-mono text-gray-700">{{ delivResult.server_ip }}</span>
+                    </p>
+
+                    <!-- Subdomain warning -->
+                    <div v-if="delivResult.is_subdomain"
+                        class="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700 leading-relaxed">
+                        <span class="mt-0.5">⚠</span>
+                        <span>
+                            Your From address uses a subdomain (<span class="font-mono">{{ delivResult.sending_domain }}</span>).
+                            SPF and DKIM records must be configured on this subdomain specifically — the parent domain's records don't apply.
+                            Consider switching your From address to <span class="font-mono">noreply@{{ delivResult.org_domain }}</span>
+                            so a single set of DNS records covers all your mail.
+                        </span>
+                    </div>
+
+                    <!-- SPF -->
+                    <div class="rounded-lg border px-3 py-2.5 text-sm space-y-1"
+                        :class="delivResult.spf.status === 'pass' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'">
+                        <div class="flex items-center gap-2 font-medium"
+                            :class="delivResult.spf.status === 'pass' ? 'text-green-700' : 'text-red-700'">
+                            <span>{{ delivResult.spf.status === 'pass' ? '✓' : '✗' }}</span>
+                            <span>SPF</span>
+                            <span class="font-normal text-xs opacity-75">— authorizes your server to send mail for this domain</span>
+                        </div>
+                        <p v-if="delivResult.spf.record" class="font-mono text-xs text-gray-600 break-all">{{ delivResult.spf.record }}</p>
+                        <div v-if="delivResult.spf.status !== 'pass'" class="pt-1 space-y-1">
+                            <p class="text-xs text-gray-700">Add this TXT record to <span class="font-mono font-semibold">{{ delivResult.spf.host }}</span>:</p>
+                            <code class="block bg-white border border-red-200 rounded px-2 py-1 text-xs font-mono text-gray-800 break-all select-all">{{ delivResult.spf.suggested }}</code>
+                            <p class="text-xs text-gray-500">If you also send via SMTP relay (SendGrid, Mailgun, etc.) add their <span class="font-mono">include:</span> alongside the ip4.</p>
+                        </div>
+                    </div>
+
+                    <!-- DKIM -->
+                    <div class="rounded-lg border px-3 py-2.5 text-sm space-y-1"
+                        :class="delivResult.dkim.status === 'pass' ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'">
+                        <div class="flex items-center gap-2 font-medium"
+                            :class="delivResult.dkim.status === 'pass' ? 'text-green-700' : 'text-amber-700'">
+                            <span>{{ delivResult.dkim.status === 'pass' ? '✓' : '⚠' }}</span>
+                            <span>DKIM</span>
+                            <span v-if="delivResult.dkim.selector" class="font-normal text-xs opacity-75">selector: {{ delivResult.dkim.selector }}</span>
+                            <span class="font-normal text-xs opacity-75">— cryptographically signs outgoing mail</span>
+                        </div>
+                        <p v-if="delivResult.dkim.record" class="font-mono text-xs text-gray-600 break-all">{{ delivResult.dkim.record }}</p>
+                        <div v-if="delivResult.dkim.status !== 'pass'" class="pt-1 space-y-1 text-xs text-amber-800">
+                            <p>No DKIM key found (checked selectors: default, mail, smtp, s1, k1, google, selector1, selector2).</p>
+                            <p class="font-semibold mt-1">To set up DKIM on CWP:</p>
+                            <ol class="list-decimal ml-4 space-y-0.5">
+                                <li>Log in to CWP admin → Email → DKIM Manager</li>
+                                <li>Enable DKIM for your domain and generate a key pair</li>
+                                <li>CWP will add the DNS record automatically if your DNS is hosted there</li>
+                                <li>If DNS is external, copy the TXT value shown and add it to <span class="font-mono">mail._domainkey.{{ delivResult.sending_domain }}</span></li>
+                            </ol>
+                            <p class="font-semibold mt-1">Manual (SSH / other panels):</p>
+                            <code class="block bg-white border border-amber-200 rounded px-2 py-1 font-mono break-all">
+                                sudo apt install opendkim opendkim-tools<br>
+                                sudo opendkim-genkey -s mail -d {{ delivResult.sending_domain }}<br>
+                                sudo cat /etc/opendkim/keys/{{ delivResult.sending_domain }}/mail.txt
+                            </code>
+                            <p>Then add the printed TXT value as a DNS record on <span class="font-mono">{{ delivResult.dkim.host }}</span>.</p>
+                        </div>
+                    </div>
+
+                    <!-- DMARC -->
+                    <div class="rounded-lg border px-3 py-2.5 text-sm space-y-1"
+                        :class="delivResult.dmarc.status === 'pass' ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'">
+                        <div class="flex items-center gap-2 font-medium"
+                            :class="delivResult.dmarc.status === 'pass' ? 'text-green-700' : 'text-amber-700'">
+                            <span>{{ delivResult.dmarc.status === 'pass' ? '✓' : '⚠' }}</span>
+                            <span>DMARC</span>
+                            <span class="font-normal text-xs opacity-75">— policy for what to do when SPF/DKIM fail</span>
+                        </div>
+                        <p v-if="delivResult.dmarc.record" class="font-mono text-xs text-gray-600 break-all">{{ delivResult.dmarc.record }}</p>
+                        <div v-if="delivResult.dmarc.status !== 'pass'" class="pt-1 space-y-1">
+                            <p class="text-xs text-gray-700">Add this TXT record to <span class="font-mono font-semibold">{{ delivResult.dmarc.host }}</span>:</p>
+                            <code class="block bg-white border border-amber-200 rounded px-2 py-1 text-xs font-mono text-gray-800 break-all select-all">{{ delivResult.dmarc.suggested }}</code>
+                            <p class="text-xs text-gray-500">DMARC requires at least SPF or DKIM to pass. Set up SPF first, then add DMARC.</p>
+                        </div>
+                    </div>
+
+                    <!-- All pass summary -->
+                    <p v-if="delivResult.spf.status === 'pass' && delivResult.dkim.status === 'pass' && delivResult.dmarc.status === 'pass'"
+                        class="text-sm text-green-700 font-medium">
+                        All records look good — your mail should pass spam filters.
+                    </p>
+                </div>
             </div>
 
             <div class="flex items-center gap-3">

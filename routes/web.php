@@ -239,6 +239,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('settings', [Admin\SettingController::class, 'update'])->name('settings.update');
         Route::patch('settings/mail', [Admin\SettingController::class, 'updateMail'])->name('settings.mail');
         Route::post('settings/mail/test', [Admin\SettingController::class, 'testMail'])->name('settings.mail.test');
+        Route::post('settings/mail/deliverability', [Admin\SettingController::class, 'emailDeliverability'])->name('settings.mail.deliverability');
         Route::post('settings/logo', [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
         Route::patch('settings/integrations', [Admin\SettingController::class, 'updateIntegrations'])->name('settings.integrations');
         Route::post('settings/license-sync', [Admin\SettingController::class, 'syncLicense'])->name('settings.license-sync');

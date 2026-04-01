@@ -265,4 +265,91 @@ class SettingController extends Controller
 
         return back()->with('flash', ['success' => 'Trial activated — all premium features are now available for 14 days.']);
     }
+
+    public function emailDeliverability(): JsonResponse
+    {
+        $fromAddress = Setting::get('mail_from_address', config('mail.from.address'));
+
+        if (! $fromAddress || ! filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
+            return response()->json(['error' => 'No valid From address is configured in Settings → Email.'], 422);
+        }
+
+        $sendingDomain = strtolower(substr(strrchr($fromAddress, '@'), 1));
+        $parts = explode('.', $sendingDomain);
+        $orgDomain = count($parts) >= 2 ? implode('.', array_slice($parts, -2)) : $sendingDomain;
+        $isSubdomain = $sendingDomain !== $orgDomain;
+
+        // Best-effort server IP detection
+        $serverIp = request()->server('SERVER_ADDR', '');
+        if (! $serverIp || $serverIp === '::1' || $serverIp === '127.0.0.1') {
+            $serverIp = @gethostbyname((string) gethostname()) ?: 'YOUR_SERVER_IP';
+        }
+
+        // ── SPF ──────────────────────────────────────────────────────────────
+        $spfFound = false;
+        $spfRecord = null;
+        $records = @dns_get_record($sendingDomain, DNS_TXT) ?: [];
+        foreach ($records as $r) {
+            if (isset($r['txt']) && str_starts_with($r['txt'], 'v=spf1')) {
+                $spfFound = true;
+                $spfRecord = $r['txt'];
+                break;
+            }
+        }
+
+        // ── DKIM (probe common selectors) ─────────────────────────────────────
+        $dkimFound = false;
+        $dkimSelector = null;
+        $dkimRecord = null;
+        foreach (['default', 'mail', 'smtp', 's1', 'k1', 'google', 'selector1', 'selector2'] as $sel) {
+            $dkimRecords = @dns_get_record("{$sel}._domainkey.{$sendingDomain}", DNS_TXT) ?: [];
+            foreach ($dkimRecords as $r) {
+                if (isset($r['txt']) && str_contains($r['txt'], 'v=DKIM1')) {
+                    $dkimFound = true;
+                    $dkimSelector = $sel;
+                    $dkimRecord = strlen($r['txt']) > 80 ? substr($r['txt'], 0, 80).'…' : $r['txt'];
+                    break 2;
+                }
+            }
+        }
+
+        // ── DMARC (always on organisational domain) ───────────────────────────
+        $dmarcFound = false;
+        $dmarcRecord = null;
+        $dmarcHost = '_dmarc.'.$orgDomain;
+        $dmarcRecords = @dns_get_record($dmarcHost, DNS_TXT) ?: [];
+        foreach ($dmarcRecords as $r) {
+            if (isset($r['txt']) && str_starts_with($r['txt'], 'v=DMARC1')) {
+                $dmarcFound = true;
+                $dmarcRecord = $r['txt'];
+                break;
+            }
+        }
+
+        return response()->json([
+            'from_address'   => $fromAddress,
+            'sending_domain' => $sendingDomain,
+            'org_domain'     => $orgDomain,
+            'is_subdomain'   => $isSubdomain,
+            'server_ip'      => $serverIp,
+            'spf' => [
+                'status'    => $spfFound ? 'pass' : 'missing',
+                'record'    => $spfRecord,
+                'host'      => $sendingDomain,
+                'suggested' => "v=spf1 ip4:{$serverIp} ~all",
+            ],
+            'dkim' => [
+                'status'   => $dkimFound ? 'pass' : 'missing',
+                'selector' => $dkimSelector,
+                'record'   => $dkimRecord,
+                'host'     => "mail._domainkey.{$sendingDomain}",
+            ],
+            'dmarc' => [
+                'status'    => $dmarcFound ? 'pass' : 'missing',
+                'record'    => $dmarcRecord,
+                'host'      => $dmarcHost,
+                'suggested' => "v=DMARC1; p=quarantine; rua=mailto:postmaster@{$orgDomain}",
+            ],
+        ]);
+    }
 }
