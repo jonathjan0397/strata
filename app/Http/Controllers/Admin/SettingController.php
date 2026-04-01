@@ -195,6 +195,21 @@ class SettingController extends Controller
             'integration_hexonet_login' => ['nullable', 'string', 'max:100'],
             'integration_hexonet_password' => ['nullable', 'string', 'max:255'],
             'integration_hexonet_sandbox' => ['nullable', 'boolean'],
+            // Namecheap VAS
+            'integration_namecheap_offer_privacy' => ['nullable', 'boolean'],
+            'integration_namecheap_default_privacy' => ['nullable', 'boolean'],
+            'integration_namecheap_default_lock' => ['nullable', 'boolean'],
+            // eNom VAS
+            'integration_enom_offer_privacy' => ['nullable', 'boolean'],
+            'integration_enom_default_lock' => ['nullable', 'boolean'],
+            // OpenSRS VAS
+            'integration_opensrs_offer_privacy' => ['nullable', 'boolean'],
+            'integration_opensrs_default_privacy' => ['nullable', 'boolean'],
+            'integration_opensrs_default_lock' => ['nullable', 'boolean'],
+            // Hexonet VAS
+            'integration_hexonet_offer_privacy' => ['nullable', 'boolean'],
+            'integration_hexonet_default_privacy' => ['nullable', 'boolean'],
+            'integration_hexonet_default_lock' => ['nullable', 'boolean'],
         ]);
 
         Setting::setMany($data);

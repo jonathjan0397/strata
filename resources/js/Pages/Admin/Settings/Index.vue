@@ -156,6 +156,21 @@ const intForm = useForm({
     integration_hexonet_login:                s.integration_hexonet_login                ?? '',
     integration_hexonet_password:             s.integration_hexonet_password             ?? '',
     integration_hexonet_sandbox:              s.integration_hexonet_sandbox              ?? false,
+    // Namecheap VAS
+    integration_namecheap_offer_privacy:      s.integration_namecheap_offer_privacy      !== undefined ? !!s.integration_namecheap_offer_privacy      : true,
+    integration_namecheap_default_privacy:    s.integration_namecheap_default_privacy    !== undefined ? !!s.integration_namecheap_default_privacy    : false,
+    integration_namecheap_default_lock:       s.integration_namecheap_default_lock       !== undefined ? !!s.integration_namecheap_default_lock       : true,
+    // eNom VAS
+    integration_enom_offer_privacy:           s.integration_enom_offer_privacy           !== undefined ? !!s.integration_enom_offer_privacy           : false,
+    integration_enom_default_lock:            s.integration_enom_default_lock            !== undefined ? !!s.integration_enom_default_lock            : true,
+    // OpenSRS VAS
+    integration_opensrs_offer_privacy:        s.integration_opensrs_offer_privacy        !== undefined ? !!s.integration_opensrs_offer_privacy        : true,
+    integration_opensrs_default_privacy:      s.integration_opensrs_default_privacy      !== undefined ? !!s.integration_opensrs_default_privacy      : false,
+    integration_opensrs_default_lock:         s.integration_opensrs_default_lock         !== undefined ? !!s.integration_opensrs_default_lock         : true,
+    // Hexonet VAS
+    integration_hexonet_offer_privacy:        s.integration_hexonet_offer_privacy        !== undefined ? !!s.integration_hexonet_offer_privacy        : true,
+    integration_hexonet_default_privacy:      s.integration_hexonet_default_privacy      !== undefined ? !!s.integration_hexonet_default_privacy      : false,
+    integration_hexonet_default_lock:         s.integration_hexonet_default_lock         !== undefined ? !!s.integration_hexonet_default_lock         : true,
 })
 
 // Show/hide toggles for password fields
@@ -164,8 +179,13 @@ function toggleSecret(key) {
     showSecrets.value[key] = !showSecrets.value[key]
 }
 
-// Collapsible integration sections — all open by default
+// Collapsible integration sections — outer sections open by default; per-registrar closed by default
 const openSections = ref(['payment', 'registrar', 'fraud', 'oauth'])
+function toggleSection(key) {
+    const idx = openSections.value.indexOf(key)
+    if (idx === -1) openSections.value.push(key)
+    else openSections.value.splice(idx, 1)
+}
 
 // Masked display helpers — show last 4 chars of a secret, rest as •
 function mask(val) {
@@ -384,141 +404,281 @@ const timezones = [
                 </div>
               </div>
 
-              <!-- Namecheap -->
-              <div class="p-5 space-y-4">
-                <h4 class="text-sm font-semibold text-gray-800">Namecheap</h4>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API User</label>
-                    <input v-model="intForm.integration_namecheap_api_user" type="text" autocomplete="off"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                    <p v-if="intForm.errors.integration_namecheap_api_user" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_api_user }}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                    <div class="relative">
-                      <input v-model="intForm.integration_namecheap_api_key" :type="showSecrets['nc_api_key'] ? 'text' : 'password'" autocomplete="new-password"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                      <button type="button" @click="toggleSecret('nc_api_key')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
-                        <svg v-if="showSecrets['nc_api_key']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
-                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
-                      </button>
+              <!-- ── Namecheap ── -->
+              <div>
+                <button type="button" @click="toggleSection('reg_namecheap')"
+                  class="w-full flex items-center justify-between px-5 py-3 bg-gray-50 hover:bg-gray-100 text-left transition-colors">
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    Namecheap
+                    <span v-if="intForm.integration_registrar_driver === 'namecheap'"
+                      class="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5">Active</span>
+                  </span>
+                  <svg :class="['h-4 w-4 text-gray-400 transition-transform duration-200', openSections.includes('reg_namecheap') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
+                <div v-show="openSections.includes('reg_namecheap')" class="p-5 space-y-5 bg-white">
+                  <div class="space-y-3">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Credentials</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">API User</label>
+                        <input v-model="intForm.integration_namecheap_api_user" type="text" autocomplete="off"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                        <p v-if="intForm.errors.integration_namecheap_api_user" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_api_user }}</p>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                        <div class="relative">
+                          <input v-model="intForm.integration_namecheap_api_key" :type="showSecrets['nc_api_key'] ? 'text' : 'password'" autocomplete="new-password"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                          <button type="button" @click="toggleSecret('nc_api_key')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                            <svg v-if="showSecrets['nc_api_key']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                            <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                          </button>
+                        </div>
+                        <p v-if="intForm.errors.integration_namecheap_api_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_api_key }}</p>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Client IP</label>
+                        <input v-model="intForm.integration_namecheap_client_ip" type="text" autocomplete="off" placeholder="1.2.3.4"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                        <p class="text-xs text-gray-400 mt-0.5">Your server's IP, must be whitelisted in Namecheap</p>
+                        <p v-if="intForm.errors.integration_namecheap_client_ip" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_client_ip }}</p>
+                      </div>
+                      <div class="flex items-center gap-3 pt-4">
+                        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                          <input v-model="intForm.integration_namecheap_sandbox" type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                          Use Sandbox
+                        </label>
+                        <span v-if="intForm.integration_namecheap_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                      </div>
                     </div>
-                    <p v-if="intForm.errors.integration_namecheap_api_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_api_key }}</p>
                   </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Client IP</label>
-                    <input v-model="intForm.integration_namecheap_client_ip" type="text" autocomplete="off" placeholder="1.2.3.4"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                    <p class="text-xs text-gray-400 mt-0.5">Your server's IP, must be whitelisted in Namecheap</p>
-                    <p v-if="intForm.errors.integration_namecheap_client_ip" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_namecheap_client_ip }}</p>
-                  </div>
-                  <div class="flex items-center gap-3 pt-4">
-                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                      <input v-model="intForm.integration_namecheap_sandbox" type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                      Use Sandbox
-                    </label>
-                    <span v-if="intForm.integration_namecheap_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  <div class="pt-1 border-t border-gray-100 space-y-3">
+                    <div>
+                      <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-3">Value Added Services</h5>
+                      <p class="text-xs text-gray-400 mt-0.5">Configure which add-ons to offer clients at domain checkout.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_namecheap_offer_privacy" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Offer WHOIS Privacy</span><span class="text-xs text-gray-400">WhoisGuard — free for life with most TLDs</span></span>
+                      </label>
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_namecheap_default_privacy" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Enable Privacy by Default</span><span class="text-xs text-gray-400">Auto-enable WhoisGuard on new registrations</span></span>
+                      </label>
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_namecheap_default_lock" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Transfer Lock by Default</span><span class="text-xs text-gray-400">Protect against unauthorized transfers</span></span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- eNom -->
-              <div class="p-5 space-y-4">
-                <h4 class="text-sm font-semibold text-gray-800">eNom</h4>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-                    <input v-model="intForm.integration_enom_uid" type="text" autocomplete="off"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                    <p v-if="intForm.errors.integration_enom_uid" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_enom_uid }}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <div class="relative">
-                      <input v-model="intForm.integration_enom_pw" :type="showSecrets['enom_pw'] ? 'text' : 'password'" autocomplete="new-password"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                      <button type="button" @click="toggleSecret('enom_pw')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
-                        <svg v-if="showSecrets['enom_pw']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
-                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
-                      </button>
+              <!-- ── eNom ── -->
+              <div>
+                <button type="button" @click="toggleSection('reg_enom')"
+                  class="w-full flex items-center justify-between px-5 py-3 bg-gray-50 hover:bg-gray-100 text-left transition-colors">
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    eNom
+                    <span v-if="intForm.integration_registrar_driver === 'enom'"
+                      class="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5">Active</span>
+                  </span>
+                  <svg :class="['h-4 w-4 text-gray-400 transition-transform duration-200', openSections.includes('reg_enom') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
+                <div v-show="openSections.includes('reg_enom')" class="p-5 space-y-5 bg-white">
+                  <div class="space-y-3">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Credentials</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                        <input v-model="intForm.integration_enom_uid" type="text" autocomplete="off"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                        <p v-if="intForm.errors.integration_enom_uid" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_enom_uid }}</p>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <div class="relative">
+                          <input v-model="intForm.integration_enom_pw" :type="showSecrets['enom_pw'] ? 'text' : 'password'" autocomplete="new-password"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                          <button type="button" @click="toggleSecret('enom_pw')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                            <svg v-if="showSecrets['enom_pw']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                            <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                          </button>
+                        </div>
+                        <p v-if="intForm.errors.integration_enom_pw" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_enom_pw }}</p>
+                      </div>
+                      <div class="flex items-center gap-3 pt-4">
+                        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                          <input v-model="intForm.integration_enom_sandbox" type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                          Use Sandbox
+                        </label>
+                        <span v-if="intForm.integration_enom_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                      </div>
                     </div>
-                    <p v-if="intForm.errors.integration_enom_pw" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_enom_pw }}</p>
                   </div>
-                  <div class="flex items-center gap-3 pt-4">
-                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                      <input v-model="intForm.integration_enom_sandbox" type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                      Use Sandbox
-                    </label>
-                    <span v-if="intForm.integration_enom_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  <div class="pt-1 border-t border-gray-100 space-y-3">
+                    <div>
+                      <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-3">Value Added Services</h5>
+                      <p class="text-xs text-gray-400 mt-0.5">eNom WhoIsGuard privacy is a separately purchased product and cannot be managed via the reseller API.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_enom_offer_privacy" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Offer WHOIS Privacy</span><span class="text-xs text-gray-400">WhoIsGuard — purchased separately via eNom panel</span></span>
+                      </label>
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_enom_default_lock" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Transfer Lock by Default</span><span class="text-xs text-gray-400">Protect against unauthorized transfers</span></span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- OpenSRS -->
-              <div class="p-5 space-y-4">
-                <h4 class="text-sm font-semibold text-gray-800">OpenSRS</h4>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Reseller Username</label>
-                    <input v-model="intForm.integration_opensrs_reseller_username" type="text" autocomplete="off"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                    <p v-if="intForm.errors.integration_opensrs_reseller_username" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_opensrs_reseller_username }}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                    <div class="relative">
-                      <input v-model="intForm.integration_opensrs_api_key" :type="showSecrets['opensrs_key'] ? 'text' : 'password'" autocomplete="new-password"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                      <button type="button" @click="toggleSecret('opensrs_key')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
-                        <svg v-if="showSecrets['opensrs_key']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
-                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
-                      </button>
+              <!-- ── OpenSRS ── -->
+              <div>
+                <button type="button" @click="toggleSection('reg_opensrs')"
+                  class="w-full flex items-center justify-between px-5 py-3 bg-gray-50 hover:bg-gray-100 text-left transition-colors">
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    OpenSRS
+                    <span v-if="intForm.integration_registrar_driver === 'opensrs'"
+                      class="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5">Active</span>
+                  </span>
+                  <svg :class="['h-4 w-4 text-gray-400 transition-transform duration-200', openSections.includes('reg_opensrs') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
+                <div v-show="openSections.includes('reg_opensrs')" class="p-5 space-y-5 bg-white">
+                  <div class="space-y-3">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Credentials</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reseller Username</label>
+                        <input v-model="intForm.integration_opensrs_reseller_username" type="text" autocomplete="off"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                        <p v-if="intForm.errors.integration_opensrs_reseller_username" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_opensrs_reseller_username }}</p>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                        <div class="relative">
+                          <input v-model="intForm.integration_opensrs_api_key" :type="showSecrets['opensrs_key'] ? 'text' : 'password'" autocomplete="new-password"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                          <button type="button" @click="toggleSecret('opensrs_key')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                            <svg v-if="showSecrets['opensrs_key']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                            <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                          </button>
+                        </div>
+                        <p v-if="intForm.errors.integration_opensrs_api_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_opensrs_api_key }}</p>
+                      </div>
+                      <div class="flex items-center gap-3 pt-4">
+                        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                          <input v-model="intForm.integration_opensrs_sandbox" type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                          Use Sandbox
+                        </label>
+                        <span v-if="intForm.integration_opensrs_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                      </div>
                     </div>
-                    <p v-if="intForm.errors.integration_opensrs_api_key" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_opensrs_api_key }}</p>
                   </div>
-                  <div class="flex items-center gap-3 pt-4">
-                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                      <input v-model="intForm.integration_opensrs_sandbox" type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                      Use Sandbox
-                    </label>
-                    <span v-if="intForm.integration_opensrs_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  <div class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
+                    <svg class="h-4 w-4 mt-0.5 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                    <span><strong>TLD Pricing Import:</strong> OpenSRS has no bulk pricing API. Import queries each TLD individually and may take 30–60 seconds to complete.</span>
+                  </div>
+                  <div class="pt-1 border-t border-gray-100 space-y-3">
+                    <div>
+                      <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-3">Value Added Services</h5>
+                      <p class="text-xs text-gray-400 mt-0.5">WHOIS privacy and transfer lock are fully managed via the OpenSRS XCP API.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_opensrs_offer_privacy" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Offer WHOIS Privacy</span><span class="text-xs text-gray-400">ID Protect — managed via API</span></span>
+                      </label>
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_opensrs_default_privacy" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Enable Privacy by Default</span><span class="text-xs text-gray-400">Auto-enable ID Protect on new registrations</span></span>
+                      </label>
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_opensrs_default_lock" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Transfer Lock by Default</span><span class="text-xs text-gray-400">Protect against unauthorized transfers</span></span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Hexonet -->
-              <div class="p-5 space-y-4">
-                <h4 class="text-sm font-semibold text-gray-800">Hexonet</h4>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Login</label>
-                    <input v-model="intForm.integration_hexonet_login" type="text" autocomplete="off"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                    <p v-if="intForm.errors.integration_hexonet_login" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_hexonet_login }}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <div class="relative">
-                      <input v-model="intForm.integration_hexonet_password" :type="showSecrets['hexonet_pw'] ? 'text' : 'password'" autocomplete="new-password"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
-                      <button type="button" @click="toggleSecret('hexonet_pw')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
-                        <svg v-if="showSecrets['hexonet_pw']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
-                        <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
-                      </button>
+              <!-- ── Hexonet ── -->
+              <div>
+                <button type="button" @click="toggleSection('reg_hexonet')"
+                  class="w-full flex items-center justify-between px-5 py-3 bg-gray-50 hover:bg-gray-100 text-left transition-colors">
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    Hexonet
+                    <span v-if="intForm.integration_registrar_driver === 'hexonet'"
+                      class="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5">Active</span>
+                  </span>
+                  <svg :class="['h-4 w-4 text-gray-400 transition-transform duration-200', openSections.includes('reg_hexonet') ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
+                <div v-show="openSections.includes('reg_hexonet')" class="p-5 space-y-5 bg-white">
+                  <div class="space-y-3">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Credentials</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Login</label>
+                        <input v-model="intForm.integration_hexonet_login" type="text" autocomplete="off"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                        <p v-if="intForm.errors.integration_hexonet_login" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_hexonet_login }}</p>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <div class="relative">
+                          <input v-model="intForm.integration_hexonet_password" :type="showSecrets['hexonet_pw'] ? 'text' : 'password'" autocomplete="new-password"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
+                          <button type="button" @click="toggleSecret('hexonet_pw')" class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
+                            <svg v-if="showSecrets['hexonet_pw']" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                            <svg v-else class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/><path d="M10.748 13.93l2.523 2.524a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/></svg>
+                          </button>
+                        </div>
+                        <p v-if="intForm.errors.integration_hexonet_password" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_hexonet_password }}</p>
+                      </div>
+                      <div class="flex items-center gap-3 pt-4">
+                        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                          <input v-model="intForm.integration_hexonet_sandbox" type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                          Use Sandbox
+                        </label>
+                        <span v-if="intForm.integration_hexonet_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                      </div>
                     </div>
-                    <p v-if="intForm.errors.integration_hexonet_password" class="text-xs text-red-500 mt-1">{{ intForm.errors.integration_hexonet_password }}</p>
                   </div>
-                  <div class="flex items-center gap-3 pt-4">
-                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                      <input v-model="intForm.integration_hexonet_sandbox" type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                      Use Sandbox
-                    </label>
-                    <span v-if="intForm.integration_hexonet_sandbox" class="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">Sandbox mode active</span>
+                  <div class="pt-1 border-t border-gray-100 space-y-3">
+                    <div>
+                      <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-3">Value Added Services</h5>
+                      <p class="text-xs text-gray-400 mt-0.5">WHOIS privacy and transfer lock are fully managed via the Hexonet ISPAPI.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_hexonet_offer_privacy" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Offer WHOIS Privacy</span><span class="text-xs text-gray-400">WhoisGuard — managed via ISPAPI</span></span>
+                      </label>
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_hexonet_default_privacy" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Enable Privacy by Default</span><span class="text-xs text-gray-400">Auto-enable WhoisGuard on new registrations</span></span>
+                      </label>
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input v-model="intForm.integration_hexonet_default_lock" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span><span class="text-sm font-medium text-gray-700 block">Transfer Lock by Default</span><span class="text-xs text-gray-400">Protect against unauthorized transfers</span></span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
