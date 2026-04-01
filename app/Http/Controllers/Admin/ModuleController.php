@@ -42,10 +42,16 @@ class ModuleController extends Controller
             'max_accounts'   => ['nullable', 'integer', 'min:1'],
         ]);
 
+        // Normalize optional string/int fields — empty strings from the form must not be
+        // written to nullable integer/string DB columns (MySQL strict mode rejects '' for SMALLINT).
+        $data['local_hostname'] = $data['local_hostname'] ?: null;
+        $data['local_port']     = $data['local_port']     ?: null;
+        $data['max_accounts']   = $data['max_accounts']   ?: null;
+
         $module = Module::create([
             ...$data,
             'api_token_enc' => isset($data['api_token']) ? encrypt($data['api_token']) : null,
-            'password_enc' => isset($data['password']) ? encrypt($data['password']) : null,
+            'password_enc'  => isset($data['password'])  ? encrypt($data['password'])  : null,
         ]);
 
         return redirect()->route('admin.modules.index')
@@ -70,6 +76,10 @@ class ModuleController extends Controller
             'active'         => ['boolean'],
             'max_accounts'   => ['nullable', 'integer', 'min:1'],
         ]);
+
+        $data['local_hostname'] = $data['local_hostname'] ?: null;
+        $data['local_port']     = $data['local_port']     ?: null;
+        $data['max_accounts']   = $data['max_accounts']   ?: null;
 
         $module->update($data);
 
