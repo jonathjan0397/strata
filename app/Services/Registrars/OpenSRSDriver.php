@@ -162,7 +162,7 @@ class OpenSRSDriver implements RegistrarDriver
 
         return [
             'expires_at' => $attrs['expiredate'] ?? '',
-            'locked' => ($attrs['registry_registrant_id'] ?? '') !== '',
+            'locked' => ($attrs['lock_state'] ?? '0') === '1',
             'privacy' => strtolower($attrs['whois_privacy'] ?? 'disable') === 'enable',
             'nameservers' => $ns,
         ];

@@ -289,9 +289,11 @@ class HexonetDriver implements RegistrarDriver
             $count = count($prop['CLASS'] ?? []);
 
             for ($i = 0; $i < $count; $i++) {
-                // CLASS is like "DOMAIN_COM" — extract TLD after first underscore
+                // CLASS is like "DOMAIN_COM" or "DOMAIN_CO_UK" — extract TLD after first underscore,
+                // then convert remaining underscores to dots for multi-part TLDs (co_uk → co.uk).
                 $class = strtolower($prop['CLASS'][$i] ?? '');
-                $tld = ltrim(substr($class, (int) strpos($class, '_')), '_');
+                $pos = strpos($class, '_');
+                $tld = $pos !== false ? str_replace('_', '.', substr($class, $pos + 1)) : '';
 
                 if ($tld === '') {
                     continue;

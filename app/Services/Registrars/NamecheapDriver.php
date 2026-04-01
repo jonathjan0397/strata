@@ -177,12 +177,12 @@ class NamecheapDriver implements RegistrarDriver
 
     public function setPrivacy(string $domain, bool $enabled): void
     {
-        $this->call('namecheap.whoisguard.enable', [
-            'DomainName' => $domain,
-            'ForwardedToMail' => '',
-        ]);
-
-        if (! $enabled) {
+        if ($enabled) {
+            $this->call('namecheap.whoisguard.enable', [
+                'DomainName' => $domain,
+                'ForwardedToMail' => '',
+            ]);
+        } else {
             $this->call('namecheap.whoisguard.disable', ['DomainName' => $domain]);
         }
     }

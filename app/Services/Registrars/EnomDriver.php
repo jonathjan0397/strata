@@ -154,20 +154,23 @@ class EnomDriver implements RegistrarDriver
     {
         [$sld, $tld] = $this->splitDomain($domain);
 
-        $data = $this->call('GetDomainInfo', ['SLD' => $sld, 'TLD' => $tld]);
+        // GetDomainInfo returns deeply nested XML that the flat parser cannot handle.
+        // Use three simple commands whose responses are all flat key=value.
+        $expData  = $this->call('GetExpDate',  ['SLD' => $sld, 'TLD' => $tld]);
+        $lockData = $this->call('GetRegLock',  ['SLD' => $sld, 'TLD' => $tld]);
+        $nsData   = $this->call('GetDNS',      ['SLD' => $sld, 'TLD' => $tld]);
 
         $ns = [];
         for ($i = 1; $i <= 13; $i++) {
-            $key = "NS{$i}";
-            if (! empty($data['services'][$key])) {
-                $ns[] = $data['services'][$key];
+            if (! empty($nsData["NS{$i}"])) {
+                $ns[] = $nsData["NS{$i}"];
             }
         }
 
         return [
-            'expires_at' => $data['expiration'] ?? '',
-            'locked' => isset($data['registrarlock']) && $data['registrarlock'] === '1',
-            'privacy' => false, // Enom uses separate WhoIsGuard product
+            'expires_at' => $expData['expiration'] ?? '',
+            'locked' => ($lockData['registrarlock'] ?? '0') === '1',
+            'privacy' => false, // Enom WhoIsGuard is a separate product; managed via reseller panel
             'nameservers' => $ns,
         ];
     }
