@@ -1,11 +1,15 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { useForm, Link } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
+import axios from 'axios'
 
 defineOptions({ layout: AppLayout })
 
-const props = defineProps({ product: { type: Object, default: null } })
+const props = defineProps({
+  product: { type: Object, default: null },
+  modules: { type: Array,  default: () => [] },
+})
 
 const form = useForm({
   name:                 props.product?.name                 ?? '',
@@ -18,6 +22,7 @@ const form = useForm({
   billing_cycle:        props.product?.billing_cycle        ?? 'monthly',
   stock:                props.product?.stock                ?? '',
   module:               props.product?.module               ?? '',
+  module_config:        props.product?.module_config        ?? {},
   autosetup:            props.product?.autosetup            ?? 'manual',
   trial_days:           props.product?.trial_days           ?? '',
   hidden:               props.product?.hidden               ?? false,
@@ -25,6 +30,68 @@ const form = useForm({
   sort_order:           props.product?.sort_order           ?? 0,
   configurable_options: props.product?.configurable_options ?? [],
 })
+
+// ── Provisioning ──────────────────────────────────────────────────────────────
+const PANEL_TYPES = [
+  { value: 'cpanel',      label: 'cPanel (WHM)' },
+  { value: 'directadmin', label: 'DirectAdmin' },
+  { value: 'plesk',       label: 'Plesk' },
+  { value: 'hestia',      label: 'HestiaCP' },
+  { value: 'cwp',         label: 'CWP (Control Web Panel)' },
+]
+
+// Servers of the currently selected panel type
+const serversOfType = computed(() =>
+  props.modules.filter(m => m.type === form.module)
+)
+
+// Which specific server is pinned (null = auto-select)
+const pinnedModuleId = ref(props.product?.module_config?.module_id ?? null)
+
+// Packages loaded from the pinned server (or first server of the type)
+const availablePackages = ref([])
+const packagesLoading   = ref(false)
+const packagesError     = ref(null)
+
+async function loadPackages(moduleId) {
+  if (!moduleId) {
+    availablePackages.value = []
+    return
+  }
+  packagesLoading.value = true
+  packagesError.value   = null
+  try {
+    const res = await axios.get(route('admin.modules.packages', moduleId))
+    availablePackages.value = res.data.packages ?? []
+    if (res.data.error) packagesError.value = res.data.error
+  } catch {
+    availablePackages.value = []
+    packagesError.value = 'Could not load packages from server.'
+  } finally {
+    packagesLoading.value = false
+  }
+}
+
+// When panel type changes — reset server pin and reload packages from first available server
+function onPanelTypeChange() {
+  pinnedModuleId.value = null
+  form.module_config = { ...form.module_config, module_id: null }
+  const first = serversOfType.value[0]
+  loadPackages(first?.id ?? null)
+}
+
+// When a specific server is selected
+function onServerChange() {
+  form.module_config = { ...form.module_config, module_id: pinnedModuleId.value }
+  const targetId = pinnedModuleId.value ?? serversOfType.value[0]?.id ?? null
+  loadPackages(targetId)
+}
+
+// Seed packages on page load if editing a product with a module already set
+if (form.module) {
+  const targetId = pinnedModuleId.value ?? serversOfType.value[0]?.id ?? null
+  loadPackages(targetId)
+}
 
 // ── Configurable options builder ──────────────────────────────────────────────
 function addOptionGroup() {
@@ -195,35 +262,137 @@ const CATEGORIES     = ['Shared Hosting','VPS Hosting','Dedicated Servers','Rese
         </div>
       </div>
 
-      <!-- Module -->
-      <div class="bg-white/70 backdrop-blur-sm rounded-xl border border-blue-100/60 p-6 shadow-sm space-y-3">
-        <h2 class="text-sm font-semibold text-slate-600 uppercase tracking-wider">Module / Provisioning</h2>
+      <!-- Module / Provisioning -->
+      <div class="bg-white/70 backdrop-blur-sm rounded-xl border border-blue-100/60 p-6 shadow-sm space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-600 uppercase tracking-wider">Provisioning</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Controls how hosting accounts are automatically created when a customer orders this product.</p>
+        </div>
+
+        <!-- Row 1: Panel type + Auto-setup trigger -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Module</label>
-            <select v-model="form.module"
+            <label class="block text-sm font-medium text-slate-700 mb-1">Panel Type</label>
+            <select v-model="form.module" @change="onPanelTypeChange"
               class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">None (manual)</option>
-              <option value="cpanel">cPanel</option>
-              <option value="plesk">Plesk</option>
-              <option value="directadmin">DirectAdmin</option>
+              <option value="">None — manual provisioning only</option>
+              <option v-for="pt in PANEL_TYPES" :key="pt.value" :value="pt.value">{{ pt.label }}</option>
               <option value="domain">Domain Registrar</option>
               <option value="ssl">SSL</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Auto Setup</label>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Provision Trigger</label>
             <select v-model="form.autosetup"
               class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="on_order">On Order — provision immediately</option>
-              <option value="on_payment">On Payment — provision when invoice paid</option>
-              <option value="manual">Manual — admin approves each order</option>
+              <option value="on_payment">On Payment — create account once invoice is paid</option>
+              <option value="on_order">On Order — create account immediately at checkout</option>
+              <option value="manual">Manual — admin must approve each order</option>
               <option value="never">Never — no auto-provisioning</option>
             </select>
-            <p class="text-xs text-slate-400 mt-1">Controls when the hosting account is created</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <template v-if="form.autosetup === 'on_payment'">Account is created the moment payment clears — recommended for paid plans.</template>
+              <template v-else-if="form.autosetup === 'on_order'">Account is created at checkout, before payment. Use for free/trial products.</template>
+              <template v-else-if="form.autosetup === 'manual'">Order lands in the queue; an admin clicks Provision to activate it.</template>
+              <template v-else>Orders are created but never auto-provisioned.</template>
+            </p>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+
+        <!-- Server + Package rows (only shown when a panel type is selected) -->
+        <template v-if="form.module && !['domain','ssl'].includes(form.module)">
+
+          <!-- Server assignment -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Server Assignment</label>
+            <select v-model="pinnedModuleId" @change="onServerChange"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option :value="null">Auto-select — use any available {{ form.module }} server at order time</option>
+              <template v-if="serversOfType.length">
+                <option v-for="m in serversOfType" :key="m.id" :value="m.id">
+                  {{ m.name }} — {{ m.hostname }}
+                  ({{ m.current_accounts }}{{ m.max_accounts ? ' / ' + m.max_accounts : '' }} accounts)
+                </option>
+              </template>
+            </select>
+            <p v-if="!serversOfType.length"
+              class="text-xs text-amber-600 mt-1">
+              No active {{ form.module }} servers configured.
+              <Link :href="route('admin.modules.create')" class="underline">Add one in Servers &amp; Modules</Link> before orders can be auto-provisioned.
+            </p>
+            <p v-else class="text-xs text-slate-400 mt-1">
+              Pin to a specific server to guarantee which machine handles new orders, or leave on auto-select for capacity-based load balancing.
+            </p>
+          </div>
+
+          <!-- Package / Plan -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Package / Plan
+              <span class="font-normal text-slate-400 text-xs ml-1">— assigned on the panel when the account is created</span>
+            </label>
+
+            <!-- Loading -->
+            <div v-if="packagesLoading"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-400 bg-slate-50">
+              Loading packages…
+            </div>
+
+            <!-- Dropdown from live packages -->
+            <select v-else-if="availablePackages.length"
+              v-model="form.module_config.plan"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">— No plan (server default) —</option>
+              <option v-for="p in availablePackages" :key="p.name" :value="p.name">{{ p.name }}</option>
+            </select>
+
+            <!-- Text fallback if server unreachable or no packages -->
+            <template v-else>
+              <input v-model="form.module_config.plan" type="text"
+                placeholder="e.g. Basic, Pro, Enterprise (exact name from the control panel)"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <p v-if="packagesError" class="text-xs text-amber-600 mt-1">
+                {{ packagesError }} — enter the plan name manually.
+              </p>
+              <p v-else-if="serversOfType.length" class="text-xs text-slate-400 mt-1">
+                Select a specific server above to load its packages automatically.
+              </p>
+            </template>
+          </div>
+
+          <!-- Package resource limits (used for auto-create) -->
+          <div v-if="form.module_config.plan" class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Disk Quota (MB)
+                <span class="font-normal text-slate-400 text-xs ml-1">blank = server default</span>
+              </label>
+              <input v-model.number="form.module_config.disk_mb" type="number" min="0" placeholder="e.g. 10240"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Bandwidth (MB/mo)
+                <span class="font-normal text-slate-400 text-xs ml-1">blank = server default</span>
+              </label>
+              <input v-model.number="form.module_config.bandwidth_mb" type="number" min="0" placeholder="e.g. 51200"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div class="col-span-2">
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input v-model="form.module_config.auto_create_package" type="checkbox"
+                  class="h-4 w-4 mt-0.5 rounded border-slate-300 text-blue-600" />
+                <span class="text-sm text-slate-700">
+                  Auto-create package on panel if it doesn't exist
+                  <span class="block text-xs text-slate-400 font-normal">When the first account is provisioned, Strata will create the package on the panel using the disk/bandwidth values above if it isn't already there.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </template>
+
+        <!-- Trial + Sort -->
+        <div class="grid grid-cols-2 gap-4 pt-1 border-t border-slate-100">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">
               Trial Period (days)
@@ -232,7 +401,7 @@ const CATEGORIES     = ['Shared Hosting','VPS Hosting','Dedicated Servers','Rese
             <input v-model="form.trial_days" type="number" min="1" max="365" placeholder="e.g. 14"
               class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <p v-if="form.errors.trial_days" class="text-red-500 text-xs mt-0.5">{{ form.errors.trial_days }}</p>
-            <p class="text-xs text-slate-400 mt-1">Service activates immediately; invoice due when trial ends</p>
+            <p class="text-xs text-slate-400 mt-1">Account activates immediately; invoice generated when trial ends.</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>

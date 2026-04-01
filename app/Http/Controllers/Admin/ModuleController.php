@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Module;
+use App\Services\ProvisionerService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,7 +29,7 @@ class ModuleController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:cpanel,plesk,directadmin,vestacp,cyberpanel,generic'],
+            'type' => ['required', 'in:cpanel,plesk,directadmin,hestia,cwp,vestacp,cyberpanel,generic'],
             'hostname' => ['required', 'string'],
             'port' => ['required', 'integer', 'min:1', 'max:65535'],
             'username' => ['required', 'string'],
@@ -80,5 +82,25 @@ class ModuleController extends Controller
 
         return redirect()->route('admin.modules.index')
             ->with('success', 'Server removed.');
+    }
+
+    /**
+     * Return the list of packages/plans on a module — used by the product form.
+     * Returns an empty array gracefully if the server is unreachable.
+     */
+    public function packages(Module $module): JsonResponse
+    {
+        if (! in_array($module->type, ProvisionerService::supportedTypes())) {
+            return response()->json(['packages' => []]);
+        }
+
+        try {
+            $driver   = ProvisionerService::forModule($module);
+            $packages = $driver->listPackages();
+        } catch (\Throwable $e) {
+            return response()->json(['packages' => [], 'error' => $e->getMessage()]);
+        }
+
+        return response()->json(['packages' => $packages]);
     }
 }

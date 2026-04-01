@@ -1,5 +1,7 @@
 # Strata — Current Features
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
+
 > Complete feature inventory as of 1.0-Beta (2026-03-29).
 > Updated after each release. See [CHANGELOG.md](CHANGELOG.md) for history.
 

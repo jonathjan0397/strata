@@ -26,6 +26,13 @@ const mkForm = (src = {}) => useForm({
     auto_reply_body:             src.auto_reply_body             ?? '',
     reject_unknown_senders:      src.reject_unknown_senders      ?? false,
     is_active:                   src.is_active                   ?? true,
+    // IMAP polling
+    imap_host:                   src.imap_host                   ?? '',
+    imap_port:                   src.imap_port                   ?? 993,
+    imap_username:               src.imap_username               ?? '',
+    imap_password:               src.imap_password               ?? '',
+    imap_encryption:             src.imap_encryption             ?? 'ssl',
+    imap_mailbox:                src.imap_mailbox                ?? 'INBOX',
 })
 
 // ── Create ────────────────────────────────────────────────────────────────────
@@ -85,7 +92,7 @@ const priorityColors = {
     urgent: 'bg-red-100 text-red-700',
 }
 
-const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
+const inputCls  = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
 const selectCls = inputCls
 </script>
 
@@ -100,7 +107,7 @@ const selectCls = inputCls
           <span class="text-gray-300">/</span>
           <h1 class="text-xl font-bold text-gray-900">Mail Pipes</h1>
         </div>
-        <p class="text-sm text-gray-500">Route inbound emails to tickets. Each pipe maps an address to a department with its own rules.</p>
+        <p class="text-sm text-gray-500">Route inbound emails to tickets via HTTP webhook, .forward rule, or IMAP polling.</p>
       </div>
       <button @click="showCreate = !showCreate"
         class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shrink-0">
@@ -150,7 +157,7 @@ const selectCls = inputCls
 
         <!-- Toggles -->
         <div class="grid grid-cols-2 gap-3">
-          <label v-for="(label, key, hint) in {
+          <label v-for="(label, key) in {
             create_client_if_not_exists: 'Auto-create client accounts for unknown senders',
             strip_signature: 'Strip email signatures from ticket body',
             reject_unknown_senders: 'Reject emails from unrecognised senders (overrides auto-create)',
@@ -177,6 +184,41 @@ const selectCls = inputCls
               <textarea v-model="createForm.auto_reply_body" rows="4" :class="inputCls" placeholder="Thank you for contacting us. Your ticket #ID has been received…" />
             </div>
           </template>
+        </div>
+
+        <!-- IMAP Polling -->
+        <div class="border-t border-gray-100 pt-4 space-y-3">
+          <p class="text-sm font-medium text-gray-700">IMAP Polling <span class="text-xs font-normal text-gray-400 ml-1">— optional: poll this mailbox for new messages every 5 minutes</span></p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="block text-xs font-medium text-gray-600 mb-1">IMAP Host</label>
+              <input v-model="createForm.imap_host" type="text" placeholder="mail.yourdomain.com" :class="inputCls" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Port</label>
+              <input v-model.number="createForm.imap_port" type="number" min="1" max="65535" placeholder="993" :class="inputCls" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Encryption</label>
+              <select v-model="createForm.imap_encryption" :class="selectCls">
+                <option value="ssl">SSL (port 993)</option>
+                <option value="tls">TLS/STARTTLS (port 143)</option>
+                <option value="none">None (port 143)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Username</label>
+              <input v-model="createForm.imap_username" type="text" placeholder="support@yourdomain.com" :class="inputCls" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Password</label>
+              <input v-model="createForm.imap_password" type="password" placeholder="••••••••" :class="inputCls" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Mailbox / Folder</label>
+              <input v-model="createForm.imap_mailbox" type="text" placeholder="INBOX" :class="inputCls" />
+            </div>
+          </div>
         </div>
 
         <div class="flex gap-2 pt-1">
@@ -270,6 +312,41 @@ const selectCls = inputCls
             </template>
           </div>
 
+          <!-- IMAP Polling -->
+          <div class="border-t border-gray-100 pt-4 space-y-3">
+            <p class="text-sm font-medium text-gray-700">IMAP Polling <span class="text-xs font-normal text-gray-400 ml-1">— leave host blank to disable</span></p>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">IMAP Host</label>
+                <input v-model="editForm.imap_host" type="text" placeholder="mail.yourdomain.com" :class="inputCls" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Port</label>
+                <input v-model.number="editForm.imap_port" type="number" min="1" max="65535" :class="inputCls" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Encryption</label>
+                <select v-model="editForm.imap_encryption" :class="selectCls">
+                  <option value="ssl">SSL (port 993)</option>
+                  <option value="tls">TLS/STARTTLS (port 143)</option>
+                  <option value="none">None (port 143)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Username</label>
+                <input v-model="editForm.imap_username" type="text" :class="inputCls" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Password <span class="text-gray-400 font-normal">(leave blank to keep current)</span></label>
+                <input v-model="editForm.imap_password" type="password" placeholder="••••••••" :class="inputCls" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Mailbox / Folder</label>
+                <input v-model="editForm.imap_mailbox" type="text" :class="inputCls" />
+              </div>
+            </div>
+          </div>
+
           <div class="flex gap-2 pt-1">
             <button type="submit" :disabled="editForm.processing"
               class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
@@ -297,12 +374,21 @@ const selectCls = inputCls
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
                 Inactive
               </span>
+              <span v-if="pipe.imap_host"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700">
+                IMAP
+              </span>
             </div>
 
             <div class="mt-1.5 text-xs text-gray-500 space-y-0.5">
               <div v-if="pipe.email_address">📬 {{ pipe.email_address }}</div>
               <div>📂 {{ pipe.department?.name ?? 'No department assigned' }}</div>
               <div v-if="pipe.assignee">👤 Auto-assigns to {{ pipe.assignee.name }}</div>
+              <div v-if="pipe.imap_host" class="text-teal-600">
+                🔄 Polling {{ pipe.imap_username }} @ {{ pipe.imap_host }}:{{ pipe.imap_port }}
+                ({{ pipe.imap_encryption?.toUpperCase() }}) / {{ pipe.imap_mailbox }}
+                <template v-if="pipe.imap_last_checked_at"> — last checked {{ new Date(pipe.imap_last_checked_at).toLocaleString() }}</template>
+              </div>
             </div>
 
             <div class="flex gap-3 mt-2 flex-wrap text-xs">
@@ -370,15 +456,19 @@ const selectCls = inputCls
       <p class="text-sm font-semibold">Setup Guide</p>
       <div class="text-xs text-blue-700 space-y-3">
         <div>
-          <strong>Option 1 — .forward file</strong> (cPanel / Exim):<br>
+          <strong>Option 1 — IMAP Polling</strong> (recommended for shared hosting):<br>
+          Enter your mailbox credentials in the IMAP Polling section above. Strata will check for new messages every 5 minutes and automatically create tickets. No mail server configuration required.
+        </div>
+        <div>
+          <strong>Option 2 — .forward file</strong> (cPanel / Exim):<br>
           In cPanel → Email Accounts, set a forwarder for the address to pipe to the artisan command. The .forward file contents should be the rule shown above (replace <code class="bg-white/70 px-1 rounded">/path/to/artisan</code> with your installation path).
         </div>
         <div>
-          <strong>Option 2 — HTTP webhook</strong> (SendGrid Inbound Parse, Mailgun Routes, Postmark Inbound):<br>
+          <strong>Option 3 — HTTP webhook</strong> (SendGrid Inbound Parse, Mailgun Routes, Postmark Inbound):<br>
           Point the inbound parse webhook to the <strong>HTTP Endpoint</strong> URL above. The raw RFC 2822 message must be sent as the POST body.
         </div>
         <div>
-          <strong>Option 3 — procmail</strong>:<br>
+          <strong>Option 4 — procmail</strong>:<br>
           Add to <code class="bg-white/70 px-1 rounded">~/.procmailrc</code>:
           <pre class="mt-1 bg-white/60 rounded px-2 py-1.5 font-mono text-xs whitespace-pre">:0
 | php /path/to/artisan mail:pipe YOUR_TOKEN</pre>

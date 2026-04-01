@@ -51,7 +51,7 @@ class CpanelProvisioner implements ProvisionerDriver
             $params['plan'] = $plan;
         }
 
-        $response = Http::withToken($this->token)
+        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
             ->withOptions(['verify' => $this->module->ssl])
             ->timeout(30)
             ->get("{$this->baseUrl}/createacct", $params);
@@ -77,7 +77,7 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function suspendAccount(string $username, string $reason = 'Billing'): void
     {
-        $response = Http::withToken($this->token)
+        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
             ->withOptions(['verify' => $this->module->ssl])
             ->timeout(15)
             ->get("{$this->baseUrl}/suspendacct", [
@@ -92,7 +92,7 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function unsuspendAccount(string $username): void
     {
-        $response = Http::withToken($this->token)
+        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
             ->withOptions(['verify' => $this->module->ssl])
             ->timeout(15)
             ->get("{$this->baseUrl}/unsuspendacct", ['user' => $username]);
@@ -104,13 +104,92 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function terminateAccount(string $username): void
     {
-        $response = Http::withToken($this->token)
+        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
             ->withOptions(['verify' => $this->module->ssl])
             ->timeout(15)
             ->get("{$this->baseUrl}/removeacct", ['user' => $username]);
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM terminate failed: {$response->status()}");
+        }
+    }
+
+    public function listAccounts(): array
+    {
+        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
+            ->withOptions(['verify' => $this->module->ssl])
+            ->timeout(30)
+            ->get("{$this->baseUrl}/listaccts", ['want' => 'user,domain,email,plan,suspended,diskused']);
+
+        if (! $response->successful()) {
+            throw new RuntimeException("WHM listaccts failed: {$response->status()}");
+        }
+
+        $accounts = $response->json('data.acct') ?? [];
+
+        return array_map(fn ($a) => [
+            'username'  => $a['user'] ?? '',
+            'domain'    => $a['domain'] ?? '',
+            'email'     => $a['email'] ?? '',
+            'plan'      => $a['plan'] ?? '',
+            'suspended' => (bool) ($a['suspended'] ?? false),
+        ], $accounts);
+    }
+
+    public function listPackages(): array
+    {
+        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
+            ->withOptions(['verify' => $this->module->ssl])
+            ->timeout(30)
+            ->get("{$this->baseUrl}/listpkgs");
+
+        if (! $response->successful()) {
+            throw new RuntimeException("WHM listpkgs failed: {$response->status()}");
+        }
+
+        $packages = $response->json('data.pkg') ?? [];
+
+        return array_map(fn ($p) => [
+            'name'         => $p['name'] ?? '',
+            'disk_mb'      => (int) ($p['QUOTA'] ?? 0),
+            'bandwidth_mb' => (int) ($p['BWLIMIT'] ?? 0),
+        ], $packages);
+    }
+
+    public function packageExists(string $name): bool
+    {
+        $packages = $this->listPackages();
+
+        return collect($packages)->contains(fn ($p) => $p['name'] === $name);
+    }
+
+    public function createPackage(string $name, array $config = []): void
+    {
+        $params = [
+            'name'     => $name,
+            'QUOTA'    => (int) ($config['disk_mb'] ?? 1024),
+            'BWLIMIT'  => (int) ($config['bandwidth_mb'] ?? 10240),
+            'MAXPOP'   => 'unlimited',
+            'MAXFTP'   => 'unlimited',
+            'MAXSQL'   => 'unlimited',
+            'MAXSUB'   => 'unlimited',
+            'MAXPARK'  => 'unlimited',
+            'MAXADDON' => 'unlimited',
+        ];
+
+        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
+            ->withOptions(['verify' => $this->module->ssl])
+            ->timeout(20)
+            ->get("{$this->baseUrl}/addpkg", $params);
+
+        if (! $response->successful()) {
+            throw new RuntimeException("WHM addpkg HTTP error: {$response->status()}");
+        }
+
+        $result = $response->json('result.0') ?? $response->json('result') ?? [];
+
+        if (($result['status'] ?? 0) != 1) {
+            throw new RuntimeException('WHM addpkg failed: '.($result['statusmsg'] ?? 'Unknown error'));
         }
     }
 

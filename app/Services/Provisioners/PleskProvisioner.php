@@ -43,26 +43,19 @@ class PleskProvisioner implements ProvisionerDriver
         $username = $this->generateUsername($domain);
         $password = Str::password(16, symbols: false);
 
-        // Create hosting subscription
-        $payload = [
-            'name' => $domain,
-            'ownerLogin' => 'admin',
+        // Step 1: Create the webspace (subscription)
+        $webspacePayload = [
+            'name'        => $domain,
+            'ownerLogin'  => 'admin',
             'hostingType' => 'virtual',
-            'subscriptionId' => null,
             'ipAddresses' => [],
         ];
 
         if ($plan) {
-            $payload['planName'] = $plan;
+            $webspacePayload['planName'] = $plan;
         }
 
-        // Step 1: Create the customer / webspace
-        $webspaceResp = $this->request('POST', '/webspaces', [
-            'name' => $domain,
-            'ownerLogin' => 'admin',
-            'hostingType' => 'virtual',
-            'ip_addresses' => [],
-        ]);
+        $webspaceResp = $this->request('POST', '/webspaces', $webspacePayload);
 
         $subscriptionId = $webspaceResp['id'] ?? null;
         if (! $subscriptionId) {
@@ -123,14 +116,71 @@ class PleskProvisioner implements ProvisionerDriver
         }
     }
 
+    public function listAccounts(): array
+    {
+        $webspaces = $this->request('GET', '/webspaces') ?? [];
+        $clients   = $this->request('GET', '/clients') ?? [];
+
+        // Build a quick lookup: login → email
+        $emailByLogin = [];
+        foreach ($clients as $client) {
+            $emailByLogin[$client['login'] ?? ''] = $client['email'] ?? '';
+        }
+
+        return array_map(fn ($ws) => [
+            'username'  => $ws['ownerClient']['login'] ?? $ws['name'] ?? '',
+            'domain'    => $ws['name'] ?? '',
+            'email'     => $emailByLogin[$ws['ownerClient']['login'] ?? ''] ?? '',
+            'plan'      => $ws['planName'] ?? '',
+            'suspended' => (bool) ($ws['is_disabled'] ?? false),
+        ], $webspaces);
+    }
+
+    public function listPackages(): array
+    {
+        $plans = $this->request('GET', '/service-plans') ?? [];
+
+        return array_map(fn ($p) => [
+            'name'         => $p['name'] ?? '',
+            'disk_mb'      => 0,
+            'bandwidth_mb' => 0,
+        ], $plans);
+    }
+
+    public function packageExists(string $name): bool
+    {
+        $packages = $this->listPackages();
+
+        return collect($packages)->contains(fn ($p) => $p['name'] === $name);
+    }
+
+    public function createPackage(string $name, array $config = []): void
+    {
+        $diskBytes      = (int) ($config['disk_mb'] ?? 1024) * 1024 * 1024;
+        $bandwidthBytes = (int) ($config['bandwidth_mb'] ?? 10240) * 1024 * 1024;
+
+        $this->request('POST', '/service-plans', [
+            'name'    => $name,
+            'limits'  => [
+                'disk_space'      => ['value' => $diskBytes,      'unit' => 'bytes'],
+                'traffic'         => ['value' => $bandwidthBytes, 'unit' => 'bytes'],
+                'max_subdomains'  => ['value' => -1],
+                'max_dom_aliases' => ['value' => -1],
+                'max_databases'   => ['value' => -1],
+                'max_mailboxes'   => ['value' => -1],
+                'max_ftp_users'   => ['value' => -1],
+            ],
+        ]);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     private function request(string $method, string $path, array $body = []): mixed
     {
         $req = Http::withHeaders([
-            'Authorization' => 'Basic '.base64_encode('admin:'.$this->auth),
+            'X-API-Key'    => $this->auth,
             'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
+            'Accept'       => 'application/json',
         ])->withOptions(['verify' => $this->module->ssl]);
 
         $response = match (strtoupper($method)) {
@@ -153,7 +203,7 @@ class PleskProvisioner implements ProvisionerDriver
     {
         $webspaces = $this->request('GET', '/webspaces') ?? [];
         foreach ($webspaces as $ws) {
-            if (($ws['name'] ?? '') === $username || ($ws['ownerLogin'] ?? '') === $username) {
+            if (($ws['name'] ?? '') === $username || ($ws['ownerClient']['login'] ?? '') === $username) {
                 return $ws;
             }
         }

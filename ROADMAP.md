@@ -1,5 +1,7 @@
 # Strata — Product Roadmap
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
+
 **Strata Service Billing and Support Platform** is a self-hosted billing, client management, and support platform built for web hosting providers. It ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathjan0397/strata/releases) and installs entirely through a browser wizard — no CLI, Composer, or Node required on the target server.
 
 **Release naming convention:** Releases are named by milestone (`1.0-Beta`, `1.0-Beta.2`, `1.0`, `1.1`, etc.). There were no public v0.x or v2.x releases; those were internal session tracking numbers. The product shipped publicly as `1.0-Beta` in March 2026.

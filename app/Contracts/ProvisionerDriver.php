@@ -22,4 +22,30 @@ interface ProvisionerDriver
 
     /** Driver slug — matches Module::type. */
     public function slug(): string;
+
+    /**
+     * List all hosting accounts on the server.
+     *
+     * @return array<int, array{username: string, domain: string, email: string, plan: string, suspended: bool}>
+     */
+    public function listAccounts(): array;
+
+    /**
+     * List all packages/plans defined on the server.
+     *
+     * @return array<int, array{name: string, disk_mb: int, bandwidth_mb: int}>
+     */
+    public function listPackages(): array;
+
+    /**
+     * Return true if a package with this name already exists on the server.
+     */
+    public function packageExists(string $name): bool;
+
+    /**
+     * Create a hosting package/plan on the server.
+     *
+     * @param  array{disk_mb?: int, bandwidth_mb?: int}  $config
+     */
+    public function createPackage(string $name, array $config = []): void;
 }

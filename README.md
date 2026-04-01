@@ -1,5 +1,7 @@
 # Strata Service Billing and Support Platform
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
+
 A self-hosted billing, client management, and support platform built for web hosting providers.
 
 ---

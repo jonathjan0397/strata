@@ -40,6 +40,8 @@ defineProps({ modules: Array })
               <span :class="m.active ? 'text-green-600' : 'text-gray-400'" class="text-xs font-medium">{{ m.active ? 'Active' : 'Inactive' }}</span>
             </td>
             <td class="px-4 py-3 text-right">
+              <Link :href="route('admin.modules.packages.sync', m.id)" class="text-xs text-violet-600 hover:underline mr-3">Sync Packages</Link>
+              <Link :href="route('admin.modules.import', m.id)" class="text-xs text-teal-600 hover:underline mr-3">Import Accounts</Link>
               <Link :href="route('admin.modules.edit', m.id)" class="text-xs text-indigo-600 hover:underline mr-3">Edit</Link>
               <button class="text-xs text-red-500 hover:text-red-700"
                 @click="router.delete(route('admin.modules.destroy', m.id))">Remove</button>

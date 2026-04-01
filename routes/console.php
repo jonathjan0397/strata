@@ -80,6 +80,12 @@ Schedule::command('billing:process-cancellations')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Poll IMAP mailboxes and pipe new messages into the ticket system — every 5 minutes
+Schedule::command('mail:fetch')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // Platform telemetry / license sync — every 12 hours at 04:15 and 16:15
 Schedule::command('strata:sync')
     ->twiceDaily(4, 16)

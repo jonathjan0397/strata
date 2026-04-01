@@ -1,5 +1,7 @@
 # Strata Service Billing and Support Platform — Installation Guide
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
+
 > **Beta-1** — Test in a non-production environment.
 > Report bugs and issues at: https://github.com/jonathjan0397/strata/issues
 

@@ -116,6 +116,79 @@ class DirectAdminProvisioner implements ProvisionerDriver
         }
     }
 
+    public function listAccounts(): array
+    {
+        // Returns a URL-encoded list: list[]=user1&list[]=user2
+        $response = $this->request('GET', '/CMD_API_SHOW_ALL_USERS');
+        $usernames = $response['list'] ?? [];
+
+        if (is_string($usernames)) {
+            $usernames = [$usernames];
+        }
+
+        $accounts = [];
+        foreach ($usernames as $username) {
+            try {
+                $details = $this->request('GET', '/CMD_API_SHOW_USER', ['user' => $username]);
+                $accounts[] = [
+                    'username'  => $username,
+                    'domain'    => $details['domain'] ?? '',
+                    'email'     => $details['email'] ?? '',
+                    'plan'      => $details['package'] ?? '',
+                    'suspended' => ($details['suspended'] ?? 'no') === 'yes',
+                ];
+            } catch (\Throwable) {
+                // Skip accounts we can't fetch details for
+            }
+        }
+
+        return $accounts;
+    }
+
+    public function listPackages(): array
+    {
+        $response = $this->request('GET', '/CMD_API_PACKAGES_USER');
+        $names = $response['list'] ?? [];
+
+        if (is_string($names)) {
+            $names = [$names];
+        }
+
+        return array_map(fn ($name) => [
+            'name'         => $name,
+            'disk_mb'      => 0,
+            'bandwidth_mb' => 0,
+        ], array_filter($names));
+    }
+
+    public function packageExists(string $name): bool
+    {
+        $packages = $this->listPackages();
+
+        return collect($packages)->contains(fn ($p) => $p['name'] === $name);
+    }
+
+    public function createPackage(string $name, array $config = []): void
+    {
+        $response = $this->request('POST', '/CMD_API_MANAGE_USER_PACKAGES', [
+            'action'      => 'add',
+            'name'        => $name,
+            'quota'       => (int) ($config['disk_mb'] ?? 1024),
+            'bandwidth'   => (int) ($config['bandwidth_mb'] ?? 10240),
+            'domainptr'   => 'unlimited',
+            'mysql'       => 'unlimited',
+            'nemailf'     => 'unlimited',
+            'nemailml'    => 'unlimited',
+            'nemailr'     => 'unlimited',
+            'ftp'         => 'unlimited',
+            'aftp'        => 'OFF',
+        ]);
+
+        if (isset($response['error']) && $response['error'] !== '0') {
+            throw new RuntimeException('DirectAdmin addpkg failed: '.($response['details'] ?? $response['text'] ?? 'Unknown'));
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     private function request(string $method, string $path, array $params = []): array

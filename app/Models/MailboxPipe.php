@@ -14,17 +14,28 @@ class MailboxPipe extends Model
         'create_client_if_not_exists', 'strip_signature',
         'auto_reply_enabled', 'auto_reply_subject', 'auto_reply_body',
         'reject_unknown_senders', 'is_active',
+        'imap_host', 'imap_port', 'imap_username', 'imap_password',
+        'imap_encryption', 'imap_mailbox', 'imap_last_checked_at',
     ];
 
     protected function casts(): array
     {
         return [
             'create_client_if_not_exists' => 'boolean',
-            'strip_signature' => 'boolean',
-            'auto_reply_enabled' => 'boolean',
-            'reject_unknown_senders' => 'boolean',
-            'is_active' => 'boolean',
+            'strip_signature'             => 'boolean',
+            'auto_reply_enabled'          => 'boolean',
+            'reject_unknown_senders'      => 'boolean',
+            'is_active'                   => 'boolean',
+            'imap_port'                   => 'integer',
+            'imap_password'               => 'encrypted',
+            'imap_last_checked_at'        => 'datetime',
         ];
+    }
+
+    /** True if this pipe has IMAP polling configured. */
+    public function hasImapConfig(): bool
+    {
+        return (bool) $this->imap_host && (bool) $this->imap_username && (bool) $this->imap_password;
     }
 
     public function department(): BelongsTo

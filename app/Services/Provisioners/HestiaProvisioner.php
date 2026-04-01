@@ -49,26 +49,22 @@ class HestiaProvisioner implements ProvisionerDriver
         $username = $this->generateUsername($domain);
         $password = Str::password(16, symbols: false);
 
-        $params = [
-            'user' => $username,
-            'password' => $password,
-            'email' => "admin@{$domain}",
-            'package' => $plan ?? 'default',
-            'fname' => $username,
-            'lname' => 'User',
-        ];
-
-        $result = $this->call('add', 'user', $params);
+        // v-add-user USER PASSWORD EMAIL [PACKAGE] [FNAME] [LNAME]
+        $result = $this->call('v-add-user', [
+            $username,
+            $password,
+            "admin@{$domain}",
+            $plan ?? 'default',
+            $username,
+            'User',
+        ]);
 
         if (($result['status'] ?? '') !== 'ok') {
             throw new RuntimeException('HestiaCP account creation failed: '.($result['error'] ?? 'Unknown error'));
         }
 
-        // Add the domain to the new user
-        $this->call('add', 'web', [
-            'user' => $username,
-            'domain' => $domain,
-        ]);
+        // v-add-web-domain USER DOMAIN
+        $this->call('v-add-web-domain', [$username, $domain]);
 
         return [
             'username' => $username,
@@ -79,7 +75,8 @@ class HestiaProvisioner implements ProvisionerDriver
 
     public function suspendAccount(string $username, string $reason = 'Billing'): void
     {
-        $result = $this->call('suspend', 'user', ['user' => $username]);
+        // v-suspend-user USER
+        $result = $this->call('v-suspend-user', [$username]);
 
         if (isset($result['status']) && $result['status'] !== 'ok') {
             throw new RuntimeException('HestiaCP suspend failed: '.($result['error'] ?? 'Unknown'));
@@ -88,7 +85,8 @@ class HestiaProvisioner implements ProvisionerDriver
 
     public function unsuspendAccount(string $username): void
     {
-        $result = $this->call('unsuspend', 'user', ['user' => $username]);
+        // v-unsuspend-user USER
+        $result = $this->call('v-unsuspend-user', [$username]);
 
         if (isset($result['status']) && $result['status'] !== 'ok') {
             throw new RuntimeException('HestiaCP unsuspend failed: '.($result['error'] ?? 'Unknown'));
@@ -97,37 +95,142 @@ class HestiaProvisioner implements ProvisionerDriver
 
     public function terminateAccount(string $username): void
     {
-        $result = $this->call('delete', 'user', [
-            'user' => $username,
-            'purge' => 'yes',
-        ]);
+        // v-delete-user USER
+        $result = $this->call('v-delete-user', [$username]);
 
         if (isset($result['status']) && $result['status'] !== 'ok') {
             throw new RuntimeException('HestiaCP delete failed: '.($result['error'] ?? 'Unknown'));
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private function call(string $action, string $object, array $params = []): array
+    public function listAccounts(): array
     {
         $response = Http::asForm()
             ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(20)
-            ->post("{$this->baseUrl}/", array_merge([
-                'user' => $this->adminUser,
-                'password' => $this->apiKey,
-                'returncode' => 'yes',
-                'cmd' => "v-{$action}-{$object}",
-            ], $params));
+            ->timeout(30)
+            ->post("{$this->baseUrl}/", [
+                'user'       => $this->adminUser,
+                'password'   => $this->apiKey,
+                'returncode' => 'no',
+                'cmd'        => 'v-list-users',
+                'arg1'       => 'json',  // positional arg: format
+            ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException("HestiaCP HTTP error [{$action}-{$object}]: {$response->status()}");
+            throw new RuntimeException("HestiaCP v-list-users failed: {$response->status()}");
+        }
+
+        $users = $response->json() ?? [];
+        $accounts = [];
+
+        foreach ($users as $username => $info) {
+            if (! is_array($info)) {
+                continue;
+            }
+            $accounts[] = [
+                'username'  => $username,
+                'domain'    => $info['DOMAIN'] ?? '',
+                'email'     => $info['EMAIL'] ?? '',
+                'plan'      => $info['PACKAGE'] ?? '',
+                'suspended' => strtoupper($info['SUSPENDED'] ?? 'NO') === 'YES',
+            ];
+        }
+
+        return $accounts;
+    }
+
+    public function listPackages(): array
+    {
+        $response = Http::asForm()
+            ->withOptions(['verify' => $this->module->ssl])
+            ->timeout(30)
+            ->post("{$this->baseUrl}/", [
+                'user'       => $this->adminUser,
+                'password'   => $this->apiKey,
+                'returncode' => 'no',
+                'cmd'        => 'v-list-packages',
+                'arg1'       => 'json',
+            ]);
+
+        if (! $response->successful()) {
+            throw new RuntimeException("HestiaCP v-list-packages failed: {$response->status()}");
+        }
+
+        $packages = $response->json() ?? [];
+        $result = [];
+
+        foreach ($packages as $name => $info) {
+            if (! is_array($info)) {
+                continue;
+            }
+            $result[] = [
+                'name'         => $name,
+                'disk_mb'      => (int) ($info['DISK'] ?? 0),
+                'bandwidth_mb' => (int) ($info['BANDWIDTH'] ?? 0),
+            ];
+        }
+
+        return $result;
+    }
+
+    public function packageExists(string $name): bool
+    {
+        $packages = $this->listPackages();
+
+        return collect($packages)->contains(fn ($p) => $p['name'] === $name);
+    }
+
+    public function createPackage(string $name, array $config = []): void
+    {
+        $disk      = (int) ($config['disk_mb'] ?? 1024);
+        $bandwidth = (int) ($config['bandwidth_mb'] ?? 10240);
+
+        // v-add-package NAME [WEB_TEMPLATE] [DNS_TEMPLATE] [MAIL_TEMPLATE] [DATABASES] [CRONTABS] [BACKUPS] [BANDWIDTH] [DISK]
+        $result = $this->call('v-add-package', [
+            $name,
+            'default',   // web template
+            'default',   // dns template
+            'default',   // mail template
+            'unlimited', // databases
+            'unlimited', // crontabs
+            'unlimited', // backups
+            $bandwidth,
+            $disk,
+        ]);
+
+        if (($result['status'] ?? '') !== 'ok') {
+            throw new RuntimeException('HestiaCP v-add-package failed: '.($result['error'] ?? 'Unknown'));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Call a HestiaCP API command. $args are positional: arg1, arg2, ... */
+    private function call(string $cmd, array $args = []): array
+    {
+        $payload = [
+            'user'       => $this->adminUser,
+            'password'   => $this->apiKey,
+            'returncode' => 'yes',
+            'cmd'        => $cmd,
+        ];
+
+        foreach ($args as $i => $val) {
+            $payload['arg'.($i + 1)] = $val;
+        }
+
+        $response = Http::asForm()
+            ->withOptions(['verify' => $this->module->ssl])
+            ->timeout(20)
+            ->post("{$this->baseUrl}/", $payload);
+
+        if (! $response->successful()) {
+            throw new RuntimeException("HestiaCP HTTP error [{$cmd}]: {$response->status()}");
         }
 
         $body = trim($response->body());
 
-        // HestiaCP returns '0' for success or an error code integer
+        // HestiaCP returns '0' for success or a non-zero integer error code
         if (is_numeric($body)) {
             return ['status' => $body === '0' ? 'ok' : 'error', 'error' => $body];
         }

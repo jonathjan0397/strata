@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Mail\TemplateMailable;
 use App\Models\Domain;
 use App\Models\Invoice;
+use App\Models\Module;
 use App\Models\OrderItem;
 use App\Models\Service;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 
 class OrderProvisioner
 {
@@ -30,11 +32,38 @@ class OrderProvisioner
 
         // Attempt auto-provisioning if a supported module is configured
         if ($product->module && in_array($product->module, ProvisionerService::supportedTypes())) {
-            $module = ProvisionerService::findAvailableModule($product->module);
+            $pinnedId = $product->module_config['module_id'] ?? null;
+
+            if ($pinnedId) {
+                // Product is pinned to a specific server — use it or fail clearly
+                $module = Module::where('id', $pinnedId)->where('active', true)->first();
+
+                if (! $module) {
+                    throw new RuntimeException("Provisioning failed: the server assigned to this product (ID: {$pinnedId}) is inactive or has been removed.");
+                }
+
+                if (! $module->hasCapacity()) {
+                    throw new RuntimeException("Provisioning failed: server '{$module->name}' has reached its account limit. Update the product to use a different server or increase the limit.");
+                }
+            } else {
+                // Auto-select any available server of this type
+                $module = ProvisionerService::findAvailableModule($product->module);
+            }
 
             if ($module) {
                 $driver = ProvisionerService::forModule($module);
-                $plan = $product->module_config['plan'] ?? null;
+                $plan   = $product->module_config['plan'] ?? null;
+
+                // Auto-create the package on the panel if it doesn't already exist
+                if ($plan && ($product->module_config['auto_create_package'] ?? false)) {
+                    if (! $driver->packageExists($plan)) {
+                        $driver->createPackage($plan, [
+                            'disk_mb'      => (int) ($product->module_config['disk_mb']      ?? 1024),
+                            'bandwidth_mb' => (int) ($product->module_config['bandwidth_mb'] ?? 10240),
+                        ]);
+                    }
+                }
+
                 $result = $driver->createAccount($service->domain ?? '', $plan);
 
                 $credentials = [

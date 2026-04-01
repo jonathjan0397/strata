@@ -6,6 +6,19 @@ defineOptions({ layout: AppLayout })
 
 const props = defineProps({ module: { type: Object, default: null } })
 
+const PANEL_TYPES = [
+  { value: 'cpanel',      label: 'cPanel (WHM)',    port: 2087, note: 'WHM JSON API' },
+  { value: 'plesk',       label: 'Plesk',           port: 8443, note: 'REST API v2' },
+  { value: 'directadmin', label: 'DirectAdmin',     port: 2222, note: 'HTTP API' },
+  { value: 'hestia',      label: 'HestiaCP',        port: 8083, note: 'REST API' },
+  { value: 'cwp',         label: 'CWP (Control Web Panel)', port: 2304, note: 'REST API' },
+  { value: 'vestacp',     label: 'VestaCP',         port: 8083, note: 'API (manual provisioning)' },
+  { value: 'cyberpanel',  label: 'CyberPanel',      port: 8090, note: 'API (manual provisioning)' },
+  { value: 'generic',     label: 'Generic / Other', port: 2087, note: 'Manual provisioning only' },
+]
+
+const DEFAULT_PORTS = Object.fromEntries(PANEL_TYPES.map(t => [t.value, t.port]))
+
 const form = useForm({
   name:         props.module?.name         ?? '',
   type:         props.module?.type         ?? 'cpanel',
@@ -17,6 +30,13 @@ const form = useForm({
   active:       props.module?.active       ?? true,
   max_accounts: props.module?.max_accounts ?? '',
 })
+
+function onTypeChange() {
+  // Auto-fill the default port when type changes (only if not editing an existing server)
+  if (!props.module) {
+    form.port = DEFAULT_PORTS[form.type] ?? 2087
+  }
+}
 
 function submit() {
   if (props.module) {
@@ -44,8 +64,8 @@ function submit() {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <select v-model="form.type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option v-for="t in ['cpanel','plesk','directadmin','vestacp','cyberpanel','generic']" :key="t" :value="t" class="uppercase">{{ t }}</option>
+            <select v-model="form.type" @change="onTypeChange" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option v-for="t in PANEL_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
             </select>
           </div>
           <div>

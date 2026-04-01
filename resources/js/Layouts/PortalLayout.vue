@@ -168,6 +168,8 @@ const nav = computed(() => [
           <div class="text-right">
             <p class="text-white/30 text-xs">&copy; {{ new Date().getFullYear() }} {{ siteName }}. All rights reserved.</p>
             <p class="text-white/20 text-xs mt-0.5">Strata Service Billing and Support Platform &copy; 2026 Jonathan R. Covington</p>
+            <a href="https://buymeacoffee.com/jonathan0397" target="_blank" rel="noopener noreferrer"
+              class="text-white/20 text-xs mt-0.5 hover:text-white/40 transition-colors inline-block">☕ Buy me a coffee</a>
           </div>
         </div>
       </div>

@@ -9,6 +9,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - **Install telemetry** — `app/Services/StrataLicense.php` static service; `app/Console/Commands/StrataSync.php` daily cron (`strata:sync` at 04:15); `config/strata.php` (`STRATA_LICENSE_SERVER_URL`, `STRATA_LICENSE_SECRET`); `install_token` UUID written to `installed.lock` at install time (backfilled on upgrade); HMAC-SHA256 response verification; 25-hour cache with graceful all-pass degradation on any failure.
+- **CWP (Control Web Panel) provisioner** — full `CwpProvisioner` driver for the CWP REST API (`/v1/`); implements create/suspend/unsuspend/terminate/listAccounts/listPackages; API key sent as `key` param in every request; added to `ProvisionerService` driver map, `ModuleController` validation, and module type enum migration `2026_04_01_000011`.
+- **HestiaCP and CWP added to modules type enum** — migration `2026_04_01_000011_add_hestia_cwp_to_modules_type_enum.php` adds `hestia` and `cwp` to the `modules.type` enum (both existed as provisioner drivers but were missing from the DB constraint).
+- **Server account import wizard** — `ServerImportController` with preview (fetches accounts+packages from panel, auto-matches plans to products, flags already-imported) and store (creates clients, services, and placeholder products); multi-step `Import.vue` wizard with package mapping table and per-account checkboxes; "Import Accounts" link on Modules index.
+- **Product provisioning configuration** — product form now selects panel type, specific server (with live account counts), and package/plan (loaded live from the server API); `OrderProvisioner` respects a pinned `module_id` in `module_config` and throws clearly if the pinned server is full/removed rather than silently falling back.
+- **Package sync** — `PackageSyncController` with `show` (lists all panel packages, annotates each with matching Strata product) and `store` (imports selected packages as hidden/$0 products); "Sync Packages" link on Modules index; `PackageSync.vue` page with inline disk/bandwidth editing and "Create on Panel" capability.
+- **Auto-create packages at provisioning time** — `ProvisionerDriver` interface extended with `packageExists()` and `createPackage()`; all five provisioners (cPanel, DirectAdmin, Plesk, HestiaCP, CWP) implement both; `OrderProvisioner` calls `createPackage()` before `createAccount()` when `module_config.auto_create_package = true` and the package doesn't already exist on the server; product form exposes disk/bandwidth/auto-create fields under the package selector.
+- **IMAP polling for mail pipes** — `FetchMailboxes` artisan command (`mail:fetch`) polls active IMAP-configured mail pipes every 5 minutes via the scheduler; connection string built from `imap_host`, `imap_port`, `imap_encryption`; fetches UNSEEN messages via `imap_search()`, processes each with `EmailPipeProcessor`, marks Seen, updates `imap_last_checked_at`; IMAP fields added to `MailboxPipeController::update()` validation; migration `2026_04_01_000010_add_imap_fields_to_mailbox_pipes`.
+- **Buy Me a Coffee links** — inconspicuous ☕ links added to admin layout footer, portal layout footer, strata-license app blade layout, and mailframe sidebar; shields.io badge added to the top of all public documentation files (README, ROADMAP, FEATURES, install guide, mailframe docs, strata-panel docs).
+
+### Fixed
+- **cPanel auth header** — all WHM JSON API calls were using `Authorization: Bearer <token>` (Laravel `withToken()`) instead of the documented `Authorization: whm <username>:<token>` format; would have caused 401 on every cPanel operation.
+- **HestiaCP command parameter format** — all CRUD operations were passing named key-value params (`user=`, `password=`, etc.) instead of positional `arg1=`, `arg2=`, ... as the HestiaCP REST API requires; affected createAccount, suspendAccount, unsuspendAccount, terminateAccount.
+- **HestiaCP wrong command** — `v-add-web` does not exist; correct command is `v-add-web-domain`; web domain was silently never added after user creation.
+- **cPanel QUOTA units** — `listPackages` was multiplying QUOTA (already in MB) by 1024, producing KB values; removed incorrect multiplier.
+- **CWP package units** — `listPackages` was multiplying diskspace/bandwidth (already in MB) by 1024; removed incorrect multiplier.
+- **HestiaCP package units** — `listPackages` was multiplying DISK/BANDWIDTH (already in MB) by 1024; removed incorrect multiplier.
+- **Plesk auth header** — was sending `Authorization: Basic base64(admin:<key>)` instead of the documented `X-API-Key: <key>` header for Plesk REST API v2.
+- **Plesk `ownerLogin` field** — `listAccounts` and `findSubscriptionByUsername` referenced flat `ownerLogin` field; correct Plesk REST API v2 structure is nested `ownerClient.login`.
+- **Plesk dead `$payload` variable** — `createAccount` built a `$payload` array then discarded it, sending a separate hardcoded array to the webspaces endpoint; consolidated into a single correct payload that respects the `$plan` parameter.
 
 ---
 

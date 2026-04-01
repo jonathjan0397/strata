@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Module;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,9 +22,20 @@ class ProductController extends Controller
         ]);
     }
 
+    private function modules(): array
+    {
+        return Module::where('active', true)
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'hostname', 'port', 'current_accounts', 'max_accounts'])
+            ->toArray();
+    }
+
     public function create(): Response
     {
-        return Inertia::render('Admin/Products/Form');
+        return Inertia::render('Admin/Products/Form', [
+            'modules' => $this->modules(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -58,7 +70,10 @@ class ProductController extends Controller
 
     public function edit(Product $product): Response
     {
-        return Inertia::render('Admin/Products/Form', ['product' => $product]);
+        return Inertia::render('Admin/Products/Form', [
+            'product' => $product,
+            'modules' => $this->modules(),
+        ]);
     }
 
     public function update(Request $request, Product $product): RedirectResponse
