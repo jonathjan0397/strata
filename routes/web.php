@@ -344,6 +344,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('audit-log', [Admin\AuditLogController::class, 'index'])->name('audit-log.index');
 
+        // Active sessions
+        Route::get('active-sessions', [Admin\ActiveSessionsController::class, 'index'])->name('active-sessions.index');
+        Route::delete('active-sessions/{sessionId}', [Admin\ActiveSessionsController::class, 'destroy'])->name('active-sessions.destroy');
+        Route::delete('active-sessions/user/{userId}', [Admin\ActiveSessionsController::class, 'destroyUser'])->name('active-sessions.destroy-user');
+
         // Workflows (Premium)
         Route::middleware('require.feature:workflows')->group(function () {
             Route::get('workflows', [Admin\WorkflowController::class, 'index'])->name('workflows.index');
