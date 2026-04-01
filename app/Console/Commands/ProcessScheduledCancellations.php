@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Service;
 use App\Services\AuditLogger;
+use App\Services\OrderProvisioner;
 use App\Services\WorkflowEngine;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class ProcessScheduledCancellations extends Command
 {
@@ -30,11 +32,18 @@ class ProcessScheduledCancellations extends Command
         $count = 0;
 
         foreach ($services as $service) {
-            $service->update([
-                'status' => 'cancelled',
-                'termination_date' => now(),
-                'scheduled_cancel_at' => null,
-            ]);
+            try {
+                OrderProvisioner::terminate($service, 'Service cancelled at end of billing period');
+            } catch (\Throwable $e) {
+                Log::error("Failed to terminate service #{$service->id} on panel: ".$e->getMessage());
+                // Still cancel in DB so the service is not re-billed
+                $service->update([
+                    'status' => 'cancelled',
+                    'termination_date' => now(),
+                ]);
+            }
+
+            $service->update(['scheduled_cancel_at' => null]);
 
             AuditLogger::log('service.cancelled', $service, ['reason' => 'end_of_period']);
             WorkflowEngine::fire('service.cancelled', $service);

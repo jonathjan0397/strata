@@ -59,12 +59,15 @@
 - Billing cycles: monthly, quarterly, semi-annual, annual, biennial, triennial, one-time
 - **Auto-setup trigger** — `on_order`, `on_payment`, `manual`, `never`
 - **Trial period** — `trial_days` field; service activates immediately; invoice due at trial end
+- **Account options** — per-product provisioning flags: reseller account (cPanel/Plesk/DirectAdmin/CWP), SSL/Let's Encrypt on creation (with DNS-must-point warning), PHP version override
 
 ### Services
 - List and detail view
 - Admin actions: suspend, unsuspend, terminate, approve & provision
 - Approve / reject cancellation requests
 - **Cancellation type** — immediate or end-of-period; end-of-period sets `scheduled_cancel_at`
+- **Panel API on lifecycle events** — suspend, unsuspend, and terminate all call the configured panel API; gracefully skips if no module is set (manual provisioning)
+- **Customer notifications on lifecycle events** — suspend, reactivation, and termination each send the corresponding email template to the client
 - **Client upgrade/downgrade** — change plan within same product type; prorated invoice or credit applied automatically
 - **Trial badge** — "Free Trial Active" notice with expiry date on client service detail
 - Provisioning info (module, credentials) stored on service record
@@ -131,6 +134,7 @@
 ### Servers
 - cPanel/WHM, Plesk, DirectAdmin, HestiaCP, CWP server CRUD
 - Credentials and API endpoint stored per server
+- **Local/internal server access** — optional hostname and port fields for same-machine installs; uses local API address instead of public hostname when set
 
 ### Domains
 - List with search and status filter
@@ -174,7 +178,9 @@
 | `invoice.paid` | Invoice marked paid |
 | `invoice.overdue` | Overdue billing command |
 | `service.activated` | Provisioning runner (includes credential variables) |
-| `service.suspended` | Suspension command |
+| `service.suspended` | Suspension (admin action or billing:suspend-overdue) |
+| `service.reactivated` | Unsuspend admin action |
+| `service.terminated` | Terminate admin action or end-of-period cancellation |
 | `support.reply` | Admin/staff reply on ticket |
 | `support.opened` | New ticket submitted (admin notification) |
 | `support.closed` | Ticket auto-closed (client notification) |
@@ -252,6 +258,8 @@
 
 ### Maintenance
 - In-browser migration runner — runs `artisan migrate --force`
+- **Force Schema Repair** — verifies and creates 5 critical tables (`settings`, `modules`, `servers`, `mailbox_pipes`, `tld_pricing`) without running full migrations; safe to run on a live site
+- **Clear Bootstrap Cache** — removes compiled `config.php`, `routes.php`, and `services.php` from `bootstrap/cache`
 
 ---
 
@@ -388,8 +396,8 @@ Embed on any external website via `<div data-strata-widget="[type]"></div>`.
 |---------|----------|-------------|
 | `billing:generate-renewals` | Daily 08:00 | Creates renewal invoices for services due within 14 days (skips trial-active and end-of-period cancel services); also generates addon renewal invoices |
 | `billing:flag-overdue` | Daily 00:05 | Marks past-due unpaid invoices overdue; sends `invoice.overdue` email |
-| `billing:suspend-overdue` | Daily 01:00 | Suspends services overdue past 3-day grace; skips trial-active services; sends `service.suspended` email |
-| `billing:process-cancellations` | Daily 00:30 | Cancels services whose end-of-period `scheduled_cancel_at` date has been reached |
+| `billing:suspend-overdue` | Daily 01:00 | Suspends services overdue past 3-day grace; skips trial-active services; calls panel API + sends `service.suspended` email |
+| `billing:process-cancellations` | Daily 00:30 | Terminates services whose end-of-period `scheduled_cancel_at` date has been reached; calls panel API + fires `service.cancelled` workflow event |
 | `billing:send-reminders` | Daily 10:00 | Sends payment reminder emails per configurable day schedule |
 | `billing:apply-late-fees` | Daily 02:00 | Applies fixed/percent late fee to overdue invoices past threshold |
 | `billing:retry-payments` | Daily 11:00 | Retries failed Stripe auto-charges (dunning); tracks attempt count |
@@ -397,6 +405,7 @@ Embed on any external website via `<div data-strata-widget="[type]"></div>`.
 | `domains:renew-expiring` | Daily 09:00 | Auto-renews active domains expiring within 30 days |
 | `domains:send-reminders` | Daily 09:30 | Emails clients at 30, 14, 7 days before domain expiry |
 | `support:close-inactive` | Daily 03:00 | Auto-closes tickets with no activity past configurable threshold; sets `closed_at` |
+| `mail:fetch` | Every 5 min | Fetches new messages from IMAP mailbox pipes and creates support tickets; uses `withoutOverlapping` to prevent concurrent runs |
 
 ---
 

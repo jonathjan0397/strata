@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\TemplateMailable;
 use App\Models\Service;
 use App\Models\Setting;
+use App\Services\OrderProvisioner;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class SuspendOverdueServices extends Command
 {
@@ -32,15 +32,13 @@ class SuspendOverdueServices extends Command
             ->get();
 
         foreach ($services as $service) {
-            $service->update(['status' => 'suspended']);
-
-            Mail::to($service->user->email)->queue(new TemplateMailable('service.suspended', [
-                'name' => $service->user->name,
-                'app_name' => config('app.name'),
-                'service_name' => $service->product?->name ?? "Service #{$service->id}",
-                'domain' => $service->domain ?? '',
-                'invoices_url' => route('client.invoices.index'),
-            ]));
+            try {
+                OrderProvisioner::suspend($service, 'Payment overdue');
+            } catch (\Throwable $e) {
+                Log::error("Failed to suspend service #{$service->id} on panel: ".$e->getMessage());
+                // Still mark suspended in DB so billing flow continues
+                $service->update(['status' => 'suspended']);
+            }
 
             $count++;
             $this->line("Suspended service #{$service->id} ({$service->domain})");

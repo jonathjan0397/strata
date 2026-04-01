@@ -293,6 +293,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 $lines[] = '✓ mailbox_pipes IMAP columns ensured';
             } catch (\Throwable $e) { $lines[] = '✗ mailbox_pipes imap: '.$e->getMessage(); }
 
+            try {
+                // 5. tld_pricing table
+                DB::statement("CREATE TABLE IF NOT EXISTS `tld_pricing` (
+                    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    `tld` VARCHAR(32) NOT NULL,
+                    `register_cost` DECIMAL(10,4) NULL,
+                    `renew_cost` DECIMAL(10,4) NULL,
+                    `transfer_cost` DECIMAL(10,4) NULL,
+                    `markup_type` ENUM('fixed','percent') NOT NULL DEFAULT 'percent',
+                    `markup_value` DECIMAL(10,4) NOT NULL DEFAULT 0,
+                    `currency` VARCHAR(3) NOT NULL DEFAULT 'USD',
+                    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                    `last_synced_at` TIMESTAMP NULL,
+                    `created_at` TIMESTAMP NULL,
+                    `updated_at` TIMESTAMP NULL,
+                    UNIQUE KEY `tld_pricing_tld_unique` (`tld`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                $lines[] = '✓ tld_pricing table ensured';
+            } catch (\Throwable $e) { $lines[] = '✗ tld_pricing: '.$e->getMessage(); }
+
             $success = ! str_contains(implode("\n", $lines), '✗');
             return response()->json(['success' => $success, 'output' => implode("\n", $lines)]);
         })->name('maintenance.repair-schema');

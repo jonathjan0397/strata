@@ -11,6 +11,7 @@ use App\Models\Service;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
+use Throwable;
 
 class OrderProvisioner
 {
@@ -95,6 +96,60 @@ class OrderProvisioner
             : null;
 
         static::sendActivationEmail($service, $plainPassword);
+    }
+
+    /**
+     * Suspend a service: calls the panel API, updates the DB, and notifies the client.
+     */
+    public static function suspend(Service $service, string $reason = 'Administrative action'): void
+    {
+        $service->loadMissing(['user', 'product']);
+
+        static::callPanel($service, 'suspendAccount', [$service->username ?? '', $reason]);
+
+        $service->update(['status' => 'suspended']);
+
+        AuditLogger::log('service.suspended', $service, ['reason' => $reason]);
+        WorkflowEngine::fire('service.suspended', $service);
+
+        static::sendLifecycleEmail($service, 'service.suspended', ['reason' => $reason]);
+    }
+
+    /**
+     * Unsuspend a service: calls the panel API, updates the DB, and notifies the client.
+     */
+    public static function unsuspend(Service $service): void
+    {
+        $service->loadMissing(['user', 'product']);
+
+        static::callPanel($service, 'unsuspendAccount', [$service->username ?? '']);
+
+        $service->update(['status' => 'active']);
+
+        AuditLogger::log('service.unsuspended', $service);
+        WorkflowEngine::fire('service.active', $service);
+
+        static::sendLifecycleEmail($service, 'service.reactivated', []);
+    }
+
+    /**
+     * Terminate a service: calls the panel API, updates the DB, and notifies the client.
+     */
+    public static function terminate(Service $service, string $reason = 'Administrative action'): void
+    {
+        $service->loadMissing(['user', 'product']);
+
+        static::callPanel($service, 'terminateAccount', [$service->username ?? '']);
+
+        $service->update([
+            'status'           => 'terminated',
+            'termination_date' => now(),
+        ]);
+
+        AuditLogger::log('service.terminated', $service, ['reason' => $reason]);
+        WorkflowEngine::fire('service.terminated', $service);
+
+        static::sendLifecycleEmail($service, 'service.terminated', ['reason' => $reason]);
     }
 
     /**
@@ -226,6 +281,51 @@ class OrderProvisioner
             Mail::to($user->email)->send(new TemplateMailable($template, $vars));
         } catch (\Throwable $e) {
             Log::warning("Domain email [{$template}] failed for user #{$user->id}: ".$e->getMessage());
+        }
+    }
+
+    /**
+     * Call a panel API method for a service, silently skipping if no module is configured.
+     * Throws if the panel call fails so the caller can decide how to handle it.
+     */
+    private static function callPanel(Service $service, string $method, array $args): void
+    {
+        $moduleId = $service->module_data['module_id'] ?? null;
+
+        if (! $moduleId || ! $service->username) {
+            return; // no panel configured — DB-only operation
+        }
+
+        $module = Module::find($moduleId);
+
+        if (! $module) {
+            Log::warning("OrderProvisioner::{$method} — module #{$moduleId} not found for service #{$service->id}");
+            return;
+        }
+
+        $driver = ProvisionerService::forModule($module);
+        $driver->{$method}(...$args);
+    }
+
+    /**
+     * Send a lifecycle notification email (suspend / reactivate / terminate).
+     */
+    private static function sendLifecycleEmail(Service $service, string $template, array $extra): void
+    {
+        $user = $service->user;
+
+        $vars = array_merge([
+            'name'         => $user->name,
+            'app_name'     => config('app.name'),
+            'service_name' => $service->product?->name ?? "Service #{$service->id}",
+            'domain'       => $service->domain ?? '—',
+            'portal_url'   => route('client.services.show', $service->id),
+        ], $extra);
+
+        try {
+            Mail::to($user->email)->send(new TemplateMailable($template, $vars));
+        } catch (Throwable $e) {
+            Log::warning("Lifecycle email [{$template}] failed for user #{$user->id}: {$e->getMessage()}");
         }
     }
 

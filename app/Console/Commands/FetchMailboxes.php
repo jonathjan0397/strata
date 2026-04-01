@@ -68,7 +68,6 @@ class FetchMailboxes extends Command
             if (! $uids) {
                 $this->line("[Pipe:{$pipe->id}] No new messages in '{$pipe->imap_mailbox}'.");
                 $pipe->update(['imap_last_checked_at' => now()]);
-                imap_close($imap);
                 return;
             }
 
@@ -92,7 +91,7 @@ class FetchMailboxes extends Command
             $this->line("[Pipe:{$pipe->id}] Processed {$count} message(s) from '{$pipe->name}'.");
             $pipe->update(['imap_last_checked_at' => now()]);
         } finally {
-            imap_close($imap);
+            try { imap_close($imap); } catch (\Throwable) {}
         }
     }
 

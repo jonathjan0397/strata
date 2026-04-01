@@ -13,6 +13,7 @@ use App\Services\WorkflowEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -128,31 +129,41 @@ class ServiceController extends Controller
         return back()->with('success', 'Service approved and activated.');
     }
 
-    public function suspend(Service $service): RedirectResponse
+    public function suspend(Request $request, Service $service): RedirectResponse
     {
-        $service->update(['status' => 'suspended']);
+        $reason = $request->input('reason') ?: 'Administrative action';
 
-        AuditLogger::log('service.suspended', $service);
-        WorkflowEngine::fire('service.suspended', $service);
+        try {
+            OrderProvisioner::suspend($service, $reason);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Panel API error — service not suspended: '.$e->getMessage());
+        }
 
-        return back()->with('success', 'Service suspended.');
+        return back()->with('success', 'Service suspended and client notified.');
     }
 
     public function unsuspend(Service $service): RedirectResponse
     {
-        $service->update(['status' => 'active']);
+        try {
+            OrderProvisioner::unsuspend($service);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Panel API error — service not reactivated: '.$e->getMessage());
+        }
 
-        return back()->with('success', 'Service reactivated.');
+        return back()->with('success', 'Service reactivated and client notified.');
     }
 
-    public function terminate(Service $service): RedirectResponse
+    public function terminate(Request $request, Service $service): RedirectResponse
     {
-        $service->update([
-            'status' => 'terminated',
-            'termination_date' => now(),
-        ]);
+        $reason = $request->input('reason') ?: 'Administrative action';
 
-        return back()->with('success', 'Service terminated.');
+        try {
+            OrderProvisioner::terminate($service, $reason);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Panel API error — service not terminated: '.$e->getMessage());
+        }
+
+        return back()->with('success', 'Service terminated and client notified.');
     }
 
     public function approveCancellation(Service $service): RedirectResponse
@@ -169,11 +180,14 @@ class ServiceController extends Controller
             return back()->with('success', "Cancellation approved — service will cancel on {$service->next_due_date->format('M d, Y')}.");
         }
 
-        // Immediate cancellation
-        $service->update([
-            'status' => 'cancelled',
-            'termination_date' => now(),
-        ]);
+        // Immediate cancellation — terminate on panel and notify client
+        try {
+            OrderProvisioner::terminate($service, 'Cancelled at client request');
+        } catch (\Throwable $e) {
+            Log::warning("Panel termination failed on cancellation for service #{$service->id}: ".$e->getMessage());
+            // Still mark cancelled in DB even if panel call fails
+            $service->update(['status' => 'cancelled', 'termination_date' => now()]);
+        }
 
         AuditLogger::log('service.cancelled', $service);
         WorkflowEngine::fire('service.cancelled', $service);

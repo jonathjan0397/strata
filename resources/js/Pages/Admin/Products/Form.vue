@@ -40,6 +40,9 @@ const PANEL_TYPES = [
   { value: 'cwp',         label: 'CWP (Control Web Panel)' },
 ]
 
+// Panels that support creating reseller accounts via API
+const RESELLER_PANELS = ['cpanel', 'plesk', 'directadmin', 'cwp']
+
 // Servers of the currently selected panel type
 const serversOfType = computed(() =>
   props.modules.filter(m => m.type === form.module)
@@ -387,6 +390,55 @@ const CATEGORIES     = ['Shared Hosting','VPS Hosting','Dedicated Servers','Rese
                   <span class="block text-xs text-slate-400 font-normal">When the first account is provisioned, Strata will create the package on the panel using the disk/bandwidth values above if it isn't already there.</span>
                 </span>
               </label>
+            </div>
+          </div>
+
+          <!-- Account-level options -->
+          <div class="space-y-3 pt-3 border-t border-slate-100">
+            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Account Options</h3>
+
+            <!-- Reseller (only panels that support it) -->
+            <div v-if="RESELLER_PANELS.includes(form.module)">
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input v-model="form.module_config.reseller" type="checkbox"
+                  class="h-4 w-4 mt-0.5 rounded border-slate-300 text-blue-600" />
+                <span class="text-sm text-slate-700">
+                  Reseller account
+                  <span class="block text-xs text-slate-400 font-normal">Account will be created with reseller privileges on the panel. Supported on cPanel, Plesk, DirectAdmin, and CWP.</span>
+                </span>
+              </label>
+            </div>
+
+            <!-- SSL / Let's Encrypt -->
+            <div>
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input v-model="form.module_config.ssl" type="checkbox"
+                  class="h-4 w-4 mt-0.5 rounded border-slate-300 text-blue-600" />
+                <span class="text-sm text-slate-700">
+                  Enable SSL / Let's Encrypt on account creation
+                  <span class="block text-xs text-slate-400 font-normal">Requests automatic SSL issuance at provisioning time.</span>
+                </span>
+              </label>
+              <div v-if="form.module_config.ssl"
+                class="mt-1.5 ml-6 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+                <svg class="h-3.5 w-3.5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                SSL issuance will fail if the domain's DNS is not already pointing to this server. Let's Encrypt must be able to reach the domain over HTTP to verify ownership.
+              </div>
+            </div>
+
+            <!-- PHP Version -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  PHP Version
+                  <span class="font-normal text-slate-400 text-xs ml-1">blank = server default</span>
+                </label>
+                <input v-model="form.module_config.php_version" type="text" placeholder="e.g. 8.3"
+                  class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <p class="text-xs text-slate-400 mt-1">Applied at provisioning time if the panel supports per-account PHP version assignment.</p>
+              </div>
             </div>
           </div>
         </template>

@@ -136,7 +136,7 @@ class CwpProvisioner implements ProvisionerDriver
 
     public function listPackages(): array
     {
-        $data     = $this->request('POST', '/package', ['action' => 'list']);
+        $data     = $this->request('POST', '/packages', ['action' => 'list']);
         $packages = $data['msj'] ?? [];
 
         if (! is_array($packages)) {
@@ -144,10 +144,10 @@ class CwpProvisioner implements ProvisionerDriver
         }
 
         return array_map(fn ($p) => [
-            'name'         => $p['name']      ?? '',
-            'disk_mb'      => $this->parseLimit($p['diskspace'] ?? '0'),
+            'name'         => $p['package_name'] ?? ($p['name'] ?? ''),
+            'disk_mb'      => $this->parseLimit($p['disk_quota'] ?? ($p['diskspace'] ?? '0')),
             'bandwidth_mb' => $this->parseLimit($p['bandwidth'] ?? '0'),
-        ], array_filter($packages, fn ($p) => ! empty($p['name'])));
+        ], array_filter($packages, fn ($p) => ! empty($p['package_name'] ?? $p['name'] ?? '')));
     }
 
     public function packageExists(string $name): bool
@@ -159,19 +159,19 @@ class CwpProvisioner implements ProvisionerDriver
 
     public function createPackage(string $name, array $config = []): void
     {
-        $data = $this->request('POST', '/package', [
+        $data = $this->request('POST', '/packages', [
             'action'         => 'add',
-            'name'           => $name,
-            'diskspace'      => (int) ($config['disk_mb'] ?? 1024),
+            'package_name'   => $name,
+            'disk_quota'     => (int) ($config['disk_mb'] ?? 1024),
             'bandwidth'      => (int) ($config['bandwidth_mb'] ?? 10240),
-            'ftpaccounts'    => 'unlimited',
-            'emailaccounts'  => 'unlimited',
-            'mysqldatabases' => 'unlimited',
-            'subdomains'     => 'unlimited',
-            'parkeddomains'  => 'unlimited',
-            'addondomains'   => 'unlimited',
-            'inodes'         => 0,
-            'dailybackup'    => 'off',
+            'ftp_accounts'   => 0,
+            'email_accounts' => 0,
+            'email_lists'    => 0,
+            'databases'      => 0,
+            'sub_domains'    => 0,
+            'parked_domains' => 0,
+            'addons_domains' => 0,
+            'hourly_emails'  => 0,
         ]);
 
         if (($data['status'] ?? '') !== 'OK') {
@@ -193,8 +193,8 @@ class CwpProvisioner implements ProvisionerDriver
             ? $req->asForm()->post($url, $params)
             : $req->get($url, $params);
 
-        // Log every CWP request/response for diagnostics
-        Log::channel('single')->debug('CWP API', [
+        // Log every CWP request/response for diagnostics (temporary error level so it surfaces in production)
+        Log::channel('single')->error('CWP API', [
             'method'  => $method,
             'url'     => $url,
             'params'  => array_merge($params, ['key' => '***']),
