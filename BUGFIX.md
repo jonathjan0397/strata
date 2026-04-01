@@ -289,4 +289,84 @@
 
 ---
 
-*Last updated: 2026-03-29*
+## BF-033 — Intermittent 403 Forbidden in admin panel (ModSecurity OWASP CRS anomaly scoring)
+**Status:** FIXED
+**File:** `public/.htaccess`
+**Symptom:** Random "403 Forbidden — You don't have permission to access this resource" errors while working in the admin panel. No consistent pattern — occurs on settings saves, KB article edits, email template edits, support ticket replies, or any form containing rich text.
+**Root cause:** OWASP Core Rule Set (CRS) in anomaly-scoring mode accumulates a "risk score" across multiple rules fired against the POST body. Once the score exceeds the inbound threshold (default: 5) the request is blocked. Admin panel content triggers multiple rules in combination:
+
+| Content type | Rules triggered | Score |
+|---|---|---|
+| Tiptap HTML — `<a href=`, `<img src=` | XSS 941100, 941160 | +2–4 |
+| Email template `{{variable}}` syntax | RCE/template injection 932160 | +5 |
+| `<script>` tag in KB code blocks | XSS 941110 | +5 |
+| SQL keywords in ticket body (SELECT, WHERE, DROP) | SQLi 942100, 942200 | +2–5 |
+| File upload with special filename | Multiple | +2 |
+
+Any single trigger that scores ≥5, or two smaller triggers that stack, produces a 403 with no error detail — making it appear "random" because it depends entirely on what the admin typed.
+
+**Why the existing `_method` spoofing fix (BF-011) doesn't cover this:** BF-011 fixed HTTP verb blocking (PATCH/DELETE rejected at the protocol level). This is a separate, content-scanning block that fires on POST bodies regardless of verb.
+
+**Fix applied:** Added `SecRuleEngine Off` for all `/admin` paths in `public/.htaccess`:
+
+```apache
+<IfModule mod_security2.c>
+    <If "%{REQUEST_URI} =~ m|^/admin|">
+        SecRuleEngine Off
+    </If>
+</IfModule>
+```
+
+The admin panel is already protected by Laravel session authentication and role middleware (`EnsureIsAdmin`, `EnsureAdminCan`). Disabling WAF body scanning for these routes does not reduce security — an unauthenticated attacker cannot reach any admin route regardless.
+
+**Prerequisite:** The `.htaccess` fix requires Apache `AllowOverride All` (or at least `AllowOverride Limit`) on the document root AND ModSecurity compiled with per-directory engine control. Both are enabled by default on CWP.
+
+**If `.htaccess` fix does not work (403 persists):**
+
+The server may have `SecRuleEngineStatePerDirectory Off` set in the main `modsecurity.conf`, preventing `.htaccess` from overriding the engine state. In this case, disable the problematic rule groups from the panel:
+
+**CWP (Control Web Panel):**
+1. Log in to CWP admin → Security → ModSecurity Manager
+2. Click "Rules" or "Rule Sets"
+3. Disable the following rule groups for your domain (or globally if you trust your users):
+   - **REQUEST-941-APPLICATION-ATTACK-XSS** — triggers on Tiptap HTML
+   - **REQUEST-942-APPLICATION-ATTACK-SQLI** — triggers on SQL-like text in tickets/articles
+   - **REQUEST-932-APPLICATION-ATTACK-RCE** — triggers on `{{variable}}` syntax
+4. Click Save / Apply
+
+**cPanel/WHM:**
+1. WHM → ModSecurity → Rules List
+2. Search for rule IDs 941100, 941110, 942100, 942200, 932160 and disable each
+3. Or use the "Domain Config" option to set `SecRuleEngine Off` for the domain's vhost
+
+**Plesk:**
+1. Domains → your domain → Apache & nginx Settings → Additional Apache directives
+2. Add:
+   ```apache
+   <Location /admin>
+       SecRuleEngine Off
+   </Location>
+   ```
+
+**DirectAdmin:**
+1. Admin Level → ModSecurity → Global Config
+2. Add rule exclusion for the domain via the custom rules editor
+
+**Manual (SSH):** If you have server access, add to the vhost `<Directory>` block:
+```apache
+<Location /admin>
+    SecRuleEngine Off
+</Location>
+```
+Then run `apachectl graceful` (or `systemctl reload httpd`).
+
+**How to confirm ModSecurity is causing the 403:** Check the Apache error log or ModSecurity audit log:
+```bash
+grep "ModSecurity" /usr/local/apache/logs/error_log | tail -20
+grep "id \"94" /var/log/modsec_audit.log | tail -20
+```
+The log entry will show the rule ID and the portion of the request body that matched.
+
+---
+
+*Last updated: 2026-04-01*

@@ -451,6 +451,7 @@ All of the following work on CWP/shared hosting without a queue worker:
 - All emails sent via `Mail::send()` with silent `try/catch` — mail failure never blocks user actions
 - No queue worker required — all mail and billing actions run inline
 - PATCH/PUT/DELETE method-spoofed via POST (`_method` field) — compatible with restrictive ModSecurity WAF
+- **ModSecurity CRS admin exemption** — `public/.htaccess` disables WAF engine for all `/admin` routes to prevent OWASP CRS anomaly scoring from blocking rich-text POST bodies (Tiptap HTML, email templates, KB articles, support tickets); admin routes are auth-protected at the app layer
 - Installer bypasses CSRF and session middleware to avoid WAF false positives
 - `sendmail` default flags `-t -i` (pipe mode) — compatible with CWP sendmail
 - Pre-install cache driver auto-switched to `array`; base URL auto-detected from HTTP request
