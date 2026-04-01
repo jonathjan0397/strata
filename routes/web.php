@@ -301,6 +301,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('tld-pricing/{tldPrice}', [Admin\TldPricingController::class, 'update'])->name('tld-pricing.update');
         Route::delete('tld-pricing/{tldPrice}', [Admin\TldPricingController::class, 'destroy'])->name('tld-pricing.destroy');
         Route::post('tld-pricing/import', [Admin\TldPricingController::class, 'import'])->name('tld-pricing.import');
+        Route::post('tld-pricing/bulk', [Admin\TldPricingController::class, 'bulkUpdate'])->name('tld-pricing.bulk-update');
 
         // Modules / Servers
         Route::get('modules', [Admin\ModuleController::class, 'index'])->name('modules.index');

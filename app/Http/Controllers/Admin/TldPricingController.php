@@ -88,6 +88,40 @@ class TldPricingController extends Controller
         return back()->with('flash', ['success' => 'TLD removed.']);
     }
 
+    /** Apply a bulk action (markup / activate / deactivate / delete) to selected TLDs. */
+    public function bulkUpdate(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids'          => ['required', 'array', 'min:1'],
+            'ids.*'        => ['integer', 'exists:tld_prices,id'],
+            'action'       => ['required', 'in:markup,activate,deactivate,delete'],
+            'markup_type'  => ['required_if:action,markup', 'nullable', 'in:fixed,percent'],
+            'markup_value' => ['required_if:action,markup', 'nullable', 'numeric', 'min:0'],
+        ]);
+
+        $ids   = $data['ids'];
+        $count = count($ids);
+
+        match ($data['action']) {
+            'markup'     => TldPrice::whereIn('id', $ids)->update([
+                'markup_type'  => $data['markup_type'],
+                'markup_value' => $data['markup_value'],
+            ]),
+            'activate'   => TldPrice::whereIn('id', $ids)->update(['is_active' => true]),
+            'deactivate' => TldPrice::whereIn('id', $ids)->update(['is_active' => false]),
+            'delete'     => TldPrice::whereIn('id', $ids)->delete(),
+        };
+
+        $label = match ($data['action']) {
+            'markup'     => "Markup updated for {$count} TLD(s).",
+            'activate'   => "{$count} TLD(s) activated.",
+            'deactivate' => "{$count} TLD(s) deactivated.",
+            'delete'     => "{$count} TLD(s) removed.",
+        };
+
+        return back()->with('flash', ['success' => $label]);
+    }
+
     /** Import/sync prices from the active registrar API. */
     public function import(): RedirectResponse
     {

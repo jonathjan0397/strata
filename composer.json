@@ -1,7 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "jonathjan0397/strata",
-    "version": "1.0-RC16",
+    "version": "1.0-RC17",
     "type": "project",
     "description": "Self-hosted billing and automation platform for hosting providers.",
     "keywords": ["laravel", "billing", "hosting", "automation"],
