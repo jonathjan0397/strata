@@ -117,7 +117,7 @@ class CwpProvisioner implements ProvisionerDriver
 
     public function listAccounts(): array
     {
-        $data     = $this->request('GET', '/account', ['action' => 'list']);
+        $data     = $this->request('POST', '/account', ['action' => 'list']);
         $accounts = $data['msj'] ?? [];
 
         if (! is_array($accounts)) {
@@ -135,7 +135,7 @@ class CwpProvisioner implements ProvisionerDriver
 
     public function listPackages(): array
     {
-        $data     = $this->request('GET', '/package', ['action' => 'list']);
+        $data     = $this->request('POST', '/package', ['action' => 'list']);
         $packages = $data['msj'] ?? [];
 
         if (! is_array($packages)) {
