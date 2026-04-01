@@ -244,7 +244,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/license-sync', [Admin\SettingController::class, 'syncLicense'])->name('settings.license-sync');
         Route::post('settings/license-trial', [Admin\SettingController::class, 'startTrial'])->name('settings.license-trial');
 
-        // Maintenance — run pending database migrations (super-admin only)
+        // Maintenance page + actions (super-admin only)
+        Route::get('maintenance', fn () => Inertia::render('Admin/Maintenance'))
+            ->name('maintenance.index');
+
         Route::post('maintenance/migrate', function () {
             abort_unless(auth()->user()?->hasRole('super-admin'), 403);
             try {
@@ -256,6 +259,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 return response()->json(['success' => false, 'error' => $e->getMessage(), 'output' => trim(Artisan::output())], 500);
             }
         })->name('maintenance.migrate');
+
+        Route::post('maintenance/cache', function () {
+            abort_unless(auth()->user()?->hasRole('super-admin'), 403);
+            try {
+                $lines = [];
+                foreach (['cache:clear', 'config:clear', 'route:clear', 'view:clear'] as $cmd) {
+                    Artisan::call($cmd);
+                    $out = trim(Artisan::output());
+                    $lines[] = $out ?: $cmd.' done.';
+                }
+
+                return response()->json(['success' => true, 'output' => implode("\n", $lines)]);
+            } catch (Throwable $e) {
+                return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+        })->name('maintenance.cache');
 
         // Departments
         Route::get('settings/departments', [Admin\DepartmentController::class, 'index'])->name('departments.index');
