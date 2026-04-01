@@ -5,6 +5,7 @@ namespace App\Services\Provisioners;
 use App\Contracts\ProvisionerDriver;
 use App\Models\Module;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -185,14 +186,26 @@ class CwpProvisioner implements ProvisionerDriver
     {
         $params['key'] = $this->apiKey;
 
+        $url = $this->baseUrl.$path;
         $req = Http::withOptions(['verify' => $this->module->ssl && ! $this->skipVerify])->timeout(20);
 
         $response = strtoupper($method) === 'POST'
-            ? $req->asForm()->post($this->baseUrl.$path, $params)
-            : $req->get($this->baseUrl.$path, $params);
+            ? $req->asForm()->post($url, $params)
+            : $req->get($url, $params);
+
+        // Log every CWP request/response for diagnostics
+        Log::channel('single')->debug('CWP API', [
+            'method'  => $method,
+            'url'     => $url,
+            'params'  => array_merge($params, ['key' => '***']),
+            'status'  => $response->status(),
+            'body'    => $response->body(),
+        ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException("CWP API HTTP error [{$path}]: {$response->status()}");
+            throw new RuntimeException(
+                "CWP API HTTP error [{$path}]: {$response->status()} — {$response->body()}"
+            );
         }
 
         return $response->json() ?? [];
