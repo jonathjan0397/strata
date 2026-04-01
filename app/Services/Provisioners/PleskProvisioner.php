@@ -18,11 +18,16 @@ class PleskProvisioner implements ProvisionerDriver
 
     private string $auth;
 
+    private bool $skipVerify;
+
     public function __construct(private readonly Module $module)
     {
+        $host = $module->local_hostname ?: $module->hostname;
+        $port = $module->local_port     ?? $module->port;
         $scheme = $module->ssl ? 'https' : 'http';
-        $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/api/v2";
-        $this->auth = decrypt($module->api_token_enc);
+        $this->baseUrl    = "{$scheme}://{$host}:{$port}/api/v2";
+        $this->auth       = decrypt($module->api_token_enc);
+        $this->skipVerify = (bool) $module->local_hostname;
     }
 
     public function slug(): string
@@ -181,7 +186,7 @@ class PleskProvisioner implements ProvisionerDriver
             'X-API-Key'    => $this->auth,
             'Content-Type' => 'application/json',
             'Accept'       => 'application/json',
-        ])->withOptions(['verify' => $this->module->ssl]);
+        ])->withOptions(['verify' => $this->module->ssl && ! $this->skipVerify]);
 
         $response = match (strtoupper($method)) {
             'GET' => $req->get($this->baseUrl.$path),

@@ -20,10 +20,15 @@ class DirectAdminProvisioner implements ProvisionerDriver
 
     private string $password;
 
+    private bool $skipVerify;
+
     public function __construct(private readonly Module $module)
     {
+        $host = $module->local_hostname ?: $module->hostname;
+        $port = $module->local_port     ?? $module->port;
         $scheme = $module->ssl ? 'https' : 'http';
-        $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}";
+        $this->baseUrl    = "{$scheme}://{$host}:{$port}";
+        $this->skipVerify = (bool) $module->local_hostname;
 
         // module_config stores {"admin_user": "admin"} — password is in api_token_enc
         $config = $module->module_config ?? [];
@@ -194,7 +199,7 @@ class DirectAdminProvisioner implements ProvisionerDriver
     private function request(string $method, string $path, array $params = []): array
     {
         $req = Http::withBasicAuth($this->user, $this->password)
-            ->withOptions(['verify' => $this->module->ssl])
+            ->withOptions(['verify' => $this->module->ssl && ! $this->skipVerify])
             ->timeout(20);
 
         $response = $method === 'POST'

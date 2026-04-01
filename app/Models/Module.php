@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Module extends Model
 {
     protected $fillable = [
-        'name', 'type', 'hostname', 'port', 'username',
+        'name', 'type', 'hostname', 'port', 'local_hostname', 'local_port', 'username',
         'api_token_enc', 'password_enc', 'ssl', 'active',
         'max_accounts', 'current_accounts', 'metadata',
     ];

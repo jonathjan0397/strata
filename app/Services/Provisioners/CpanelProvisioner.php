@@ -14,11 +14,23 @@ class CpanelProvisioner implements ProvisionerDriver
 
     private string $token;
 
+    private bool $skipVerify;
+
     public function __construct(private readonly Module $module)
     {
+        $host = $module->local_hostname ?: $module->hostname;
+        $port = $module->local_port     ?? $module->port;
         $scheme = $module->ssl ? 'https' : 'http';
-        $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/json-api";
-        $this->token = decrypt($module->api_token_enc);
+        $this->baseUrl    = "{$scheme}://{$host}:{$port}/json-api";
+        $this->token      = decrypt($module->api_token_enc);
+        $this->skipVerify = (bool) $module->local_hostname;
+    }
+
+    private function req(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
+            ->withOptions(['verify' => $this->module->ssl && ! $this->skipVerify])
+            ->timeout(30);
     }
 
     public function slug(): string
@@ -51,10 +63,7 @@ class CpanelProvisioner implements ProvisionerDriver
             $params['plan'] = $plan;
         }
 
-        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
-            ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(30)
-            ->get("{$this->baseUrl}/createacct", $params);
+        $response = $this->req()->get("{$this->baseUrl}/createacct", $params);
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM API HTTP error: {$response->status()}");
@@ -77,13 +86,10 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function suspendAccount(string $username, string $reason = 'Billing'): void
     {
-        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
-            ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(15)
-            ->get("{$this->baseUrl}/suspendacct", [
-                'user' => $username,
-                'reason' => $reason,
-            ]);
+        $response = $this->req()->get("{$this->baseUrl}/suspendacct", [
+            'user' => $username,
+            'reason' => $reason,
+        ]);
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM suspend failed: {$response->status()}");
@@ -92,10 +98,7 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function unsuspendAccount(string $username): void
     {
-        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
-            ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(15)
-            ->get("{$this->baseUrl}/unsuspendacct", ['user' => $username]);
+        $response = $this->req()->get("{$this->baseUrl}/unsuspendacct", ['user' => $username]);
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM unsuspend failed: {$response->status()}");
@@ -104,10 +107,7 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function terminateAccount(string $username): void
     {
-        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
-            ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(15)
-            ->get("{$this->baseUrl}/removeacct", ['user' => $username]);
+        $response = $this->req()->get("{$this->baseUrl}/removeacct", ['user' => $username]);
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM terminate failed: {$response->status()}");
@@ -116,10 +116,7 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function listAccounts(): array
     {
-        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
-            ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(30)
-            ->get("{$this->baseUrl}/listaccts", ['want' => 'user,domain,email,plan,suspended,diskused']);
+        $response = $this->req()->get("{$this->baseUrl}/listaccts", ['want' => 'user,domain,email,plan,suspended,diskused']);
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM listaccts failed: {$response->status()}");
@@ -138,10 +135,7 @@ class CpanelProvisioner implements ProvisionerDriver
 
     public function listPackages(): array
     {
-        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
-            ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(30)
-            ->get("{$this->baseUrl}/listpkgs");
+        $response = $this->req()->get("{$this->baseUrl}/listpkgs");
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM listpkgs failed: {$response->status()}");
@@ -177,10 +171,7 @@ class CpanelProvisioner implements ProvisionerDriver
             'MAXADDON' => 'unlimited',
         ];
 
-        $response = Http::withHeaders(['Authorization' => "whm {$this->module->username}:{$this->token}"])
-            ->withOptions(['verify' => $this->module->ssl])
-            ->timeout(20)
-            ->get("{$this->baseUrl}/addpkg", $params);
+        $response = $this->req()->get("{$this->baseUrl}/addpkg", $params);
 
         if (! $response->successful()) {
             throw new RuntimeException("WHM addpkg HTTP error: {$response->status()}");

@@ -28,16 +28,18 @@ class ModuleController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:cpanel,plesk,directadmin,hestia,cwp,vestacp,cyberpanel,generic'],
-            'hostname' => ['required', 'string'],
-            'port' => ['required', 'integer', 'min:1', 'max:65535'],
-            'username' => ['required', 'string'],
-            'api_token' => ['nullable', 'string'],
-            'password' => ['nullable', 'string'],
-            'ssl' => ['boolean'],
-            'active' => ['boolean'],
-            'max_accounts' => ['nullable', 'integer', 'min:1'],
+            'name'           => ['required', 'string', 'max:255'],
+            'type'           => ['required', 'in:cpanel,plesk,directadmin,hestia,cwp,vestacp,cyberpanel,generic'],
+            'hostname'       => ['required', 'string'],
+            'port'           => ['required', 'integer', 'min:1', 'max:65535'],
+            'local_hostname' => ['nullable', 'string'],
+            'local_port'     => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'username'       => ['required', 'string'],
+            'api_token'      => ['nullable', 'string'],
+            'password'       => ['nullable', 'string'],
+            'ssl'            => ['boolean'],
+            'active'         => ['boolean'],
+            'max_accounts'   => ['nullable', 'integer', 'min:1'],
         ]);
 
         $module = Module::create([
@@ -58,13 +60,15 @@ class ModuleController extends Controller
     public function update(Request $request, Module $module): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'hostname' => ['required', 'string'],
-            'port' => ['required', 'integer', 'min:1', 'max:65535'],
-            'username' => ['required', 'string'],
-            'ssl' => ['boolean'],
-            'active' => ['boolean'],
-            'max_accounts' => ['nullable', 'integer', 'min:1'],
+            'name'           => ['required', 'string', 'max:255'],
+            'hostname'       => ['required', 'string'],
+            'port'           => ['required', 'integer', 'min:1', 'max:65535'],
+            'local_hostname' => ['nullable', 'string'],
+            'local_port'     => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'username'       => ['required', 'string'],
+            'ssl'            => ['boolean'],
+            'active'         => ['boolean'],
+            'max_accounts'   => ['nullable', 'integer', 'min:1'],
         ]);
 
         $module->update($data);

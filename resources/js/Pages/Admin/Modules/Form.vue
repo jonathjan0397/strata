@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { useForm, Link } from '@inertiajs/vue3'
+import { ref } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
@@ -20,16 +21,20 @@ const PANEL_TYPES = [
 const DEFAULT_PORTS = Object.fromEntries(PANEL_TYPES.map(t => [t.value, t.port]))
 
 const form = useForm({
-  name:         props.module?.name         ?? '',
-  type:         props.module?.type         ?? 'cpanel',
-  hostname:     props.module?.hostname     ?? '',
-  port:         props.module?.port         ?? 2087,
-  username:     props.module?.username     ?? '',
-  api_token:    '',
-  ssl:          props.module?.ssl          ?? true,
-  active:       props.module?.active       ?? true,
-  max_accounts: props.module?.max_accounts ?? '',
+  name:           props.module?.name           ?? '',
+  type:           props.module?.type           ?? 'cpanel',
+  hostname:       props.module?.hostname       ?? '',
+  port:           props.module?.port           ?? 2087,
+  local_hostname: props.module?.local_hostname ?? '',
+  local_port:     props.module?.local_port     ?? '',
+  username:       props.module?.username       ?? '',
+  api_token:      '',
+  ssl:            props.module?.ssl            ?? true,
+  active:         props.module?.active         ?? true,
+  max_accounts:   props.module?.max_accounts   ?? '',
 })
+
+const showLocal = ref(!!(props.module?.local_hostname))
 
 function onTypeChange() {
   // Auto-fill the default port when type changes (only if not editing an existing server)
@@ -70,12 +75,43 @@ function submit() {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Hostname</label>
-            <input v-model="form.hostname" type="text" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input v-model="form.hostname" type="text" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="server.example.com" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
             <input v-model="form.port" type="number" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
+
+          <!-- Local / internal access toggle -->
+          <div class="col-span-2">
+            <button type="button" @click="showLocal = !showLocal"
+              class="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+              <svg :class="showLocal ? 'rotate-90' : ''" class="h-3.5 w-3.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+              {{ showLocal ? 'Hide' : 'Set' }} local / internal access address
+            </button>
+            <p class="mt-0.5 text-xs text-gray-400">
+              Use when Strata and this panel are on the same server. API calls will use the local address; SSL certificate verification is skipped automatically for local connections.
+            </p>
+          </div>
+
+          <template v-if="showLocal">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Local Hostname</label>
+              <div class="flex gap-2">
+                <input v-model="form.local_hostname" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="127.0.0.1" />
+                <button type="button" @click="form.local_hostname = '127.0.0.1'"
+                  class="shrink-0 text-xs text-gray-500 border border-gray-300 rounded-lg px-2.5 py-2 hover:bg-gray-50 transition-colors">
+                  localhost
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Local Port <span class="font-normal text-gray-400">(blank = same as above)</span></label>
+              <input v-model="form.local_port" type="number" min="1" max="65535" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" :placeholder="form.port" />
+            </div>
+          </template>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input v-model="form.username" type="text" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />

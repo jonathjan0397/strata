@@ -21,10 +21,15 @@ class HestiaProvisioner implements ProvisionerDriver
 
     private string $apiKey;
 
+    private bool $skipVerify;
+
     public function __construct(private readonly Module $module)
     {
+        $host = $module->local_hostname ?: $module->hostname;
+        $port = $module->local_port     ?? $module->port;
         $scheme = $module->ssl ? 'https' : 'http';
-        $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/api/v1";
+        $this->baseUrl    = "{$scheme}://{$host}:{$port}/api/v1";
+        $this->skipVerify = (bool) $module->local_hostname;
 
         $config = $module->module_config ?? [];
         $this->adminUser = $config['admin_user'] ?? 'admin';
@@ -106,7 +111,7 @@ class HestiaProvisioner implements ProvisionerDriver
     public function listAccounts(): array
     {
         $response = Http::asForm()
-            ->withOptions(['verify' => $this->module->ssl])
+            ->withOptions(['verify' => $this->module->ssl && ! $this->skipVerify])
             ->timeout(30)
             ->post("{$this->baseUrl}/", [
                 'user'       => $this->adminUser,
@@ -142,7 +147,7 @@ class HestiaProvisioner implements ProvisionerDriver
     public function listPackages(): array
     {
         $response = Http::asForm()
-            ->withOptions(['verify' => $this->module->ssl])
+            ->withOptions(['verify' => $this->module->ssl && ! $this->skipVerify])
             ->timeout(30)
             ->post("{$this->baseUrl}/", [
                 'user'       => $this->adminUser,
@@ -220,7 +225,7 @@ class HestiaProvisioner implements ProvisionerDriver
         }
 
         $response = Http::asForm()
-            ->withOptions(['verify' => $this->module->ssl])
+            ->withOptions(['verify' => $this->module->ssl && ! $this->skipVerify])
             ->timeout(20)
             ->post("{$this->baseUrl}/", $payload);
 

@@ -22,11 +22,16 @@ class CwpProvisioner implements ProvisionerDriver
 
     private string $apiKey;
 
+    private bool $skipVerify;
+
     public function __construct(private readonly Module $module)
     {
+        $host = $module->local_hostname ?: $module->hostname;
+        $port = $module->local_port     ?? $module->port;
         $scheme = $module->ssl ? 'https' : 'http';
-        $this->baseUrl = "{$scheme}://{$module->hostname}:{$module->port}/v1";
-        $this->apiKey  = decrypt($module->api_token_enc);
+        $this->baseUrl    = "{$scheme}://{$host}:{$port}/v1";
+        $this->apiKey     = decrypt($module->api_token_enc);
+        $this->skipVerify = (bool) $module->local_hostname;
     }
 
     public function slug(): string
@@ -180,7 +185,7 @@ class CwpProvisioner implements ProvisionerDriver
     {
         $params['key'] = $this->apiKey;
 
-        $req = Http::withOptions(['verify' => $this->module->ssl])->timeout(20);
+        $req = Http::withOptions(['verify' => $this->module->ssl && ! $this->skipVerify])->timeout(20);
 
         $response = strtoupper($method) === 'POST'
             ? $req->asForm()->post($this->baseUrl.$path, $params)
