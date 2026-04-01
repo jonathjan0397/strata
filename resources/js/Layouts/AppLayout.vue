@@ -404,7 +404,7 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
             </main>
             <div class="px-4 sm:px-6 pb-4 text-center">
                 <a href="https://buymeacoffee.com/jonathan0397" target="_blank" rel="noopener noreferrer"
-                    class="text-xs text-gray-300/30 hover:text-gray-300/60 dark:text-gray-600/50 dark:hover:text-gray-500 transition-colors">
+                    class="text-sm text-gray-400/60 hover:text-gray-500 dark:text-gray-600/60 dark:hover:text-gray-400 transition-colors">
                     ☕ Buy me a coffee
                 </a>
             </div>
