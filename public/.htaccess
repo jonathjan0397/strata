@@ -1,29 +1,12 @@
-# ── ModSecurity: disable WAF content scanning for authenticated admin routes ─
+# ── ModSecurity note ─────────────────────────────────────────────────────────
+# If you experience random 403 Forbidden errors while working in the admin
+# panel, ModSecurity's OWASP CRS anomaly scoring is likely the cause.
+# See BUGFIX.md BF-033 for fix instructions (CWP panel, cPanel/WHM, Plesk,
+# DirectAdmin, and manual vhost approaches).
 #
-# Problem: OWASP CRS anomaly scoring fires on innocent POST body content that
-# Strata's admin panel legitimately sends — Tiptap HTML (<a href>, <img>,
-# <script> in code blocks), email templates with {{variable}} syntax, KB
-# articles, support ticket body text containing SQL-like words (SELECT, DROP,
-# WHERE), and rich settings values. Each matching rule adds to the anomaly
-# score; once it crosses the threshold (default 5) Apache returns 403 Forbidden
-# with no indication of which field or rule triggered it.
-#
-# Fix: turn the WAF engine off for /admin routes. These routes are already
-# protected by Laravel session auth + role middleware at the application layer,
-# so disabling WAF body scanning here does not reduce security.
-#
-# Note: SecRuleEngine in .htaccess requires that the server config includes
-# "AllowOverride All" AND that ModSecurity was compiled/configured with
-# per-directory engine control enabled. On CWP this works out of the box.
-# If the 403s persist despite this block, disable the affected rule groups
-# from CWP's ModSecurity panel instead — see BUGFIX.md BF-033 for full
-# step-by-step instructions.
-#
-<IfModule mod_security2.c>
-    <If "%{REQUEST_URI} =~ m|^/admin|">
-        SecRuleEngine Off
-    </If>
-</IfModule>
+# SecRuleEngine cannot be set here (.htaccess) on most shared hosts because
+# it requires "AllowOverride Limit" + per-directory engine control in the
+# main Apache config. Use the panel-level approach from BUGFIX.md instead.
 
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
