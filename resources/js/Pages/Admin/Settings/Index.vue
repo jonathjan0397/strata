@@ -930,6 +930,17 @@ function syncLicense() {
         <form v-if="tab === 'email'" @submit.prevent="mailForm.patch(route('admin.settings.mail'))" class="space-y-4">
             <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
 
+                <!-- Deliverability tip -->
+                <div class="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5 text-xs text-blue-800 leading-relaxed">
+                    <span class="mt-0.5 shrink-0">💡</span>
+                    <span>
+                        <strong>For reliable Gmail/Outlook delivery</strong> — use SMTP with a transactional mail service
+                        (Brevo, Mailgun, SendGrid, AWS SES, or Postmark). Shared hosting server mail is often flagged as spam
+                        due to shared IP reputation regardless of SPF/DKIM/DMARC configuration.
+                        Use <em>Check DNS Records</em> below to verify your authentication records once configured.
+                    </span>
+                </div>
+
                 <!-- Mailer type -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Mail Driver</label>

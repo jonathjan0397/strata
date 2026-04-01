@@ -427,4 +427,46 @@ sudo cat /etc/opendkim/keys/yourdomain.com/mail.txt   # copy this TXT value to D
 
 ---
 
+## BF-035 — Gmail marks outgoing mail as spam despite DKIM/DMARC passing
+**Status:** DOCUMENTED — requires hosting/DNS changes, not a code fix
+
+### Symptom
+Email passes DKIM and DMARC but Gmail still delivers to spam folder.
+
+### Diagnosis
+Authentication (DKIM PASS, DMARC PASS) proves the mail is yours — it does not affect Gmail's spam scoring. Gmail spam filtering is primarily driven by **IP reputation** and **domain reputation**, which are independent of DNS authentication records.
+
+**Shared hosting IPs are the root cause.** When Strata is installed on a shared hosting server (CWP, cPanel, etc.), outgoing mail is relayed through a shared Postfix instance on an IP that is shared with potentially hundreds of other websites. If any other tenant on that IP sends spam, the entire IP pool's reputation with Gmail drops — affecting every sender on the server regardless of their own sending practices.
+
+Additional factors observed:
+- **SPF NONE on subdomain envelope sender** — if `MAIL_FROM_ADDRESS` is set to `noreply@portal.yourdomain.com`, the Return-Path uses the subdomain. If no SPF record exists on the subdomain (even if the root domain has one), SPF resolves as NONE. This is a soft negative signal even when DMARC passes via DKIM.
+- **New domain cold-start** — domains with no sending history start with neutral/low reputation; Gmail's filters are more aggressive for the first weeks of sending.
+
+### Fix A — Add SPF to the sending subdomain (if applicable)
+If your From address uses a subdomain (e.g. `noreply@portal.yourdomain.com`), add a TXT record to that subdomain:
+```
+portal.yourdomain.com   TXT   v=spf1 ip4:YOUR_SERVER_IP ~all
+```
+Or change your From address in Settings → Email to the root domain (`noreply@yourdomain.com`) so the root domain's SPF record applies to the envelope sender.
+
+### Fix B — Register with Google Postmaster Tools (free)
+1. Go to https://postmaster.google.com
+2. Add and verify your sending domain
+3. Monitor domain reputation and IP reputation — this also signals to Gmail that a real sender is managing the domain, which slightly improves initial reputation scoring.
+
+### Fix C — Use a dedicated SMTP relay (recommended for production)
+The permanent solution for reliable Gmail delivery from shared hosting is to route outgoing mail through a transactional email service with pre-warmed IPs and established Gmail reputation. Configure SMTP credentials in Settings → Email.
+
+| Provider | Free tier | Setup |
+|---|---|---|
+| **Brevo** (formerly Sendinblue) | 300 emails/day | SMTP host: smtp-relay.brevo.com, port 587 |
+| **Mailgun** | 100 emails/day (US region) | SMTP host: smtp.mailgun.org, port 587 |
+| **SendGrid** | 100 emails/day | SMTP host: smtp.sendgrid.net, port 587 |
+| **AWS SES** | 62,000/month (from EC2), $0.10/1000 otherwise | SMTP host: email-smtp.us-east-1.amazonaws.com, port 587 |
+| **Postmark** | 100 emails/month free | Best deliverability reputation; SMTP host: smtp.postmarkapp.com, port 587 |
+
+All of these services provide their own SPF/DKIM records and the setup is purely in Settings → Email — no server changes needed. DMARC alignment works automatically since they sign with your verified domain.
+
+---
+
 *Last updated: 2026-04-01*
