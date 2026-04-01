@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased]
+## [1.0.0] — 2026-04-01 — Stable Release
 
 ### Added
 - **Local / internal server access** — modules now store optional `local_hostname` and `local_port`; when set, all provisioner API calls use the local address and SSL certificate verification is skipped automatically; migration `2026_04_01_000012_add_local_access_to_modules`.
