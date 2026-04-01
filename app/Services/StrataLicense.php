@@ -87,10 +87,11 @@ class StrataLicense
         try {
             $response = Http::timeout(8)
                 ->post(rtrim($serverUrl, '/').'/api/ping', [
-                    'install_token' => $installToken,
+                    'install_token'  => $installToken,
                     'install_secret' => $installSecret,
-                    'version' => $version,
-                    'app_url' => $appUrl,
+                    'software'       => 'strata-billing',
+                    'version'        => $version,
+                    'app_url'        => $appUrl,
                 ]);
 
             if (! $response->successful()) {

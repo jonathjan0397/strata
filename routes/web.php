@@ -241,6 +241,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/mail/test', [Admin\SettingController::class, 'testMail'])->name('settings.mail.test');
         Route::post('settings/logo', [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
         Route::patch('settings/integrations', [Admin\SettingController::class, 'updateIntegrations'])->name('settings.integrations');
+        Route::post('settings/license-sync', [Admin\SettingController::class, 'syncLicense'])->name('settings.license-sync');
 
         // Maintenance — run pending database migrations (super-admin only)
         Route::post('maintenance/migrate', function () {

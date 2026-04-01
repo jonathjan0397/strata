@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\AuditLogger;
+use App\Services\StrataLicense;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -236,5 +237,19 @@ class SettingController extends Controller
         Setting::set('logo_path', $path);
 
         return back()->with('flash', ['success' => 'Logo uploaded.']);
+    }
+
+    public function syncLicense(): RedirectResponse
+    {
+        $result = StrataLicense::refresh();
+
+        $status = $result['status'] ?? 'unknown';
+        $features = implode(', ', $result['features'] ?? []) ?: 'none';
+
+        AuditLogger::log('settings.license_synced', null, ['status' => $status]);
+
+        return back()->with('flash', [
+            'success' => "License synced — status: {$status}, features: {$features}.",
+        ]);
     }
 }

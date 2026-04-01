@@ -209,6 +209,26 @@ const timezones = [
     'Asia/Dubai', 'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo', 'Asia/Shanghai',
     'Australia/Sydney', 'Australia/Melbourne', 'Pacific/Auckland',
 ]
+
+// ── License sync ──────────────────────────────────────────────────────────────
+const syncingLicense = ref(false)
+const syncResult     = ref(null)
+
+function syncLicense() {
+    syncingLicense.value = true
+    syncResult.value     = null
+    router.post(route('admin.settings.license-sync'), {}, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            const flash = page.props.flash ?? {}
+            syncResult.value = { message: flash.success ?? 'License synced.' }
+        },
+        onError: () => {
+            syncResult.value = { error: 'Sync failed — check server logs.' }
+        },
+        onFinish: () => { syncingLicense.value = false },
+    })
+}
 </script>
 
 <template>
@@ -841,6 +861,32 @@ const timezones = [
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          <!-- Strata License -->
+          <div class="rounded-xl border border-gray-200 overflow-hidden">
+            <div class="w-full flex items-center justify-between px-5 py-3.5 bg-slate-800 text-white">
+              <span class="flex items-center gap-2 font-semibold text-sm">
+                <span>🔑</span> Strata License
+              </span>
+            </div>
+            <div class="bg-white p-5 space-y-3">
+              <p class="text-xs text-gray-500">Force an immediate re-ping to the license server and refresh the cached feature list. The license syncs automatically every 12 hours.</p>
+              <div class="flex items-center gap-4">
+                <button type="button" @click="syncLicense"
+                  :disabled="syncingLicense"
+                  class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+                  <svg v-if="syncingLicense" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  {{ syncingLicense ? 'Syncing…' : 'Force License Sync' }}
+                </button>
+                <span v-if="syncResult" :class="syncResult.error ? 'text-red-600' : 'text-green-600'" class="text-sm">
+                  {{ syncResult.error ?? syncResult.message }}
+                </span>
+              </div>
             </div>
           </div>
 
