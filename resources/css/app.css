@@ -15,20 +15,82 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ── Admin dark mode content overrides ─────────────────────────────────────── */
-/* These patch common card/table/form patterns on admin pages without touching  */
-/* every individual page component.                                             */
+/* Global patches so individual page components don't need dark: variants.      */
+/* Covers both gray-* and slate-* naming conventions used across admin pages.   */
+
+/* ── Backgrounds ─────────────────────────────────────────────────────────────── */
 html.dark .bg-white          { background-color: rgb(30 41 59); }
+html.dark .bg-white\/70      { background-color: rgb(30 41 59 / 0.85) !important; }
+html.dark .bg-white\/80      { background-color: rgb(30 41 59 / 0.9)  !important; }
 html.dark .bg-gray-50        { background-color: rgb(22 32 50); }
+html.dark .bg-gray-50\/80    { background-color: rgb(22 32 50 / 0.9) !important; }
 html.dark .bg-gray-100       { background-color: rgb(30 41 59); }
+html.dark .bg-slate-50       { background-color: rgb(22 32 50); }
+html.dark .bg-slate-50\/80   { background-color: rgb(22 32 50 / 0.9) !important; }
+html.dark .bg-slate-100      { background-color: rgb(30 41 59); }
+html.dark .bg-slate-200      { background-color: rgb(37 49 68); }
+
+/* ── Borders ─────────────────────────────────────────────────────────────────── */
 html.dark .border-gray-100   { border-color: rgb(51 65 85); }
 html.dark .border-gray-200   { border-color: rgb(51 65 85); }
 html.dark .border-gray-300   { border-color: rgb(71 85 105); }
-html.dark .text-gray-900     { color: rgb(241 245 249); }
-html.dark .text-gray-800     { color: rgb(226 232 240); }
-html.dark .text-gray-700     { color: rgb(203 213 225); }
-html.dark .text-gray-600     { color: rgb(148 163 184); }
-html.dark .text-gray-500     { color: rgb(100 116 139); }
-html.dark .text-gray-400     { color: rgb(71 85 105); }
+html.dark .border-slate-50   { border-color: rgb(37 49 68); }
+html.dark .border-slate-100  { border-color: rgb(51 65 85); }
+html.dark .border-slate-200  { border-color: rgb(51 65 85); }
+html.dark .border-slate-300  { border-color: rgb(71 85 105); }
+
+/* ── Text — gray scale ───────────────────────────────────────────────────────── */
+/* Correct hierarchy: 900=brightest → 400=dimmest but still legible              */
+html.dark .text-gray-900     { color: rgb(241 245 249); }   /* slate-50  */
+html.dark .text-gray-800     { color: rgb(226 232 240); }   /* slate-100 */
+html.dark .text-gray-700     { color: rgb(203 213 225); }   /* slate-200 */
+html.dark .text-gray-600     { color: rgb(148 163 184); }   /* slate-400 */
+html.dark .text-gray-500     { color: rgb(148 163 184); }   /* slate-400 — was slate-500, too dim */
+html.dark .text-gray-400     { color: rgb(100 116 139); }   /* slate-500 — was slate-600, nearly invisible */
+
+/* ── Text — slate scale ──────────────────────────────────────────────────────── */
+html.dark .text-slate-900    { color: rgb(241 245 249); }
+html.dark .text-slate-800    { color: rgb(226 232 240); }
+html.dark .text-slate-700    { color: rgb(203 213 225); }
+html.dark .text-slate-600    { color: rgb(148 163 184); }
+html.dark .text-slate-500    { color: rgb(148 163 184); }
+html.dark .text-slate-400    { color: rgb(100 116 139); }
+
+/* ── Dividers ─────────────────────────────────────────────────────────────────── */
+html.dark .divide-gray-50  > * + * { border-color: rgb(37 49 68); }
+html.dark .divide-gray-100 > * + * { border-color: rgb(51 65 85); }
+html.dark .divide-gray-200 > * + * { border-color: rgb(51 65 85); }
+html.dark .divide-slate-50 > * + * { border-color: rgb(37 49 68); }
+html.dark .divide-slate-100 > * + * { border-color: rgb(51 65 85); }
+html.dark .divide-slate-200 > * + * { border-color: rgb(51 65 85); }
+
+/* ── Hover states on rows/buttons ────────────────────────────────────────────── */
+html.dark .hover\:bg-gray-50:hover       { background-color: rgb(37 49 68); }
+html.dark .hover\:bg-slate-50:hover      { background-color: rgb(37 49 68); }
+html.dark .hover\:bg-blue-50\/30:hover   { background-color: rgb(30 58 138 / 0.15); }
+html.dark .hover\:bg-indigo-50:hover     { background-color: rgb(49 46 129 / 0.25); }
+
+/* ── Action/info bars (indigo, amber, green, red) ────────────────────────────── */
+html.dark .bg-indigo-50      { background-color: rgb(49 46 129 / 0.25); }
+html.dark .border-indigo-200 { border-color: rgb(99 102 241 / 0.35); }
+html.dark .text-indigo-700   { color: rgb(165 180 252); }
+html.dark .text-indigo-600   { color: rgb(129 140 248); }
+html.dark .bg-amber-50       { background-color: rgb(120 53 15 / 0.25); }
+html.dark .border-amber-200  { border-color: rgb(217 119 6 / 0.4); }
+html.dark .text-amber-700    { color: rgb(252 211 77); }
+html.dark .text-amber-600    { color: rgb(251 191 36); }
+html.dark .bg-green-50       { background-color: rgb(20 83 45 / 0.25); }
+html.dark .border-green-200  { border-color: rgb(34 197 94 / 0.35); }
+html.dark .text-green-700    { color: rgb(134 239 172); }
+html.dark .bg-red-50         { background-color: rgb(127 29 29 / 0.25); }
+html.dark .border-red-200    { border-color: rgb(239 68 68 / 0.35); }
+html.dark .text-red-600      { color: rgb(252 165 165); }
+html.dark .text-red-700      { color: rgb(252 165 165); }
+html.dark .bg-blue-50        { background-color: rgb(30 58 138 / 0.2); }
+html.dark .border-blue-100\/60 { border-color: rgb(51 65 85); }
+html.dark .border-blue-200   { border-color: rgb(59 130 246 / 0.3); }
+
+/* ── Form inputs ─────────────────────────────────────────────────────────────── */
 html.dark input[type='text'],
 html.dark input[type='email'],
 html.dark input[type='password'],
@@ -43,11 +105,23 @@ html.dark select {
     color: rgb(226 232 240);
     border-color: rgb(71 85 105);
 }
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: rgb(71 85 105); }
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus { border-color: rgb(99 102 241); outline-color: rgb(99 102 241); }
+
+/* ── Tables ──────────────────────────────────────────────────────────────────── */
+html.dark thead,
 html.dark thead th,
 html.dark th {
     background-color: rgb(15 23 42);
     color: rgb(148 163 184);
 }
-html.dark tbody td  { border-color: rgb(51 65 85); color: rgb(203 213 225); }
-html.dark .divide-gray-100 > * + *,
-html.dark .divide-gray-200 > * + * { border-color: rgb(51 65 85); }
+html.dark tbody tr:hover       { background-color: rgb(37 49 68); }
+html.dark tbody td             { border-color: rgb(51 65 85); color: rgb(203 213 225); }
+html.dark .divide-y > tr + tr  { border-color: rgb(51 65 85); }
+
+/* ── Misc ────────────────────────────────────────────────────────────────────── */
+html.dark .shadow-sm { box-shadow: 0 1px 2px rgb(0 0 0 / 0.4); }
+html.dark .backdrop-blur-sm { backdrop-filter: blur(4px); }
