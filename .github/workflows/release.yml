@@ -64,25 +64,40 @@ jobs:
           echo "ZIP_NAME=$ZIP" >> "$GITHUB_ENV"
 
       # ── Publish GitHub Release ────────────────────────────────────────────────
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "Strata ${{ github.ref_name }}"
-          body: |
-            ## Strata Service Billing and Support Platform — ${{ github.ref_name }}
-
-            ### Installation
-            1. Upload and extract this ZIP to your server's web root
-            2. Copy `.env.example` to `.env` and configure your database and mail settings
-            3. Visit `/install` to run the setup wizard
-
-            ### Upgrade from a previous version
-            1. Upload and extract this ZIP (your `.env` and `storage/` are preserved)
-            2. Visit `/upgrade` to run the upgrade wizard — runs migrations automatically
-
-            See [CHANGELOG.md](CHANGELOG.md) for what's new in this release.
-          files: ${{ env.ZIP_NAME }}
-          draft: false
-          prerelease: ${{ contains(github.ref_name, 'RC') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+      # Use gh CLI directly so the release is created-or-updated in one step,
+      # avoiding the "tag already exists" conflict if someone created a draft
+      # release or manually tagged before the workflow ran.
+      - name: Create or update GitHub Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          ZIP: ${{ env.ZIP_NAME }}
+          IS_PRERELEASE: ${{ contains(github.ref_name, 'RC') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          NOTES=$(cat <<'BODY'
+          ### Installation
+          1. Download `strata-${TAG}.zip` and extract it to your server's web root
+          2. Copy `.env.example` to `.env` and fill in your database credentials and `APP_URL`
+          3. Visit `/install` to run the browser setup wizard — no CLI required
+
+          ### Upgrade from a previous version
+          1. Download and extract this ZIP (your `.env` and `storage/` are preserved)
+          2. Visit `/upgrade` to run the browser upgrade wizard — runs migrations automatically
+
+          See [CHANGELOG.md](CHANGELOG.md) for the full list of changes in this release.
+          BODY
+          )
+
+          # Delete any existing release for this tag (keeps the tag itself)
+          gh release delete "$TAG" --yes 2>/dev/null || true
+
+          gh release create "$TAG" "$ZIP" \
+            --title "Strata $TAG" \
+            --notes "$NOTES" \
+            --latest \
+            $PRERELEASE_FLAG
