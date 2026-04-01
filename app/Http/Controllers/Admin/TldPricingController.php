@@ -93,7 +93,7 @@ class TldPricingController extends Controller
     {
         $data = $request->validate([
             'ids'          => ['required', 'array', 'min:1'],
-            'ids.*'        => ['integer', 'exists:tld_prices,id'],
+            'ids.*'        => ['integer', 'exists:tld_pricing,id'],
             'action'       => ['required', 'in:markup,activate,deactivate,delete'],
             'markup_type'  => ['required_if:action,markup', 'nullable', 'in:fixed,percent'],
             'markup_value' => ['required_if:action,markup', 'nullable', 'numeric', 'min:0'],
