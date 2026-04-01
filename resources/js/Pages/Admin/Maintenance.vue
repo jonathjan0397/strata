@@ -14,6 +14,13 @@ const ACTIONS = [
         color:   'indigo',
     },
     {
+        key:     'repair',
+        label:   'Force Schema Repair',
+        desc:    'Directly applies known schema changes even if migrations are marked as already run. Use when the DB schema is out of sync with the codebase.',
+        route:   '/admin/maintenance/repair-schema',
+        color:   'rose',
+    },
+    {
         key:     'cache',
         label:   'Clear Application Cache',
         desc:    'Flushes the runtime cache (config, routes, views, compiled classes). Run after deployments.',
@@ -63,8 +70,8 @@ async function run(action) {
           </div>
           <button @click="run(action)"
             :disabled="results[action.key]?.loading"
-            :class="action.color === 'indigo'
-              ? 'bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-500'
+            :class="action.color === 'indigo' ? 'bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-500'
+              : action.color === 'rose'   ? 'bg-rose-600 hover:bg-rose-500 focus:ring-rose-500'
               : 'bg-amber-500 hover:bg-amber-400 focus:ring-amber-400'"
             class="shrink-0 inline-flex items-center gap-1.5 text-sm font-medium text-white px-4 py-2 rounded-lg disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2">
             <svg v-if="results[action.key]?.loading" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">

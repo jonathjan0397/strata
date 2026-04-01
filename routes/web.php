@@ -260,6 +260,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
             }
         })->name('maintenance.migrate');
 
+        Route::post('maintenance/repair-schema', function () {
+            abort_unless(auth()->user()?->hasRole('super-admin'), 403);
+            $lines = [];
+            try {
+                // 1. modules.type enum — add hestia + cwp if missing
+                DB::statement("ALTER TABLE modules MODIFY COLUMN type ENUM('cpanel','plesk','directadmin','hestia','cwp','vestacp','cyberpanel','generic') NOT NULL DEFAULT 'generic'");
+                $lines[] = '✓ modules.type enum updated (hestia, cwp added)';
+            } catch (\Throwable $e) { $lines[] = '✗ modules.type: '.$e->getMessage(); }
+
+            try {
+                // 2. modules.local_hostname
+                DB::statement("ALTER TABLE modules ADD COLUMN IF NOT EXISTS local_hostname VARCHAR(255) NULL AFTER hostname");
+                $lines[] = '✓ modules.local_hostname column ensured';
+            } catch (\Throwable $e) { $lines[] = '✗ modules.local_hostname: '.$e->getMessage(); }
+
+            try {
+                // 3. modules.local_port
+                DB::statement("ALTER TABLE modules ADD COLUMN IF NOT EXISTS local_port SMALLINT UNSIGNED NULL AFTER local_hostname");
+                $lines[] = '✓ modules.local_port column ensured';
+            } catch (\Throwable $e) { $lines[] = '✗ modules.local_port: '.$e->getMessage(); }
+
+            try {
+                // 4. mailbox_pipes imap fields
+                DB::statement("ALTER TABLE mailbox_pipes
+                    ADD COLUMN IF NOT EXISTS imap_host VARCHAR(255) NULL,
+                    ADD COLUMN IF NOT EXISTS imap_port INT NULL DEFAULT 993,
+                    ADD COLUMN IF NOT EXISTS imap_username VARCHAR(255) NULL,
+                    ADD COLUMN IF NOT EXISTS imap_password_enc TEXT NULL,
+                    ADD COLUMN IF NOT EXISTS imap_encryption VARCHAR(16) NULL DEFAULT 'ssl',
+                    ADD COLUMN IF NOT EXISTS imap_last_checked_at TIMESTAMP NULL");
+                $lines[] = '✓ mailbox_pipes IMAP columns ensured';
+            } catch (\Throwable $e) { $lines[] = '✗ mailbox_pipes imap: '.$e->getMessage(); }
+
+            $success = ! str_contains(implode("\n", $lines), '✗');
+            return response()->json(['success' => $success, 'output' => implode("\n", $lines)]);
+        })->name('maintenance.repair-schema');
+
         Route::post('maintenance/cache', function () {
             abort_unless(auth()->user()?->hasRole('super-admin'), 403);
             try {
