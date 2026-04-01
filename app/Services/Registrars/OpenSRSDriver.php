@@ -323,42 +323,76 @@ XML;
     }
 
     /**
-     * Fetch reseller cost pricing for all TLDs.
-     * Uses the get_product_list / domain action (OpenSRS XCP API).
+     * Fetch reseller cost pricing via per-TLD get_price calls.
+     *
+     * OpenSRS XCP has no bulk pricing endpoint. We query get_price for each
+     * reg_type (new / renewal / transfer) across a set of common TLDs.
      *
      * @return array<string, array{register: float|null, renew: float|null, transfer: float|null, currency: string}>
      */
     public function getPricing(): array
     {
+        $tlds = [
+            'com', 'net', 'org', 'info', 'biz', 'us', 'ca', 'co', 'io',
+            'me', 'tv', 'cc', 'mobi', 'name', 'pro',
+            'app', 'dev', 'online', 'store', 'site', 'tech',
+            'cloud', 'digital', 'blog',
+            'uk', 'co.uk', 'org.uk', 'me.uk',
+            'de', 'eu', 'fr', 'it', 'es', 'nl', 'be', 'ch', 'at',
+            'au', 'com.au', 'net.au',
+            'nz', 'co.nz',
+            'in', 'mx', 'com.mx',
+        ];
+
         $pricing = [];
 
-        $result = $this->call('get_product_list', 'domain', [
-            'product_type' => 'domain_registration',
-        ]);
+        foreach ($tlds as $tld) {
+            $domain = "zzz9test.{$tld}";
 
-        $code = (int) ($result['response_code'] ?? 0);
-        if ($code < 200 || $code >= 300) {
-            throw new RuntimeException('OpenSRS get_product_list failed: '.($result['response_text'] ?? "code {$code}"));
+            $register = $this->fetchPrice($domain, 'new');
+            $renew    = $this->fetchPrice($domain, 'renewal');
+            $transfer = $this->fetchPrice($domain, 'transfer');
+
+            if ($register !== null || $renew !== null || $transfer !== null) {
+                $pricing[$tld] = [
+                    'register' => $register,
+                    'renew'    => $renew,
+                    'transfer' => $transfer,
+                    'currency' => 'USD',
+                ];
+            }
         }
 
-        // attributes.products is a dt_array — parsed as a plain PHP array
-        $products = $result['attributes']['products'] ?? [];
-
-        foreach ($products as $product) {
-            $tld = strtolower(ltrim($product['tld'] ?? '', '.'));
-            if ($tld === '') {
-                continue;
-            }
-
-            $pricing[$tld] = [
-                'register' => isset($product['price_register']) ? (float) $product['price_register'] : null,
-                'renew'    => isset($product['price_renew'])    ? (float) $product['price_renew']    : null,
-                'transfer' => isset($product['price_transfer']) ? (float) $product['price_transfer'] : null,
-                'currency' => $product['currency'] ?? 'USD',
-            ];
+        if (empty($pricing)) {
+            throw new RuntimeException('OpenSRS returned no pricing data for any queried TLDs.');
         }
 
         return $pricing;
+    }
+
+    /**
+     * Fetch the reseller price for one domain + reg_type. Returns null if not supported.
+     */
+    private function fetchPrice(string $domain, string $regType): ?float
+    {
+        try {
+            $result = $this->call('get_price', 'domain', [
+                'domain'   => $domain,
+                'reg_type' => $regType,
+                'period'   => 1,
+            ]);
+
+            $code = (int) ($result['response_code'] ?? 0);
+            if ($code < 200 || $code >= 300) {
+                return null;
+            }
+
+            $price = $result['attributes']['price'] ?? null;
+
+            return $price !== null ? (float) $price : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function splitDomain(string $domain): array
