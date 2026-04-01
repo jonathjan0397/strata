@@ -167,11 +167,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('clients/{client}/tasks/{task}/complete', [Admin\ClientController::class, 'completeTask'])->name('clients.tasks.complete');
         Route::delete('clients/{client}/tasks/{task}', [Admin\ClientController::class, 'destroyTask'])->name('clients.tasks.destroy');
 
-        Route::get('client-groups', [Admin\ClientGroupController::class, 'index'])->name('client-groups.index');
-        Route::post('client-groups', [Admin\ClientGroupController::class, 'store'])->name('client-groups.store');
-        Route::patch('client-groups/{clientGroup}', [Admin\ClientGroupController::class, 'update'])->name('client-groups.update');
-        Route::delete('client-groups/{clientGroup}', [Admin\ClientGroupController::class, 'destroy'])->name('client-groups.destroy');
-        Route::post('clients/{client}/assign-group', [Admin\ClientGroupController::class, 'assignClient'])->name('client-groups.assign');
+        Route::middleware('require.feature:client_groups')->group(function () {
+            Route::get('client-groups', [Admin\ClientGroupController::class, 'index'])->name('client-groups.index');
+            Route::post('client-groups', [Admin\ClientGroupController::class, 'store'])->name('client-groups.store');
+            Route::patch('client-groups/{clientGroup}', [Admin\ClientGroupController::class, 'update'])->name('client-groups.update');
+            Route::delete('client-groups/{clientGroup}', [Admin\ClientGroupController::class, 'destroy'])->name('client-groups.destroy');
+            Route::post('clients/{client}/assign-group', [Admin\ClientGroupController::class, 'assignClient'])->name('client-groups.assign');
+        });
 
         // Promo Codes
         Route::get('promo-codes', [Admin\PromoCodeController::class, 'index'])->name('promo-codes.index');
@@ -242,6 +244,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/logo', [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
         Route::patch('settings/integrations', [Admin\SettingController::class, 'updateIntegrations'])->name('settings.integrations');
         Route::post('settings/license-sync', [Admin\SettingController::class, 'syncLicense'])->name('settings.license-sync');
+        Route::post('settings/license-trial', [Admin\SettingController::class, 'startTrial'])->name('settings.license-trial');
 
         // Maintenance — run pending database migrations (super-admin only)
         Route::post('maintenance/migrate', function () {
@@ -334,19 +337,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('staff/{staff}', [Admin\StaffController::class, 'update'])->name('staff.update');
         Route::delete('staff/{staff}', [Admin\StaffController::class, 'destroy'])->name('staff.destroy');
 
-        // Audit Log
-        Route::get('audit-log', [Admin\AuditLogController::class, 'index'])->name('audit-log.index');
+        // Audit Log (Premium)
+        Route::middleware('require.feature:audit_log')->group(function () {
+            Route::get('audit-log', [Admin\AuditLogController::class, 'index'])->name('audit-log.index');
+        });
 
-        // Workflows (Premium ⭐)
-        Route::get('workflows', [Admin\WorkflowController::class, 'index'])->name('workflows.index');
-        Route::get('workflows/create', [Admin\WorkflowController::class, 'create'])->name('workflows.create');
-        Route::post('workflows', [Admin\WorkflowController::class, 'store'])->name('workflows.store');
-        Route::get('workflows/{workflow}/edit', [Admin\WorkflowController::class, 'edit'])->name('workflows.edit');
-        Route::patch('workflows/{workflow}', [Admin\WorkflowController::class, 'update'])->name('workflows.update');
-        Route::delete('workflows/{workflow}', [Admin\WorkflowController::class, 'destroy'])->name('workflows.destroy');
-        Route::post('workflows/{workflow}/toggle', [Admin\WorkflowController::class, 'toggleActive'])->name('workflows.toggle');
+        // Workflows (Premium)
+        Route::middleware('require.feature:workflows')->group(function () {
+            Route::get('workflows', [Admin\WorkflowController::class, 'index'])->name('workflows.index');
+            Route::get('workflows/create', [Admin\WorkflowController::class, 'create'])->name('workflows.create');
+            Route::post('workflows', [Admin\WorkflowController::class, 'store'])->name('workflows.store');
+            Route::get('workflows/{workflow}/edit', [Admin\WorkflowController::class, 'edit'])->name('workflows.edit');
+            Route::patch('workflows/{workflow}', [Admin\WorkflowController::class, 'update'])->name('workflows.update');
+            Route::delete('workflows/{workflow}', [Admin\WorkflowController::class, 'destroy'])->name('workflows.destroy');
+            Route::post('workflows/{workflow}/toggle', [Admin\WorkflowController::class, 'toggleActive'])->name('workflows.toggle');
+        });
 
-        Route::get('reports', [Admin\ReportController::class, 'index'])->name('reports.index');
+        // Reports (Premium)
+        Route::middleware('require.feature:advanced_reports')->group(function () {
+            Route::get('reports', [Admin\ReportController::class, 'index'])->name('reports.index');
+        });
 
         Route::get('tax-rates', [Admin\TaxRateController::class, 'index'])->name('tax-rates.index');
         Route::post('tax-rates', [Admin\TaxRateController::class, 'store'])->name('tax-rates.store');
@@ -356,16 +366,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('email-log', [Admin\EmailLogController::class, 'index'])->name('email-log.index');
         Route::get('email-log/{emailLog}', [Admin\EmailLogController::class, 'show'])->name('email-log.show');
 
-        // Quotes
-        Route::get('quotes', [Admin\QuoteController::class, 'index'])->name('quotes.index');
-        Route::get('quotes/create', [Admin\QuoteController::class, 'create'])->name('quotes.create');
-        Route::post('quotes', [Admin\QuoteController::class, 'store'])->name('quotes.store');
-        Route::get('quotes/{quote}', [Admin\QuoteController::class, 'show'])->name('quotes.show');
-        Route::get('quotes/{quote}/edit', [Admin\QuoteController::class, 'edit'])->name('quotes.edit');
-        Route::patch('quotes/{quote}', [Admin\QuoteController::class, 'update'])->name('quotes.update');
-        Route::delete('quotes/{quote}', [Admin\QuoteController::class, 'destroy'])->name('quotes.destroy');
-        Route::post('quotes/{quote}/send', [Admin\QuoteController::class, 'send'])->name('quotes.send');
-        Route::post('quotes/{quote}/convert', [Admin\QuoteController::class, 'convert'])->name('quotes.convert');
+        // Quotes (Premium)
+        Route::middleware('require.feature:quotes')->group(function () {
+            Route::get('quotes', [Admin\QuoteController::class, 'index'])->name('quotes.index');
+            Route::get('quotes/create', [Admin\QuoteController::class, 'create'])->name('quotes.create');
+            Route::post('quotes', [Admin\QuoteController::class, 'store'])->name('quotes.store');
+            Route::get('quotes/{quote}', [Admin\QuoteController::class, 'show'])->name('quotes.show');
+            Route::get('quotes/{quote}/edit', [Admin\QuoteController::class, 'edit'])->name('quotes.edit');
+            Route::patch('quotes/{quote}', [Admin\QuoteController::class, 'update'])->name('quotes.update');
+            Route::delete('quotes/{quote}', [Admin\QuoteController::class, 'destroy'])->name('quotes.destroy');
+            Route::post('quotes/{quote}/send', [Admin\QuoteController::class, 'send'])->name('quotes.send');
+            Route::post('quotes/{quote}/convert', [Admin\QuoteController::class, 'convert'])->name('quotes.convert');
+        });
 
         // Addons catalog
         Route::get('addons', [Admin\AddonController::class, 'index'])->name('addons.index');
@@ -375,16 +387,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('addons/{addon}', [Admin\AddonController::class, 'update'])->name('addons.update');
         Route::delete('addons/{addon}', [Admin\AddonController::class, 'destroy'])->name('addons.destroy');
 
-        // Affiliates
-        Route::get('affiliates', [Admin\AffiliateController::class, 'index'])->name('affiliates.index');
-        Route::post('affiliates', [Admin\AffiliateController::class, 'store'])->name('affiliates.store');
-        Route::get('affiliates/{affiliate}', [Admin\AffiliateController::class, 'show'])->name('affiliates.show');
-        Route::patch('affiliates/{affiliate}', [Admin\AffiliateController::class, 'update'])->name('affiliates.update');
-        Route::delete('affiliates/{affiliate}', [Admin\AffiliateController::class, 'destroy'])->name('affiliates.destroy');
-        Route::post('affiliates/{affiliate}/approve', [Admin\AffiliateController::class, 'approve'])->name('affiliates.approve');
-        Route::post('affiliates/{affiliate}/deactivate', [Admin\AffiliateController::class, 'deactivate'])->name('affiliates.deactivate');
-        Route::post('affiliates/payouts/{payout}/approve', [Admin\AffiliateController::class, 'approvePayout'])->name('affiliates.payouts.approve');
-        Route::post('affiliates/referrals/{referral}/approve', [Admin\AffiliateController::class, 'approveReferral'])->name('affiliates.referrals.approve');
+        // Affiliates (Premium)
+        Route::middleware('require.feature:affiliates')->group(function () {
+            Route::get('affiliates', [Admin\AffiliateController::class, 'index'])->name('affiliates.index');
+            Route::post('affiliates', [Admin\AffiliateController::class, 'store'])->name('affiliates.store');
+            Route::get('affiliates/{affiliate}', [Admin\AffiliateController::class, 'show'])->name('affiliates.show');
+            Route::patch('affiliates/{affiliate}', [Admin\AffiliateController::class, 'update'])->name('affiliates.update');
+            Route::delete('affiliates/{affiliate}', [Admin\AffiliateController::class, 'destroy'])->name('affiliates.destroy');
+            Route::post('affiliates/{affiliate}/approve', [Admin\AffiliateController::class, 'approve'])->name('affiliates.approve');
+            Route::post('affiliates/{affiliate}/deactivate', [Admin\AffiliateController::class, 'deactivate'])->name('affiliates.deactivate');
+            Route::post('affiliates/payouts/{payout}/approve', [Admin\AffiliateController::class, 'approvePayout'])->name('affiliates.payouts.approve');
+            Route::post('affiliates/referrals/{referral}/approve', [Admin\AffiliateController::class, 'approveReferral'])->name('affiliates.referrals.approve');
+        });
     });
 
     // ── Client portal ─────────────────────────────────────────────────────────

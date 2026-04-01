@@ -252,4 +252,17 @@ class SettingController extends Controller
             'success' => "License synced — status: {$status}, features: {$features}.",
         ]);
     }
+
+    public function startTrial(): RedirectResponse
+    {
+        $result = StrataLicense::startTrial();
+
+        if (isset($result['error'])) {
+            return back()->with('flash', ['error' => $result['error']]);
+        }
+
+        AuditLogger::log('settings.trial_started', null);
+
+        return back()->with('flash', ['success' => 'Trial activated — all premium features are now available for 14 days.']);
+    }
 }

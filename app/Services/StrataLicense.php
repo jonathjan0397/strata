@@ -43,6 +43,54 @@ class StrataLicense
         });
     }
 
+    /**
+     * Activate a 14-day trial on the license server for this installation.
+     * Returns ['success' => true] or ['error' => '...'].
+     */
+    public static function startTrial(): array
+    {
+        $serverUrl = config('strata.license_server_url');
+        if (! $serverUrl) {
+            return ['error' => 'License server not configured.'];
+        }
+
+        $lockPath = storage_path('installed.lock');
+        if (! file_exists($lockPath)) {
+            return ['error' => 'Installation lock file not found.'];
+        }
+
+        $lock          = json_decode(file_get_contents($lockPath), true) ?? [];
+        $installToken  = $lock['install_token'] ?? null;
+        $installSecret = $lock['install_secret'] ?? null;
+
+        if (! $installToken || ! $installSecret) {
+            return ['error' => 'Installation credentials missing.'];
+        }
+
+        try {
+            $response = Http::timeout(8)
+                ->post(rtrim($serverUrl, '/').'/api/trial', [
+                    'install_token'  => $installToken,
+                    'install_secret' => $installSecret,
+                    'software'       => 'strata-billing',
+                    'version'        => $lock['version'] ?? 'unknown',
+                    'app_url'        => config('app.url'),
+                ]);
+
+            if (! $response->successful()) {
+                return ['error' => $response->json('error') ?? 'Trial activation failed.'];
+            }
+
+            // Refresh cache so the new features take effect immediately.
+            static::refresh();
+
+            return ['success' => true];
+
+        } catch (\Throwable) {
+            return ['error' => 'Could not reach the license server.'];
+        }
+    }
+
     /** Force an immediate re-ping and cache refresh. */
     public static function refresh(): array
     {
@@ -112,8 +160,11 @@ class StrataLicense
             unset($body['sig']);
 
             return [
-                'status' => $body['status'] ?? 'active',
-                'features' => $body['features'] ?? [],
+                'status'          => $body['status'] ?? 'active',
+                'features'        => $body['features'] ?? [],
+                'trial_used'      => $body['trial_used'] ?? false,
+                'expires_in_days' => $body['expires_in_days'] ?? null,
+                'synced_at'       => now()->toIso8601String(),
             ];
 
         } catch (\Throwable) {

@@ -109,12 +109,25 @@ function remove(id) {
 }
 
 // ── Import ────────────────────────────────────────────────────────────────────
-const importing = ref(false)
+const importing     = ref(false)
+const importSeconds = ref(0)
+let importTimer     = null
 
 function importPrices() {
-    importing.value = true
+    importing.value     = true
+    importSeconds.value = 0
+    importTimer = setInterval(() => { importSeconds.value++ }, 1000)
+
+    // Warn user if they try to navigate away mid-import
+    window.onbeforeunload = () => 'TLD pricing import is in progress. Leaving now will cancel it.'
+
     router.post(route('admin.tld-pricing.import'), {}, {
-        onFinish: () => { importing.value = false },
+        onFinish: () => {
+            importing.value = false
+            clearInterval(importTimer)
+            importTimer = null
+            window.onbeforeunload = null
+        },
     })
 }
 
@@ -143,6 +156,36 @@ function fmt(v) {
         </button>
       </div>
     </div>
+
+    <!-- Import status bar -->
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-2">
+      <div v-if="importing" class="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+        <svg class="mt-0.5 h-5 w-5 shrink-0 animate-spin text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-amber-800">
+            Importing TLD pricing from registrar…
+            <span class="ml-2 font-mono text-amber-600">({{ importSeconds }}s)</span>
+          </p>
+          <p class="mt-0.5 text-xs text-amber-700">
+            This can take 30–60 seconds while pricing is fetched for each TLD. <strong>Do not navigate away</strong> or the import will be cancelled.
+          </p>
+          <!-- Progress bar (indeterminate) -->
+          <div class="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-amber-200">
+            <div class="h-full w-1/3 rounded-full bg-amber-500"
+              style="animation: import-slide 1.5s ease-in-out infinite;"></div>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Add form -->
     <div v-if="showAddForm" class="mb-5 bg-white border border-indigo-100 rounded-xl p-5">
@@ -353,3 +396,11 @@ function fmt(v) {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes import-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(200%); }
+  100% { transform: translateX(-100%); }
+}
+</style>

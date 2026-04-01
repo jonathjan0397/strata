@@ -4,6 +4,7 @@ use App\Http\Middleware\CheckInstalled;
 use App\Http\Middleware\EnsureAdminCan;
 use App\Http\Middleware\EnsureIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequireFeature;
 use App\Http\Middleware\RequireTwoFactor;
 use App\Http\Middleware\TrackAffiliateReferral;
 use Illuminate\Foundation\Application;
@@ -23,9 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             TrackAffiliateReferral::class,
         ]);
         $middleware->alias([
-            'admin' => EnsureIsAdmin::class,
-            'admin.can' => EnsureAdminCan::class,
-            'require.2fa' => RequireTwoFactor::class,
+            'admin'           => EnsureIsAdmin::class,
+            'admin.can'       => EnsureAdminCan::class,
+            'require.2fa'     => RequireTwoFactor::class,
+            'require.feature' => RequireFeature::class,
         ]);
         $middleware->validateCsrfTokens(except: [
             'stripe/webhook',

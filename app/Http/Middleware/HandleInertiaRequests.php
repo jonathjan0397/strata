@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Setting;
+use App\Services\StrataLicense;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
@@ -69,6 +70,36 @@ class HandleInertiaRequests extends Middleware
             'logoUrl' => fn () => ($p = Setting::get('logo_path')) ? Storage::disk('public')->url($p) : null,
             'portalTheme' => fn () => Setting::get('portal_theme', 'blue'),
             'appVersion' => fn () => $this->resolveVersion(),
+            'license'    => fn () => $this->resolveLicense(),
         ]);
+    }
+
+    private function resolveLicense(): array
+    {
+        $managed = (bool) config('strata.license_server_url');
+
+        if (! $managed) {
+            return [
+                'managed'         => false,
+                'active'          => true,
+                'status'          => 'active',
+                'features'        => [],
+                'trial_used'      => false,
+                'expires_in_days' => null,
+                'synced_at'       => null,
+            ];
+        }
+
+        $payload = StrataLicense::payload();
+
+        return [
+            'managed'         => true,
+            'active'          => ($payload['status'] ?? 'active') === 'active',
+            'status'          => $payload['status'] ?? 'active',
+            'features'        => $payload['features'] ?? [],
+            'trial_used'      => $payload['trial_used'] ?? false,
+            'expires_in_days' => $payload['expires_in_days'] ?? null,
+            'synced_at'       => $payload['synced_at'] ?? null,
+        ];
     }
 }
