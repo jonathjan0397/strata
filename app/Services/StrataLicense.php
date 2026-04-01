@@ -129,6 +129,14 @@ class StrataLicense
             return $default;
         }
 
+        // Always reconcile version from composer.json so FTP/manual deploys
+        // report the correct version without requiring an upgrade-wizard run.
+        $codeVersion = static::readComposerVersion();
+        if ($codeVersion !== 'unknown' && ($lock['version'] ?? '') !== $codeVersion) {
+            $lock['version'] = $codeVersion;
+            file_put_contents($lockPath, json_encode($lock, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+
         $version = $lock['version'] ?? 'unknown';
         $appUrl = config('app.url');
 
@@ -170,6 +178,19 @@ class StrataLicense
         } catch (\Throwable) {
             return $default;
         }
+    }
+
+    /** Read the version string from composer.json without loading the full file. */
+    private static function readComposerVersion(): string
+    {
+        $path = base_path('composer.json');
+        if (! is_file($path)) {
+            return 'unknown';
+        }
+
+        $decoded = json_decode(file_get_contents($path), true);
+
+        return $decoded['version'] ?? 'unknown';
     }
 
     /**
