@@ -190,8 +190,8 @@ class OpenSRSDriver implements RegistrarDriver
     {
         $body = $this->buildXml($action, $object, $attributes);
 
-        $md5Key = md5($this->apiKey);
-        $sig = md5(md5($body.$md5Key).$md5Key);
+        // OpenSRS signature: MD5( MD5(body + apiKey) + apiKey )
+        $sig = md5(md5($body.$this->apiKey).$this->apiKey);
 
         $response = Http::withHeaders([
             'Content-Type' => 'text/xml',
