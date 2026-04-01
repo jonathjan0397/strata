@@ -110,8 +110,8 @@ const adminNavGroups = [
     },
 ];
 
-// All groups default open; track manually closed ones
-const groupOpen = ref(Object.fromEntries(adminNavGroups.map(g => [g.key, true])));
+// All groups default collapsed; the active group opens automatically via groupIsOpen()
+const groupOpen = ref(Object.fromEntries(adminNavGroups.map(g => [g.key, false])));
 
 function toggleGroup(key) {
     // Never collapse a group that contains the active page
@@ -132,7 +132,7 @@ function isActiveHref(href) {
 function groupIsOpen(key) {
     const group = adminNavGroups.find(g => g.key === key);
     if (group?.items.some(item => isActiveHref(item.href))) return true;
-    return groupOpen.value[key] ?? true;
+    return groupOpen.value[key] ?? false;
 }
 
 // ── Client nav ────────────────────────────────────────────────────────────────
