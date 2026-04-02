@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.0.15] — 2026-04-02
+
+### Added
+- **Missing email templates** — three previously unseeded templates added: `domain.expiring` (domain expiry reminder with domain name, expiry date, days remaining, renewal link), `invoice.reminder` (payment due reminder with invoice ID, amount, due date, days until due, pay link), and `ticket.auto_reply` (support ticket auto-confirmation with ticket ID, subject, auto-reply body, and ticket link); all seeded via `EmailTemplatesSeeder::updateOrCreate` so existing customisations are preserved.
+
+### Fixed
+- **Email log not updating** — `TemplateMailable` implemented `ShouldQueue`, meaning emails dispatched via `Mail::send()` were queued and `MessageSent` never fired on shared hosting without a running queue worker; `LogSentEmail` therefore never logged them; removed `ShouldQueue` from `TemplateMailable` to make all email sends synchronous and log-safe; commands that use `Mail::queue()` explicitly (`SendDomainRenewalReminders`, `SendPaymentReminders`) now also fire `MessageSent` synchronously when `QUEUE_CONNECTION=sync`.
+- **OAuth redirect URL not visible to admins** — Settings → Integrations → OAuth sections now display the exact callback URLs to whitelist in Google Cloud Console and Azure App Registrations (e.g. `https://your-domain/auth/google/callback`); previously admins had to guess the correct URL.
+
+---
+
 ## [1.0.10] — 2026-04-02
 
 ### Added
