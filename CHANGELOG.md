@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.0.10] — 2026-04-02
+
+### Added
+- **Portal feature highlights editor** — admin can edit, toggle, add, or remove the three feature cards shown on the public portal home page (icon, title, description, enabled toggle); stored as JSON in settings; section hides automatically when all cards are disabled; grid columns adjust to match the number of enabled cards (1, 2, or 3).
+- **Portal stats row editor** — admin can edit, toggle, add, or remove the stats displayed below the hero buttons (e.g. 99.9% Uptime, 24/7 Support, SSL Included); each stat has a value, label, and enabled toggle; row hides when all stats are disabled.
+- **Reports & Analytics date range selection** — period selector bar with quick presets (This Month, Last Month, Last 12 Months, Year to Date, Last Year, All Time) and specific year/month pickers; period-aware revenue chart switches between daily bars (month views) and monthly bars (year/multi-month views); period KPI banner shows total revenue and invoice count for the selected range.
+- **Reports CSV export** — two export formats available for any period: *CSV — Invoices* (detailed per-invoice rows with client name, email, subtotal, tax, total, payment method; compatible with QuickBooks, Xero, Wave, FreshBooks) and *CSV — Summary* (monthly aggregated totals with a TOTALS row; useful for accountant reconciliation); `GET /admin/reports/export` route with `type` and period params.
+- **Active Sessions** — `sessions` database table migration with `Schema::hasTable` guard; `config/session.php` default driver set to `database`; admin Active Sessions page now shows all connected users.
+- **Bulk suspend/unsuspend rate-limit protection** — 1-second delay injected between panel API calls in `SuspendOverdueServices` and `ProcessScheduledCancellations` when services have a panel configured; prevents CWP/cPanel from dropping rapid sequential requests.
+
+### Fixed
+- **`OrderProvisioner::callPanel()` silent return** — when a service had `module_id` set but the module record had been deleted, `callPanel()` silently returned without calling the panel API; changed to throw `RuntimeException` with a clear message directing the admin to re-link the service; added `Log::debug` for the legitimate no-panel early-return case.
+- **Active Sessions always blank** — server `.env` had `SESSION_DRIVER=file` overriding the config default; sessions were never written to the database table; fixed by updating the server `.env` to `SESSION_DRIVER=database` and running `config:clear`.
+
+---
+
 ## [1.0.0] — 2026-04-01 — Stable Release
 
 ### Added
@@ -167,4 +183,4 @@ All emails use `Mail::send()` with silent `try/catch`. PATCH/PUT/DELETE method-s
 
 ---
 
-*Last updated: 2026-03-29 — 1.0-RC1 tagged*
+*Last updated: 2026-04-02 — 1.0.10 tagged*
