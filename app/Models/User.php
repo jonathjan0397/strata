@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Mail\TemplateMailable;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -124,5 +130,26 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isClient(): bool
     {
         return $this->hasRole('client');
+    }
+
+    /** Send branded email verification instead of Laravel's plain default. */
+    public function sendEmailVerificationNotification(): void
+    {
+        $url = URL::temporarySignedRoute(
+            'verification.verify',
+            Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
+            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+        );
+
+        try {
+            Mail::to($this->email)->send(new TemplateMailable('auth.email_verify', [
+                'name'             => $this->name,
+                'verification_url' => $url,
+                'app_name'         => config('app.name'),
+            ]));
+        } catch (\Throwable) {
+            // Fall back to Laravel's built-in notification if template not found
+            $this->notify(new VerifyEmail);
+        }
     }
 }

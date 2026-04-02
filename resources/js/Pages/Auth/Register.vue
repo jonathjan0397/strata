@@ -1,8 +1,11 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
 import GuestLayout from '@/Layouts/GuestLayout.vue'
 
 defineOptions({ layout: GuestLayout })
+
+const oauth = computed(() => usePage().props.oauthProviders ?? {})
 
 const form = useForm({
   name: '',
@@ -88,14 +91,14 @@ function submit() {
       </p>
     </form>
 
-    <div class="mt-6">
+    <div v-if="oauth.google || oauth.microsoft" class="mt-6">
       <div class="relative">
         <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-700" /></div>
         <div class="relative flex justify-center text-xs text-gray-500"><span class="bg-gray-900 px-3">or sign up with</span></div>
       </div>
 
-      <div class="mt-4 grid grid-cols-2 gap-3">
-        <a
+      <div class="mt-4 gap-3" :class="(oauth.google && oauth.microsoft) ? 'grid grid-cols-2' : 'flex'">
+        <a v-if="oauth.google"
           :href="route('socialite.redirect', 'google')"
           class="flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
         >
@@ -107,7 +110,7 @@ function submit() {
           </svg>
           Google
         </a>
-        <a
+        <a v-if="oauth.microsoft"
           :href="route('socialite.redirect', 'microsoft')"
           class="flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
         >

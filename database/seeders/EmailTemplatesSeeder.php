@@ -101,6 +101,20 @@ class EmailTemplatesSeeder extends Seeder
                 'body_html' => '<p>Hi {{name}},</p><p>Support ticket <strong>#{{ticket_id}}: {{ticket_subject}}</strong> has been assigned to you.</p><p><a href="{{ticket_url}}" class="btn">View Ticket</a></p><p>Thanks,<br>The {{app_name}} Team</p>',
                 'body_plain' => "Hi {{name}},\n\nTicket #{{ticket_id}}: {{ticket_subject}} has been assigned to you.\n\nView: {{ticket_url}}\n\nThanks,\nThe {{app_name}} Team",
             ],
+            [
+                'slug' => 'quote.sent',
+                'name' => 'Quote Sent to Client',
+                'subject' => 'Your Quote #{{quote_id}} from {{app_name}}',
+                'body_html' => '<p>Hi {{name}},</p><p>We\'ve prepared a quote for you. Please review the details below and let us know if you have any questions.</p><table style="width:100%;border-collapse:collapse;margin:16px 0"><tr><td style="padding:8px 0;color:#6b7280">Quote #</td><td style="padding:8px 0;font-weight:600">{{quote_id}}</td></tr><tr><td style="padding:8px 0;color:#6b7280">Total</td><td style="padding:8px 0;font-weight:600">${{total}}</td></tr><tr><td style="padding:8px 0;color:#6b7280">Valid Until</td><td style="padding:8px 0">{{valid_until}}</td></tr></table><p><a href="{{quote_url}}" class="btn">View &amp; Accept Quote</a></p><p>If you have any questions about this quote, please don\'t hesitate to open a support ticket.</p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nWe've prepared a quote for you.\n\nQuote #: {{quote_id}}\nTotal: \${{total}}\nValid Until: {{valid_until}}\n\nView & Accept: {{quote_url}}\n\nThanks,\nThe {{app_name}} Team",
+            ],
+            [
+                'slug' => 'auth.email_verify',
+                'name' => 'Email Address Verification',
+                'subject' => 'Please verify your email address',
+                'body_html' => '<p>Hi {{name}},</p><p>Thanks for signing up! Before you can access your account, we need to verify your email address.</p><p><a href="{{verification_url}}" class="btn">Verify My Email Address</a></p><p>This link will expire in 60 minutes. If you did not create an account, you can safely ignore this email.</p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nThanks for signing up! Please verify your email address by visiting the link below.\n\nVerify: {{verification_url}}\n\nThis link expires in 60 minutes. If you didn't create this account, ignore this email.\n\nThanks,\nThe {{app_name}} Team",
+            ],
         ];
 
         foreach ($templates as $data) {

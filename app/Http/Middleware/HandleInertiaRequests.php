@@ -66,11 +66,26 @@ class HandleInertiaRequests extends Middleware
             'twoFactorWarning' => fn () => $request->user()?->hasAnyRole(['super-admin', 'admin', 'staff'])
                 && ! ($request->user()->two_factor_enabled && $request->user()->two_factor_confirmed_at),
             'stripeKey' => config('services.stripe.key'),
+            'oauthProviders' => fn () => [
+                'google'    => (bool) Setting::get('google_client_id'),
+                'microsoft' => (bool) Setting::get('microsoft_client_id'),
+            ],
             'siteName' => fn () => Setting::get('site_title', Setting::get('company_name', config('app.name'))),
             'logoUrl' => fn () => ($p = Setting::get('logo_path')) ? Storage::disk('public')->url($p) : null,
             'portalTheme' => fn () => Setting::get('portal_theme', 'blue'),
-            'appVersion' => fn () => $this->resolveVersion(),
-            'license'    => fn () => $this->resolveLicense(),
+            'appVersion'    => fn () => $this->resolveVersion(),
+            'license'       => fn () => $this->resolveLicense(),
+            'portalBranding' => fn () => [
+                'primaryColor' => Setting::get('brand_primary_color'),
+                'accentColor'  => Setting::get('brand_accent_color'),
+                'heroBadge'    => Setting::get('portal_hero_badge'),
+                'heroTitle'    => Setting::get('portal_hero_title'),
+                'footerLinks'   => json_decode(Setting::get('portal_footer_links', '[]'), true) ?: [],
+                'featureCards'  => json_decode(Setting::get('portal_feature_cards', 'null'), true),
+                'statItems'     => json_decode(Setting::get('portal_stat_items', 'null'), true),
+                'customCss'     => Setting::get('portal_custom_css'),
+                'faviconUrl'    => ($p = Setting::get('favicon_path')) ? Storage::disk('public')->url($p) : null,
+            ],
         ]);
     }
 

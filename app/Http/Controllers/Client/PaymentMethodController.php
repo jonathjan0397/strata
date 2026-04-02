@@ -15,11 +15,12 @@ use Stripe\StripeClient;
 
 class PaymentMethodController extends Controller
 {
-    private StripeClient $stripe;
+    private ?StripeClient $stripe;
 
     public function __construct()
     {
-        $this->stripe = new StripeClient(config('services.stripe.secret'));
+        $secret = config('services.stripe.secret');
+        $this->stripe = $secret ? new StripeClient($secret) : null;
     }
 
     public function index(Request $request): Response
@@ -31,7 +32,8 @@ class PaymentMethodController extends Controller
             ->get();
 
         return Inertia::render('Client/PaymentMethods/Index', [
-            'methods' => $methods,
+            'methods'   => $methods,
+            'hasStripe' => (bool) $this->stripe,
         ]);
     }
 
@@ -40,6 +42,7 @@ class PaymentMethodController extends Controller
      */
     public function setupIntent(Request $request): JsonResponse
     {
+        abort_unless($this->stripe, 503, 'Stripe is not configured.');
         $user = $request->user();
         $this->ensureStripeCustomer($user);
 

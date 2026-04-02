@@ -20,6 +20,12 @@ class DashboardController extends Controller
                 'open_tickets' => $user->tickets()->whereIn('status', ['open', 'customer_reply'])->count(),
                 'active_domains' => $user->domains()->where('status', 'active')->count(),
             ],
+            'all_services' => $user->services()
+                ->with('product')
+                ->whereIn('status', ['active', 'suspended', 'pending'])
+                ->orderByRaw("FIELD(status,'active','pending','suspended')")
+                ->orderBy('next_due_date')
+                ->get(),
             'services_due' => $user->services()
                 ->with('product')
                 ->where('status', 'active')
@@ -32,6 +38,11 @@ class DashboardController extends Controller
                 ->latest('due_date')
                 ->limit(5)
                 ->get(),
+            'billing_history' => $user->invoices()
+                ->where('status', 'paid')
+                ->latest('paid_at')
+                ->limit(6)
+                ->get(['id', 'total', 'paid_at', 'date']),
             'recent_tickets' => $user->tickets()
                 ->whereIn('status', ['open', 'customer_reply', 'answered'])
                 ->latest('last_reply_at')

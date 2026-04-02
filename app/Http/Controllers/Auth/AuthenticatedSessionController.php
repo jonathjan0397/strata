@@ -42,7 +42,11 @@ class AuthenticatedSessionController extends Controller
 
         AuditLogger::log('auth.login', null, [], $user->id);
 
-        return redirect()->intended(route('admin.dashboard'));
+        $destination = $user->hasAnyRole(['super-admin', 'admin', 'staff'])
+            ? route('admin.dashboard')
+            : route('client.dashboard');
+
+        return redirect()->intended($destination);
     }
 
     public function destroy(Request $request): RedirectResponse
