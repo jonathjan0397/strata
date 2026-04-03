@@ -2,7 +2,7 @@
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
 
-> Complete feature inventory as of v1.0.16 (2026-04-02).
+> Complete feature inventory as of v1.0.16 (2026-04-03).
 > Updated after each release. See [CHANGELOG.md](CHANGELOG.md) for history.
 
 ---
@@ -19,7 +19,8 @@
 | OAuth2 social login | Laravel Socialite — Google and Microsoft |
 | Email verification | Verified on registration; resend available |
 | Password reset | Signed email link; standard Laravel flow |
-| Active session management | View and revoke sessions per device/IP |
+| Password change | Change password from Profile page — requires current password; available to all roles |
+| Active session management | View and revoke sessions per device/IP (admin/staff only) |
 | Role system | `super-admin`, `admin`, `staff`, `client` via spatie/laravel-permission |
 | Staff permission groups | Granular scopes: billing, support, technical, clients, reports |
 
@@ -480,4 +481,4 @@ All of the following work on CWP/shared hosting without a queue worker:
 
 ---
 
-*Last updated: 2026-04-02 — v1.0.16*
+*Last updated: 2026-04-03 — v1.0.16*

@@ -34,7 +34,8 @@ Strata ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathja
 - **2FA optional** — persistent amber banner nudge for admin/staff; non-blocking
 - **OAuth2 social login** via Laravel Socialite — Google and Microsoft
 - Password reset via signed email link
-- **Active session management** — view and revoke sessions per device/IP
+- **Password change** — change password from Profile page; requires current password; all roles
+- **Active session management** — view and revoke sessions per device/IP (admin/staff only)
 - Role system: `super-admin`, `admin`, `staff`, `client` (via spatie/laravel-permission)
 - **Staff permission groups** — granular scopes: billing, support, technical, clients, reports
 

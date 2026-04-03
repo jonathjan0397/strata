@@ -535,4 +535,25 @@ Additionally, "Sessions" (active session management) was visible in the client-f
 
 ---
 
-*Last updated: 2026-04-02*
+## BF-039 — Client dashboard blank: Ziggy route `client.tickets.show` does not exist
+**Status:** FIXED
+**File:** `resources/js/Pages/Client/Dashboard.vue`
+
+### Symptom
+The client portal dashboard appeared blank for any account that had open support tickets. For accounts with no tickets the page rendered (but showed the redesigned empty state from BF-038).
+
+### Root cause
+`Dashboard.vue` contained the following in the recent tickets list:
+```vue
+<Link :href="route('client.tickets.show', t.id)">
+```
+The route `client.tickets.show` does not exist. The correct route name is `client.support.show` (declared in `routes/web.php` as `Route::get('support/{ticket}', ...)->name('support.show')` inside the `Route::name('client.')->group(...)` block, giving the full name `client.support.show`).
+
+Ziggy throws a JavaScript exception when `route()` is called with an unknown name. Because this occurred inside a `v-for` rendering the tickets list, the exception propagated and crashed the entire Vue component tree for the page, resulting in a fully blank dashboard for any account with tickets.
+
+### Fix
+Changed `route('client.tickets.show', t.id)` to `route('client.support.show', t.id)` in `Dashboard.vue`.
+
+---
+
+*Last updated: 2026-04-03*

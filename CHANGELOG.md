@@ -5,13 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.0.16] — 2026-04-02
+## [1.0.16] — 2026-04-03
+
+### Added
+- **Password change** — all user roles (admin, staff, client) can now change their account password from the Profile page (`/profile`); requires current password, enforces minimum 8 characters with confirmation; success message displayed inline; `ProfileController::changePassword()` + `PUT profile/password` route.
 
 ### Fixed
-- **Client invoice list 500** — `InvoiceController::index()` cloned the paginated query (which carries `latest()` → `ORDER BY created_at DESC`) before running aggregate `SUM()` columns; MySQL's `ONLY_FULL_GROUP_BY` mode rejects mixing aggregates with a non-grouped `ORDER BY` clause; added `->reorder()` before `->selectRaw()` to strip the inherited order before the summary totals query runs.
-- **Client service cancellation 500** — `requestCancellation` attempted to write `status = 'cancellation_requested'` to the `services` table; the column was declared `ENUM('pending','active','suspended','cancelled','terminated')` and `cancellation_requested` was never added; added migration `2026_04_02_000003_add_cancellation_requested_to_services_status` to extend the enum; also deployed two previously missing column migrations (`cancellation_reason`/`cancellation_requested_at` via `2026_03_27_032000` and `cancellation_type`/`scheduled_cancel_at` via `2026_03_28_310000`).
-- **Client dashboard blank** — redesigned `Client/Dashboard.vue` with a personalised welcome banner, outstanding balance alert (amber strip with total due + pay-now link when unpaid invoices exist), clickable stat cards (services, unpaid invoices, open tickets, account credit), services list with colour-coded due-date proximity indicator, improved empty state with "Browse Plans" CTA, and unpaid/tickets side-by-side with billing history full-width below.
-- **Active Sessions visible to clients** — "Sessions" link in the shared Account nav was rendered for all users; filtered with `settingsNav.filter(i => isAdmin || i.name !== 'Sessions')` so it appears only for admin/staff.
+- **Client invoice list 500** — `InvoiceController::index()` cloned the paginated query (which carries `latest()` → `ORDER BY created_at DESC`) before running aggregate `SUM()` columns; MySQL's `ONLY_FULL_GROUP_BY` mode rejects mixing aggregates with a non-grouped `ORDER BY` clause; added `->reorder()` before `->selectRaw()` to strip the inherited order before the summary totals query runs (BF-036).
+- **Client service cancellation 500** — `requestCancellation` attempted to write `status = 'cancellation_requested'` to the `services` table; the column was declared `ENUM('pending','active','suspended','cancelled','terminated')` and `cancellation_requested` was never added; added migration `2026_04_02_000003_add_cancellation_requested_to_services_status` to extend the enum via raw `ALTER TABLE ... MODIFY COLUMN` (Doctrine DBAL not required) (BF-037).
+- **Client dashboard blank** — redesigned `Client/Dashboard.vue` with a personalised welcome banner, outstanding balance alert (amber strip with total due + pay-now link when unpaid invoices exist), clickable stat cards (services, unpaid invoices, open tickets, account credit), services list with colour-coded due-date proximity indicator, improved empty state with "Browse Plans" CTA, and unpaid/tickets side-by-side with billing history full-width below; `DashboardController` now passes `creditBalance` and `companyName` props (BF-038).
+- **Client dashboard blank — Ziggy route crash** — `Dashboard.vue` referenced `route('client.tickets.show', t.id)` in the recent tickets list; this route does not exist (correct name: `client.support.show`); Ziggy threw a JavaScript exception that crashed the entire Vue page on any account with open tickets (BF-039).
+- **Active Sessions visible to clients** — "Sessions" link in the shared Account nav was rendered for all users; filtered with `settingsNav.filter(i => isAdmin || i.name !== 'Sessions')` so it appears only for admin/staff (BF-038).
 
 ---
 
@@ -204,4 +208,4 @@ All emails use `Mail::send()` with silent `try/catch`. PATCH/PUT/DELETE method-s
 
 ---
 
-*Last updated: 2026-04-02 — 1.0.16*
+*Last updated: 2026-04-03 — 1.0.16*
