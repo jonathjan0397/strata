@@ -535,6 +535,44 @@ Additionally, "Sessions" (active session management) was visible in the client-f
 
 ---
 
+## BF-040 — Admin email log not recording new messages
+**Status:** FIXED
+**Files:** `app/Listeners/LogSentEmail.php`, `app/Mail/TemplateMailable.php`, `app/Console/Commands/FlagOverdueInvoices.php`, `app/Console/Commands/SendDomainRenewalReminders.php`, `app/Console/Commands/SendPaymentReminders.php`
+
+### Symptom
+The admin Email Log page shows no new entries after emails are sent. The log may have older entries from before the issue appeared, but nothing new is recorded regardless of what action triggers a mail send.
+
+### Root cause 1 — Wrong address extraction in listener
+
+`LogSentEmail::handle()` contained:
+```php
+$toAddresses = array_keys($message->getTo() ?? []);
+```
+Laravel 10+ uses Symfony Mailer. `Email::getTo()` returns `Symfony\Component\Mime\Address[]` — a 0-indexed array of objects. `array_keys()` on a 0-indexed array returns the integer indices `[0, 1, 2, ...]`, not the email address strings.
+
+Result: every log entry was written with `to = "0"` instead of the actual recipient address. The `User::where('email', '0')` lookup always returned null so `user_id` was always null. Log entries were created but appeared meaningless — admins searching for a real email address found nothing.
+
+**Fix:** Changed to `array_map(fn($a) => $a->getAddress(), $message->getTo() ?? [])` to correctly extract the email string from each `Address` object.
+
+### Root cause 2 — Scheduler commands used `Mail::queue()`
+
+Three scheduled commands sent mail via `Mail::to()->queue()`:
+- `billing:flag-overdue` (`FlagOverdueInvoices`)
+- `domains:send-reminders` (`SendDomainRenewalReminders`)
+- `billing:send-reminders` (`SendPaymentReminders`)
+
+`Mail::queue()` pushes a `SendQueuedMailable` job to the configured queue. On shared hosting with `QUEUE_CONNECTION=database` and no `queue:work` daemon running, these jobs are written to the `jobs` table and never processed. The emails are never sent and `MessageSent` never fires, so no log entry is ever created.
+
+**Fix:** Changed all three to `Mail::send()` wrapped in `try/catch (\Throwable)` — consistent with every other mail call in the application.
+
+### Root cause 3 — `TemplateMailable` class declaration missing
+
+`class TemplateMailable extends Mailable` was lost from `app/Mail/TemplateMailable.php` during a local file edit. The server continued to function because PHP OPcache was serving the previously compiled version of the file. Once OPcache expired or the server restarted, any mail call would produce a fatal `ParseError` (property declaration at global scope) caught silently by the surrounding `try/catch`, preventing the email from sending or logging.
+
+**Fix:** Restored the class declaration.
+
+---
+
 ## BF-039 — Client dashboard blank: Ziggy route `client.tickets.show` does not exist
 **Status:** FIXED
 **File:** `resources/js/Pages/Client/Dashboard.vue`

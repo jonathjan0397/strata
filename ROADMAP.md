@@ -14,7 +14,7 @@ See [CHANGELOG.md](CHANGELOG.md) for a detailed history of what changed in each 
 
 The stable release track began at **1.0.0** (2026-04-01) and is now at **v1.0.16** (2026-04-03). The full feature set is production-ready: admin panel, client portal, public glassmorphism portal, embeddable widget, five provisioning modules (cPanel, Plesk, DirectAdmin, HestiaCP, CWP), four domain registrars, three payment gateways, full billing automation, automation workflows, affiliate program, quote system, and advanced order features.
 
-Patch releases since 1.0.0 resolved: Active Sessions (session driver config), OAuth button visibility (settings key prefix fix), activation email delivery (sync send, resend button), portal branding consolidation, rich-text announcements, invoice list SQL GROUP BY error (BF-036), service cancellation enum gap (BF-037), client dashboard redesign (BF-038), dashboard Ziggy route crash (BF-039), and password change for all user roles.
+Patch releases since 1.0.0 resolved: Active Sessions (session driver config), OAuth button visibility (settings key prefix fix), activation email delivery (sync send, resend button), portal branding consolidation, rich-text announcements, invoice list SQL GROUP BY error (BF-036), service cancellation enum gap (BF-037), client dashboard redesign (BF-038), dashboard Ziggy route crash (BF-039), password change for all user roles, and email log address extraction + scheduler queue() calls (BF-040).
 
 ---
 

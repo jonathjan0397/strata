@@ -16,6 +16,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Client dashboard blank** — redesigned `Client/Dashboard.vue` with a personalised welcome banner, outstanding balance alert (amber strip with total due + pay-now link when unpaid invoices exist), clickable stat cards (services, unpaid invoices, open tickets, account credit), services list with colour-coded due-date proximity indicator, improved empty state with "Browse Plans" CTA, and unpaid/tickets side-by-side with billing history full-width below; `DashboardController` now passes `creditBalance` and `companyName` props (BF-038).
 - **Client dashboard blank — Ziggy route crash** — `Dashboard.vue` referenced `route('client.tickets.show', t.id)` in the recent tickets list; this route does not exist (correct name: `client.support.show`); Ziggy threw a JavaScript exception that crashed the entire Vue page on any account with open tickets (BF-039).
 - **Active Sessions visible to clients** — "Sessions" link in the shared Account nav was rendered for all users; filtered with `settingsNav.filter(i => isAdmin || i.name !== 'Sessions')` so it appears only for admin/staff (BF-038).
+- **Email log not recording new messages** — two root causes: (1) `LogSentEmail` listener called `array_keys()` on the Symfony `Address[]` array returned by `getTo()`, which yields integer indices `[0, 1, ...]` instead of email strings — every log entry was written with `to = "0"`; fixed with `array_map(fn($a) => $a->getAddress(), ...)`. (2) `FlagOverdueInvoices`, `SendDomainRenewalReminders`, and `SendPaymentReminders` used `Mail::queue()` — on shared hosting with `QUEUE_CONNECTION=database` and no queue worker, jobs sit in the queue forever and are never sent or logged; changed to `Mail::send()` with `try/catch` consistent with all other mail calls (BF-040).
+- **`TemplateMailable` class declaration missing** — `class TemplateMailable extends Mailable` line was lost in a local file edit; server was running a cached OPcache version; restored (BF-040).
 
 ---
 
@@ -208,4 +210,4 @@ All emails use `Mail::send()` with silent `try/catch`. PATCH/PUT/DELETE method-s
 
 ---
 
-*Last updated: 2026-04-03 — 1.0.16*
+*Last updated: 2026-04-03 — v1.0.16*
