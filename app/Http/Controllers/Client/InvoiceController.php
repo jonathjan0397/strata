@@ -42,7 +42,7 @@ class InvoiceController extends Controller
         }
 
         // Summary totals for the current filtered set (clone before paginating)
-        $summary = (clone $query)->selectRaw('
+        $summary = (clone $query)->reorder()->selectRaw('
             SUM(total) as total_billed,
             SUM(CASE WHEN status = \'paid\' THEN total ELSE 0 END) as total_paid,
             SUM(CASE WHEN status != \'paid\' THEN amount_due ELSE 0 END) as total_outstanding

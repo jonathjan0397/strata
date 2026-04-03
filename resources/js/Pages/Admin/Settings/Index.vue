@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import { Link, router, useForm } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
 
+
 defineOptions({ layout: AppLayout })
 
 const props = defineProps({ settings: Object, appUrl: String })
@@ -28,6 +29,59 @@ function uploadLogo() {
     fd.append('logo', logoFile.value)
     router.post(route('admin.settings.logo'), fd, { forceFormData: true })
 }
+
+// Favicon upload
+const faviconPreview = ref(s.favicon_path ? `/storage/${s.favicon_path}` : null)
+const faviconFile    = ref(null)
+
+function onFaviconChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    faviconFile.value = file
+    faviconPreview.value = URL.createObjectURL(file)
+}
+
+function uploadFavicon() {
+    if (!faviconFile.value) return
+    const fd = new FormData()
+    fd.append('favicon', faviconFile.value)
+    router.post(route('admin.settings.favicon'), fd, { forceFormData: true })
+}
+
+// Footer links — managed as an array, synced to form.portal_footer_links (JSON)
+const footerLinks = ref(
+    (() => { try { return JSON.parse(s.portal_footer_links || '[]') } catch { return [] } })()
+)
+watch(footerLinks, (v) => { form.portal_footer_links = JSON.stringify(v) }, { deep: true })
+
+function addFooterLink() { footerLinks.value.push({ label: '', url: '' }) }
+function removeFooterLink(i) { footerLinks.value.splice(i, 1) }
+
+// Feature cards
+const DEFAULT_FEATURE_CARDS = [
+    { icon: '🛡️', title: 'Secure & Reliable',   desc: 'Enterprise-grade infrastructure with 99.9% uptime SLA and proactive monitoring.', enabled: true },
+    { icon: '⚡',  title: 'Instant Provisioning', desc: 'Services are provisioned automatically the moment your order is confirmed.', enabled: true },
+    { icon: '💬',  title: 'Real Support',          desc: 'Talk to humans, not bots. Our team responds fast via your support portal.', enabled: true },
+]
+const featureCards = ref(
+    (() => { try { return JSON.parse(s.portal_feature_cards || 'null') || DEFAULT_FEATURE_CARDS } catch { return DEFAULT_FEATURE_CARDS } })()
+)
+watch(featureCards, (v) => { form.portal_feature_cards = JSON.stringify(v) }, { deep: true })
+function addFeatureCard() { featureCards.value.push({ icon: '✨', title: '', desc: '', enabled: true }) }
+function removeFeatureCard(i) { featureCards.value.splice(i, 1) }
+
+// Stat items
+const DEFAULT_STAT_ITEMS = [
+    { value: '99.9%', label: 'Uptime',    enabled: true },
+    { value: '24/7',  label: 'Support',   enabled: true },
+    { value: 'SSL',   label: 'Included',  enabled: true },
+]
+const statItems = ref(
+    (() => { try { return JSON.parse(s.portal_stat_items || 'null') || DEFAULT_STAT_ITEMS } catch { return DEFAULT_STAT_ITEMS } })()
+)
+watch(statItems, (v) => { form.portal_stat_items = JSON.stringify(v) }, { deep: true })
+function addStatItem() { statItems.value.push({ value: '', label: '', enabled: true }) }
+function removeStatItem(i) { statItems.value.splice(i, 1) }
 
 const form = useForm({
     // General
@@ -63,6 +117,15 @@ const form = useForm({
     affiliate_default_commission_type:  s.affiliate_default_commission_type  ?? 'percent',
     affiliate_default_commission_value: s.affiliate_default_commission_value ?? '10',
     affiliate_default_payout_threshold: s.affiliate_default_payout_threshold ?? '50',
+    // Portal branding
+    brand_primary_color:  s.brand_primary_color  ?? '',
+    brand_accent_color:   s.brand_accent_color   ?? '',
+    portal_hero_badge:    s.portal_hero_badge    ?? '',
+    portal_hero_title:    s.portal_hero_title    ?? '',
+    portal_footer_links:   s.portal_footer_links  ?? '[]',
+    portal_feature_cards:  s.portal_feature_cards ?? '',
+    portal_stat_items:     s.portal_stat_items    ?? '',
+    portal_custom_css:     s.portal_custom_css    ?? '',
 })
 
 // Mail settings form
@@ -225,6 +288,7 @@ const tabs = [
     { key: 'billing',      label: 'Billing' },
     { key: 'email',        label: 'Email' },
     { key: 'integrations', label: 'Integrations' },
+    { key: 'portal',       label: 'Portal' },
 ]
 
 const timezones = [
@@ -1222,33 +1286,6 @@ function syncLicense() {
                     </select>
                 </div>
 
-                <!-- Tagline -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Portal Tagline</label>
-                    <input v-model="form.tagline" type="text" placeholder="Professional hosting &amp; services"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                    <p class="text-xs text-gray-400 mt-1">Shown below the hero title on the public portal home page.</p>
-                </div>
-
-                <!-- Portal Theme -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Portal Color Theme</label>
-                    <div class="grid grid-cols-4 gap-3">
-                        <label v-for="th in [
-                            { value:'blue',      label:'Ocean Blue',   bg:'linear-gradient(135deg,#0c1445,#0891b2)' },
-                            { value:'red',       label:'Ruby Red',     bg:'linear-gradient(135deg,#2d0a0a,#dc2626)' },
-                            { value:'green',     label:'Forest Green', bg:'linear-gradient(135deg,#042f1a,#059669)' },
-                            { value:'lightblue', label:'Sky Blue',     bg:'linear-gradient(135deg,#0a1628,#3b82f6)' },
-                        ]" :key="th.value"
-                            class="cursor-pointer rounded-xl overflow-hidden border-2 transition-all"
-                            :class="form.portal_theme === th.value ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-gray-300'">
-                            <input type="radio" class="sr-only" :value="th.value" v-model="form.portal_theme" />
-                            <div class="h-10 w-full" :style="`background: ${th.bg};`"></div>
-                            <div class="bg-white px-2 py-1.5 text-xs font-medium text-gray-600 text-center">{{ th.label }}</div>
-                        </label>
-                    </div>
-                </div>
-
                 <!-- Domain Search TLDs -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Domain Search TLDs</label>
@@ -1420,6 +1457,223 @@ function syncLicense() {
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Portal Branding -->
+            <div v-show="tab === 'portal'" class="space-y-4">
+
+                <!-- Color Theme -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Color Theme</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Sets the portal's background gradient and button colors. Use Brand Colors below to override the button and accent colors from the chosen theme.</p>
+                    </div>
+                    <div class="grid grid-cols-4 gap-3">
+                        <label v-for="th in [
+                            { value:'blue',      label:'Ocean Blue',   bg:'linear-gradient(135deg,#0c1445,#0891b2)' },
+                            { value:'red',       label:'Ruby Red',     bg:'linear-gradient(135deg,#2d0a0a,#dc2626)' },
+                            { value:'green',     label:'Forest Green', bg:'linear-gradient(135deg,#042f1a,#059669)' },
+                            { value:'lightblue', label:'Sky Blue',     bg:'linear-gradient(135deg,#0a1628,#3b82f6)' },
+                        ]" :key="th.value"
+                            class="cursor-pointer rounded-xl overflow-hidden border-2 transition-all"
+                            :class="form.portal_theme === th.value ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-gray-300'">
+                            <input type="radio" class="sr-only" :value="th.value" v-model="form.portal_theme" />
+                            <div class="h-12 w-full" :style="`background: ${th.bg};`"></div>
+                            <div class="bg-white px-2 py-1.5 text-xs font-medium text-gray-600 text-center">{{ th.label }}</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Identity -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                    <p class="text-sm font-semibold text-gray-800">Identity</p>
+
+                    <!-- Favicon -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-lg border border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden shrink-0">
+                                <img v-if="faviconPreview" :src="faviconPreview" class="w-8 h-8 object-contain" />
+                                <span v-else class="text-xs text-gray-400">ico</span>
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" accept="image/png,image/svg+xml,image/jpeg"
+                                    @change="onFaviconChange"
+                                    class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                <p class="text-xs text-gray-400 mt-1">PNG or SVG, square, max 512 KB. Shown in browser tabs.</p>
+                            </div>
+                            <button v-if="faviconFile" type="button" @click="uploadFavicon"
+                                class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 shrink-0">
+                                Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Brand Colors -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Brand Colors</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Override the button/accent colors from your selected theme. Leave blank to use theme defaults.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color <span class="text-gray-400 font-normal">(CTA buttons)</span></label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" v-model="form.brand_primary_color"
+                                    class="h-9 w-10 rounded border border-gray-300 cursor-pointer p-0.5" />
+                                <input type="text" v-model="form.brand_primary_color" placeholder="#0ea5e9" maxlength="9"
+                                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                <button v-if="form.brand_primary_color" type="button" @click="form.brand_primary_color = ''"
+                                    class="text-xs text-gray-400 hover:text-gray-600 px-2">Clear</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Accent Color <span class="text-gray-400 font-normal">(gradients)</span></label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" v-model="form.brand_accent_color"
+                                    class="h-9 w-10 rounded border border-gray-300 cursor-pointer p-0.5" />
+                                <input type="text" v-model="form.brand_accent_color" placeholder="#6366f1" maxlength="9"
+                                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                <button v-if="form.brand_accent_color" type="button" @click="form.brand_accent_color = ''"
+                                    class="text-xs text-gray-400 hover:text-gray-600 px-2">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Homepage Hero -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                    <p class="text-sm font-semibold text-gray-800">Homepage Hero</p>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Badge Text</label>
+                        <input v-model="form.portal_hero_badge" type="text" maxlength="100"
+                            placeholder="Hosting &amp; Services Platform"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <p class="text-xs text-gray-400 mt-1">Small pill badge above the headline. Leave blank for default.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Main Headline</label>
+                        <input v-model="form.portal_hero_title" type="text" maxlength="100"
+                            placeholder="Professional Hosting Made Simple"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <p class="text-xs text-gray-400 mt-1">Large h1 text. Leave blank to use the default with gradient accent.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tagline <span class="font-normal text-gray-400">(subtitle)</span></label>
+                        <input v-model="form.tagline" type="text" maxlength="255"
+                            placeholder="Professional hosting &amp; services"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <p class="text-xs text-gray-400 mt-1">Shown below the headline on the portal home page.</p>
+                    </div>
+                </div>
+
+                <!-- Footer Links -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Footer Links</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Leave empty to use the default portal navigation.</p>
+                        </div>
+                        <button type="button" @click="addFooterLink"
+                            class="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">
+                            + Add Link
+                        </button>
+                    </div>
+                    <div v-for="(link, i) in footerLinks" :key="i" class="flex items-center gap-2">
+                        <input v-model="link.label" type="text" placeholder="Label" maxlength="60"
+                            class="w-32 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <input v-model="link.url" type="text" placeholder="/page or https://..."
+                            class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <button type="button" @click="removeFooterLink(i)"
+                            class="text-gray-400 hover:text-red-500 px-1 text-lg leading-none">&times;</button>
+                    </div>
+                    <p v-if="footerLinks.length === 0" class="text-xs text-gray-400 italic">No custom links configured.</p>
+                </div>
+
+                <!-- Feature Highlights -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Feature Highlights</p>
+                            <p class="text-xs text-gray-500 mt-0.5">The three cards shown below the hero. Toggle, reorder, or edit any card.</p>
+                        </div>
+                        <button type="button" @click="addFeatureCard"
+                            class="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">
+                            + Add Card
+                        </button>
+                    </div>
+                    <div v-for="(card, i) in featureCards" :key="i"
+                        class="rounded-lg border border-gray-200 p-3 space-y-2"
+                        :class="card.enabled === false ? 'opacity-50' : ''">
+                        <div class="flex items-center gap-2">
+                            <input v-model="card.icon" type="text" maxlength="4"
+                                placeholder="🛡️"
+                                class="w-14 border border-gray-300 rounded-lg px-2 py-1.5 text-center text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                            <input v-model="card.title" type="text" maxlength="60"
+                                placeholder="Card title"
+                                class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                            <!-- Toggle -->
+                            <button type="button" @click="card.enabled = !card.enabled"
+                                class="shrink-0 w-10 h-5 rounded-full transition-colors relative"
+                                :class="card.enabled !== false ? 'bg-indigo-600' : 'bg-gray-300'">
+                                <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all"
+                                    :class="card.enabled !== false ? 'left-5' : 'left-0.5'" />
+                            </button>
+                            <button type="button" @click="removeFeatureCard(i)"
+                                class="text-gray-400 hover:text-red-500 px-1 text-lg leading-none">&times;</button>
+                        </div>
+                        <textarea v-model="card.desc" rows="2" maxlength="200"
+                            placeholder="Short description shown under the card title..."
+                            class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+                    </div>
+                    <p v-if="featureCards.length === 0" class="text-xs text-gray-400 italic">No cards — section will be hidden.</p>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Stats Row</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Numbers shown below the hero buttons (e.g. 99.9% Uptime).</p>
+                        </div>
+                        <button type="button" @click="addStatItem"
+                            class="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">
+                            + Add Stat
+                        </button>
+                    </div>
+                    <div v-for="(stat, i) in statItems" :key="i" class="flex items-center gap-2"
+                        :class="stat.enabled === false ? 'opacity-50' : ''">
+                        <input v-model="stat.value" type="text" maxlength="20"
+                            placeholder="99.9%"
+                            class="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <input v-model="stat.label" type="text" maxlength="30"
+                            placeholder="Uptime"
+                            class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <!-- Toggle -->
+                        <button type="button" @click="stat.enabled = !stat.enabled"
+                            class="shrink-0 w-10 h-5 rounded-full transition-colors relative"
+                            :class="stat.enabled !== false ? 'bg-indigo-600' : 'bg-gray-300'">
+                            <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all"
+                                :class="stat.enabled !== false ? 'left-5' : 'left-0.5'" />
+                        </button>
+                        <button type="button" @click="removeStatItem(i)"
+                            class="text-gray-400 hover:text-red-500 px-1 text-lg leading-none">&times;</button>
+                    </div>
+                    <p v-if="statItems.length === 0" class="text-xs text-gray-400 italic">No stats — row will be hidden.</p>
+                </div>
+
+                <!-- Custom CSS -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Custom CSS</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Injected into the public portal. Targets the portal pages only.</p>
+                    </div>
+                    <textarea v-model="form.portal_custom_css" rows="8"
+                        placeholder="/* Example: change hero background */&#10;.hero-section { background: ... }"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y">
+                    </textarea>
                 </div>
             </div>
 

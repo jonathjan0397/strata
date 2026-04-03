@@ -23,7 +23,7 @@ function fmtDate(val) {
       >
         <h2 class="text-base font-semibold text-gray-900 mb-1">{{ a.title }}</h2>
         <p class="text-xs text-gray-400 mb-4">{{ fmtDate(a.published_at) }}</p>
-        <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{{ a.body }}</div>
+        <div class="prose prose-sm max-w-none" v-html="a.body" />
       </article>
     </div>
 

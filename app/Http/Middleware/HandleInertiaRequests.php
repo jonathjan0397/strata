@@ -61,14 +61,15 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'success' => fn () => $request->hasSession() ? $request->session()->get('success') : null,
+                'warning' => fn () => $request->hasSession() ? $request->session()->get('warning') : null,
                 'error' => fn () => $request->hasSession() ? $request->session()->get('error') : null,
             ],
             'twoFactorWarning' => fn () => $request->user()?->hasAnyRole(['super-admin', 'admin', 'staff'])
                 && ! ($request->user()->two_factor_enabled && $request->user()->two_factor_confirmed_at),
             'stripeKey' => config('services.stripe.key'),
             'oauthProviders' => fn () => [
-                'google'    => (bool) Setting::get('google_client_id'),
-                'microsoft' => (bool) Setting::get('microsoft_client_id'),
+                'google'    => (bool) Setting::get('integration_google_client_id'),
+                'microsoft' => (bool) Setting::get('integration_microsoft_client_id'),
             ],
             'siteName' => fn () => Setting::get('site_title', Setting::get('company_name', config('app.name'))),
             'logoUrl' => fn () => ($p = Setting::get('logo_path')) ? Storage::disk('public')->url($p) : null,

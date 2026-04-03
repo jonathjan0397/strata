@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\MailSendException;
 use App\Http\Controllers\Controller;
 use App\Models\Addon;
 use App\Models\Invoice;
@@ -122,11 +123,25 @@ class ServiceController extends Controller
 
         try {
             OrderProvisioner::provision($service);
+        } catch (MailSendException $e) {
+            // Service was provisioned successfully but the welcome email failed.
+            return back()->with('warning', $e->getMessage().' You can resend it from this page.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Provisioning failed: '.$e->getMessage());
         }
 
-        return back()->with('success', 'Service approved and activated.');
+        return back()->with('success', 'Service approved and activated. Welcome email sent.');
+    }
+
+    public function resendWelcome(Service $service): RedirectResponse
+    {
+        try {
+            OrderProvisioner::resendWelcomeEmail($service);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Email failed: '.$e->getMessage());
+        }
+
+        return back()->with('success', 'Welcome email resent to '.$service->user->email.'.');
     }
 
     public function suspend(Request $request, Service $service): RedirectResponse

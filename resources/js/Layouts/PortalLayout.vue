@@ -1,13 +1,14 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 
 const page   = usePage()
 const user   = computed(() => page.props.auth?.user)
 const flash  = computed(() => page.props.flash)
-const siteName   = computed(() => page.props.siteName   ?? 'Strata Service Billing and Support Platform')
-const logoUrl    = computed(() => page.props.logoUrl    ?? null)
+const siteName    = computed(() => page.props.siteName   ?? 'Strata Service Billing and Support Platform')
+const logoUrl     = computed(() => page.props.logoUrl    ?? null)
 const portalTheme = computed(() => page.props.portalTheme ?? 'blue')
+const branding    = computed(() => page.props.portalBranding ?? {})
 
 const THEMES = {
   blue:      { bg: 'linear-gradient(135deg,#0c1445 0%,#1a3a6b 40%,#0e7490 80%,#0891b2 100%)', orb1:'#38bdf8', orb2:'#818cf8', orb3:'#0ea5e9', accent:'56,189,248', header:'12,20,69', btn1:'#0ea5e9', btn2:'#6366f1' },
@@ -16,7 +17,38 @@ const THEMES = {
   lightblue: { bg: 'linear-gradient(135deg,#0a1628 0%,#1e3a5f 40%,#1e5799 80%,#3b82f6 100%)', orb1:'#93c5fd', orb2:'#a5b4fc', orb3:'#60a5fa', accent:'147,197,253', header:'10,22,40',  btn1:'#3b82f6', btn2:'#6366f1' },
 }
 
-const t = computed(() => THEMES[portalTheme.value] ?? THEMES.blue)
+// Start with preset theme, override btn colors if admin has set custom brand colors
+const t = computed(() => {
+  const base = THEMES[portalTheme.value] ?? THEMES.blue
+  return {
+    ...base,
+    btn1: branding.value.primaryColor || base.btn1,
+    btn2: branding.value.accentColor  || base.btn2,
+  }
+})
+
+// Footer links: use admin-configured links or fall back to defaults
+const footerLinks = computed(() => {
+  const custom = branding.value.footerLinks
+  if (Array.isArray(custom) && custom.length > 0) return custom
+  return [
+    { label: 'Services',    url: route('portal.products') },
+    { label: 'Help Center', url: route('portal.kb') },
+    { label: 'News',        url: route('portal.announcements') },
+    { label: 'Client Login',url: route('login') },
+  ]
+})
+
+// Inject custom CSS into <head>, cleaned up on unmount / change
+watchEffect((onCleanup) => {
+  const css = branding.value.customCss
+  if (!css) return
+  const el = document.createElement('style')
+  el.id = 'portal-custom-css'
+  el.textContent = css
+  document.head.appendChild(el)
+  onCleanup(() => el.remove())
+})
 
 const mobileOpen = ref(false)
 
@@ -160,10 +192,8 @@ const nav = computed(() => [
             </template>
           </div>
           <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/50">
-            <a :href="route('portal.products')"      class="hover:text-white/80 transition-colors">Services</a>
-            <a :href="route('portal.kb')"            class="hover:text-white/80 transition-colors">Help Center</a>
-            <a :href="route('portal.announcements')" class="hover:text-white/80 transition-colors">News</a>
-            <a :href="route('login')"                class="hover:text-white/80 transition-colors">Client Login</a>
+            <a v-for="link in footerLinks" :key="link.label" :href="link.url"
+              class="hover:text-white/80 transition-colors">{{ link.label }}</a>
           </nav>
           <div class="text-right">
             <p class="text-white/30 text-xs">&copy; {{ new Date().getFullYear() }} {{ siteName }}. All rights reserved.</p>

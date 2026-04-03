@@ -95,7 +95,16 @@ class OrderProvisioner
             ? decrypt($credentials['password_enc'])
             : null;
 
-        static::sendActivationEmail($service, $plainPassword);
+        try {
+            static::sendActivationEmail($service, $plainPassword);
+        } catch (Throwable $e) {
+            Log::warning("Service activation email failed for service #{$service->id}: ".$e->getMessage());
+            // Throw a typed signal so the controller can show a targeted warning
+            // without treating it as a provisioning failure.
+            throw new \App\Exceptions\MailSendException(
+                "Service activated, but the welcome email could not be sent: ".$e->getMessage()
+            );
+        }
     }
 
     /**
@@ -293,14 +302,21 @@ class OrderProvisioner
         $moduleId = $service->module_data['module_id'] ?? null;
 
         if (! $moduleId || ! $service->username) {
+            Log::debug("OrderProvisioner::{$method} — skipped (no panel) for service #{$service->id}", [
+                'has_module_id' => (bool) $moduleId,
+                'has_username'  => (bool) $service->username,
+            ]);
+
             return; // no panel configured — DB-only operation
         }
 
         $module = Module::find($moduleId);
 
         if (! $module) {
-            Log::warning("OrderProvisioner::{$method} — module #{$moduleId} not found for service #{$service->id}");
-            return;
+            throw new RuntimeException(
+                "Panel module #{$moduleId} not found — it may have been deleted. ".
+                "Re-link this service to an active server before retrying."
+            );
         }
 
         $driver = ProvisionerService::forModule($module);
@@ -329,6 +345,17 @@ class OrderProvisioner
         }
     }
 
+    /**
+     * Resend the service welcome email to the client.
+     * Used by admins when the original send failed or the client didn't receive it.
+     * Throws on mail failure so the caller can surface the error.
+     */
+    public static function resendWelcomeEmail(Service $service): void
+    {
+        $service->loadMissing(['user', 'product']);
+        static::sendActivationEmail($service, null);
+    }
+
     private static function sendActivationEmail(Service $service, ?string $password): void
     {
         $user = $service->user;
@@ -350,10 +377,7 @@ class OrderProvisioner
             'portal_url' => route('client.services.show', $service->id),
         ];
 
-        try {
-            Mail::to($user->email)->send(new TemplateMailable('service.active', $vars));
-        } catch (\Throwable $e) {
-            Log::warning("Service activation email failed for user #{$user->id}: ".$e->getMessage());
-        }
+        // Let the exception bubble — callers decide whether to swallow or surface it.
+        Mail::to($user->email)->send(new TemplateMailable('service.active', $vars));
     }
 }

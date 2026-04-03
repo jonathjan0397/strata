@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Listeners\LogSentEmail;
+use App\Models\Setting;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
@@ -18,6 +19,28 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(MessageSent::class, LogSentEmail::class);
+
+        // Overlay Socialite credentials from the settings table so admins can
+        // configure OAuth without touching .env or server config files.
+        if (! app()->runningInConsole() && file_exists(storage_path('installed.lock'))) {
+            try {
+                if ($id = Setting::get('integration_google_client_id')) {
+                    config([
+                        'services.google.client_id'     => $id,
+                        'services.google.client_secret' => Setting::get('integration_google_client_secret'),
+                    ]);
+                }
+                if ($id = Setting::get('integration_microsoft_client_id')) {
+                    config([
+                        'services.microsoft.client_id'     => $id,
+                        'services.microsoft.client_secret' => Setting::get('integration_microsoft_client_secret'),
+                        'services.microsoft.tenant'        => Setting::get('integration_microsoft_tenant', 'common'),
+                    ]);
+                }
+            } catch (\Throwable) {
+                // DB may not be ready yet — skip silently
+            }
+        }
 
         if (! file_exists(storage_path('installed.lock'))) {
             // Pre-install: switch cache to array so nothing tries to hit the

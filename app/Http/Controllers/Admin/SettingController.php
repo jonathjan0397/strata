@@ -58,6 +58,15 @@ class SettingController extends Controller
             'affiliate_default_commission_type' => ['nullable', 'in:percent,fixed'],
             'affiliate_default_commission_value' => ['nullable', 'numeric', 'min:0'],
             'affiliate_default_payout_threshold' => ['nullable', 'numeric', 'min:0'],
+            // Portal branding
+            'brand_primary_color'  => ['nullable', 'string', 'max:20', 'regex:/^(#[0-9A-Fa-f]{3,8})?$/'],
+            'brand_accent_color'   => ['nullable', 'string', 'max:20', 'regex:/^(#[0-9A-Fa-f]{3,8})?$/'],
+            'portal_hero_badge'    => ['nullable', 'string', 'max:100'],
+            'portal_hero_title'    => ['nullable', 'string', 'max:100'],
+            'portal_footer_links'    => ['nullable', 'string', 'max:3000'],
+            'portal_feature_cards'   => ['nullable', 'string', 'max:5000'],
+            'portal_stat_items'      => ['nullable', 'string', 'max:1000'],
+            'portal_custom_css'      => ['nullable', 'string', 'max:10000'],
         ]);
 
         Setting::setMany($data);
@@ -237,6 +246,23 @@ class SettingController extends Controller
         Setting::set('logo_path', $path);
 
         return back()->with('flash', ['success' => 'Logo uploaded.']);
+    }
+
+    public function uploadFavicon(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'favicon' => ['required', 'image', 'mimes:png,jpg,jpeg,svg', 'max:512'],
+        ]);
+
+        $old = Setting::get('favicon_path');
+        if ($old) {
+            Storage::disk('public')->delete($old);
+        }
+
+        $path = $request->file('favicon')->store('favicons', 'public');
+        Setting::set('favicon_path', $path);
+
+        return back()->with('flash', ['success' => 'Favicon uploaded.']);
     }
 
     public function syncLicense(): RedirectResponse

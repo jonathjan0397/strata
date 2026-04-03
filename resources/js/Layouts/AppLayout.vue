@@ -309,7 +309,7 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
                 <div class="mt-auto pt-3 border-t border-blue-800/30">
                     <p class="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-blue-400/50">Account</p>
                     <ul class="space-y-0.5">
-                        <li v-for="item in settingsNav" :key="item.name">
+                        <li v-for="item in settingsNav.filter(i => isAdmin || i.name !== 'Sessions')" :key="item.name">
                             <Link
                                 :href="item.href"
                                 class="group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
@@ -391,9 +391,12 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
             </div>
 
             <!-- Flash messages -->
-            <div v-if="flash?.success || flash?.error" class="px-4 sm:px-6 pt-4">
+            <div v-if="flash?.success || flash?.error || flash?.warning" class="px-4 sm:px-6 pt-4">
                 <div v-if="flash.success" class="rounded-xl bg-green-50/80 dark:bg-green-900/30 backdrop-blur-sm border border-green-200/60 dark:border-green-700/40 px-4 py-3 text-sm text-green-800 dark:text-green-300 shadow-sm">
                     {{ flash.success }}
+                </div>
+                <div v-if="flash.warning" class="rounded-xl bg-amber-50/80 dark:bg-amber-900/30 backdrop-blur-sm border border-amber-200/60 dark:border-amber-700/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-300 shadow-sm">
+                    {{ flash.warning }}
                 </div>
                 <div v-if="flash.error" class="rounded-xl bg-red-50/80 dark:bg-red-900/30 backdrop-blur-sm border border-red-200/60 dark:border-red-700/40 px-4 py-3 text-sm text-red-800 dark:text-red-300 shadow-sm">
                     {{ flash.error }}

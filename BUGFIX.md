@@ -469,4 +469,70 @@ All of these services provide their own SPF/DKIM records and the setup is purely
 
 ---
 
-*Last updated: 2026-04-01*
+---
+
+## BF-036 — Client invoice list 500: SQLSTATE[42000] Mixing GROUP columns without GROUP BY
+**Status:** FIXED
+**File:** `app/Http/Controllers/Client/InvoiceController.php`
+
+### Symptom
+Visiting the client invoices list returns a Middleware 500 Server Error.
+
+### Root cause
+`InvoiceController::index()` clones the paginated query before running an aggregate `SUM()` summary:
+```php
+$summary = (clone $query)->selectRaw('SUM(total) as total_billed, ...')->first();
+```
+The cloned query inherits `latest()` → `ORDER BY created_at DESC`. MySQL's `ONLY_FULL_GROUP_BY` mode rejects mixing aggregate functions with an `ORDER BY` on a non-grouped column when no `GROUP BY` clause is present.
+
+Error: `SQLSTATE[42000]: Syntax error or access violation: 1140 Mixing of GROUP columns (MIN(),MAX(),COUNT(),...) with no GROUP columns is illegal if there is no GROUP BY clause`
+
+### Fix
+Added `->reorder()` before `->selectRaw()` to strip the inherited ORDER BY before the aggregate query executes:
+```php
+$summary = (clone $query)->reorder()->selectRaw('SUM(total) as total_billed, ...')->first();
+```
+
+---
+
+## BF-037 — Client service cancellation 500: `cancellation_requested` not in services status enum
+**Status:** FIXED
+**Files:** `app/Http/Controllers/Client/ServiceController.php`, `database/migrations/2026_04_02_000003_add_cancellation_requested_to_services_status.php`
+
+### Symptom
+Submitting a service cancellation request from the client portal returns a Middleware 500 Server Error.
+
+### Root cause
+`ServiceController::requestCancellation()` sets `status = 'cancellation_requested'`, but the `services.status` column was declared as `ENUM('pending','active','suspended','cancelled','terminated')` — `cancellation_requested` was never added to the enum. MySQL rejected the UPDATE with a data integrity violation error.
+
+Additionally, the `cancellation_reason`, `cancellation_requested_at`, `cancellation_type`, and `scheduled_cancel_at` columns added by migrations `2026_03_27_032000` and `2026_03_28_310000` were missing from the deploy tracking list (they were present on the server but not recorded in `deploy-stratatest.js`).
+
+### Fix
+Created migration `2026_04_02_000003_add_cancellation_requested_to_services_status.php` using a raw `ALTER TABLE ... MODIFY COLUMN status ENUM(...)` statement (Doctrine DBAL not required):
+```sql
+ALTER TABLE services MODIFY COLUMN status ENUM('pending','active','suspended','cancelled','terminated','cancellation_requested') NOT NULL DEFAULT 'pending'
+```
+`down()` moves any `cancellation_requested` rows back to `active` before narrowing the enum. Both previously missing column migrations were also added to `deploy-stratatest.js` for future deploy tracking.
+
+---
+
+## BF-038 — Client dashboard blank / no account summary
+**Status:** FIXED
+**Files:** `resources/js/Pages/Client/Dashboard.vue`, `app/Http/Controllers/Client/DashboardController.php`
+
+### Symptom
+The client portal dashboard loaded but appeared blank — no useful account information was shown, especially for accounts with no services or invoices yet.
+
+### Root cause
+The existing dashboard had the correct data structure but relied entirely on populated data to show content. All sections showed empty-state text simultaneously for a new account. There was no account summary, no CTA for new accounts, no credit balance display, and no outstanding balance alert.
+
+Additionally, "Sessions" (active session management) was visible in the client-facing Account navigation sidebar — this is an admin/security tool not relevant to standard clients.
+
+### Fix
+- **Dashboard redesign** — personalised welcome banner with user name and company name, outstanding balance amber alert strip when unpaid invoices exist, stat cards as clickable links with colour highlighting, services list with colour-coded due-date proximity (red ≤7d, amber ≤14d), "Browse Plans" CTA on empty service state, unpaid/tickets side-by-side layout, billing history full-width below.
+- **DashboardController** — added `creditBalance` (float) and `companyName` (from Settings) to props.
+- **Sessions nav hidden from clients** — `settingsNav` rendered in `AppLayout.vue` now filters `i.name !== 'Sessions'` for non-admin users.
+
+---
+
+*Last updated: 2026-04-02*

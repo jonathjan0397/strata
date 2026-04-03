@@ -38,7 +38,7 @@ function fmt(iso) {
               <h2 class="font-semibold text-white text-lg leading-snug">{{ a.title }}</h2>
               <time class="text-xs text-white/40 shrink-0">{{ fmt(a.published_at) }}</time>
             </div>
-            <p class="text-sm text-white/65 leading-relaxed whitespace-pre-wrap">{{ a.body }}</p>
+            <div class="prose prose-sm prose-invert max-w-none announcement-body" v-html="a.body" />
           </div>
         </div>
       </article>
@@ -72,3 +72,19 @@ function fmt(iso) {
 
   </div>
 </template>
+
+<style scoped>
+.announcement-body :deep(img) {
+  max-width: 100%;
+  border-radius: 0.75rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+.announcement-body :deep(a) {
+  color: #38bdf8;
+}
+.announcement-body :deep(pre) {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+</style>

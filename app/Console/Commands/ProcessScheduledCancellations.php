@@ -29,18 +29,27 @@ class ProcessScheduledCancellations extends Command
             return self::SUCCESS;
         }
 
-        $count = 0;
+        $count       = 0;
+        $panelFailed = [];
 
-        foreach ($services as $service) {
+        foreach ($services as $index => $service) {
+            // Space out panel API calls to avoid rate-limiting on bulk operations.
+            if ($index > 0 && ($service->module_data['module_id'] ?? null) && $service->username) {
+                sleep(1);
+            }
+
             try {
                 OrderProvisioner::terminate($service, 'Service cancelled at end of billing period');
+                $this->line("  ✓ Terminated service #{$service->id} ({$service->domain})");
             } catch (\Throwable $e) {
                 Log::error("Failed to terminate service #{$service->id} on panel: ".$e->getMessage());
-                // Still cancel in DB so the service is not re-billed
+                // Still cancel in DB so the service is not re-billed.
                 $service->update([
                     'status' => 'cancelled',
                     'termination_date' => now(),
                 ]);
+                $panelFailed[] = "#{$service->id} ({$service->domain}): ".$e->getMessage();
+                $this->warn("  ⚠ DB-only — panel call failed for service #{$service->id}: ".$e->getMessage());
             }
 
             $service->update(['scheduled_cancel_at' => null]);
@@ -48,12 +57,18 @@ class ProcessScheduledCancellations extends Command
             AuditLogger::log('service.cancelled', $service, ['reason' => 'end_of_period']);
             WorkflowEngine::fire('service.cancelled', $service);
 
-            $label = $service->domain ?? $service->product?->name ?? '';
-            $this->line("Cancelled service #{$service->id} ({$label})");
             $count++;
         }
 
         $this->info("Cancelled {$count} service(s).");
+
+        if (count($panelFailed) > 0) {
+            $this->warn(count($panelFailed).' panel call(s) failed — services cancelled in DB only:');
+            foreach ($panelFailed as $msg) {
+                $this->warn("  - {$msg}");
+            }
+            Log::warning('ProcessScheduledCancellations: '.count($panelFailed).' panel call(s) failed.', $panelFailed);
+        }
 
         return self::SUCCESS;
     }

@@ -142,6 +142,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ── Profile ──────────────────────────────────────────────────────────────
     Route::get('profile', [ProfileController::class,  'edit'])->name('profile.edit');
     Route::patch('profile', [ProfileController::class,  'update'])->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'changePassword'])->name('profile.password');
     Route::get('profile/security', fn () => Inertia::render('Profile/Security'))->name('profile.security');
     Route::get('profile/sessions', [SessionController::class, 'index'])->name('profile.sessions');
     Route::delete('profile/sessions/{session}', [SessionController::class, 'destroy'])->name('profile.sessions.destroy');
@@ -193,6 +194,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('services', [Admin\ServiceController::class, 'index'])->name('services.index');
         Route::get('services/{service}', [Admin\ServiceController::class, 'show'])->name('services.show');
         Route::post('services/{service}/approve', [Admin\ServiceController::class, 'approve'])->name('services.approve');
+        Route::post('services/{service}/resend-welcome', [Admin\ServiceController::class, 'resendWelcome'])->name('services.resend-welcome');
         Route::post('services/{service}/suspend', [Admin\ServiceController::class, 'suspend'])->name('services.suspend');
         Route::post('services/{service}/unsuspend', [Admin\ServiceController::class, 'unsuspend'])->name('services.unsuspend');
         Route::post('services/{service}/terminate', [Admin\ServiceController::class, 'terminate'])->name('services.terminate');
@@ -241,6 +243,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/mail/test', [Admin\SettingController::class, 'testMail'])->name('settings.mail.test');
         Route::post('settings/mail/deliverability', [Admin\SettingController::class, 'emailDeliverability'])->name('settings.mail.deliverability');
         Route::post('settings/logo', [Admin\SettingController::class, 'uploadLogo'])->name('settings.logo');
+        Route::post('settings/favicon', [Admin\SettingController::class, 'uploadFavicon'])->name('settings.favicon');
         Route::patch('settings/integrations', [Admin\SettingController::class, 'updateIntegrations'])->name('settings.integrations');
         Route::post('settings/license-sync', [Admin\SettingController::class, 'syncLicense'])->name('settings.license-sync');
         Route::post('settings/license-trial', [Admin\SettingController::class, 'startTrial'])->name('settings.license-trial');
@@ -438,6 +441,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         Route::get('reports', [Admin\ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/export', [Admin\ReportController::class, 'export'])->name('reports.export');
 
         Route::get('tax-rates', [Admin\TaxRateController::class, 'index'])->name('tax-rates.index');
         Route::post('tax-rates', [Admin\TaxRateController::class, 'store'])->name('tax-rates.store');

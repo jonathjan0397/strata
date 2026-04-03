@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.0.16] — 2026-04-02
+
+### Fixed
+- **Client invoice list 500** — `InvoiceController::index()` cloned the paginated query (which carries `latest()` → `ORDER BY created_at DESC`) before running aggregate `SUM()` columns; MySQL's `ONLY_FULL_GROUP_BY` mode rejects mixing aggregates with a non-grouped `ORDER BY` clause; added `->reorder()` before `->selectRaw()` to strip the inherited order before the summary totals query runs.
+- **Client service cancellation 500** — `requestCancellation` attempted to write `status = 'cancellation_requested'` to the `services` table; the column was declared `ENUM('pending','active','suspended','cancelled','terminated')` and `cancellation_requested` was never added; added migration `2026_04_02_000003_add_cancellation_requested_to_services_status` to extend the enum; also deployed two previously missing column migrations (`cancellation_reason`/`cancellation_requested_at` via `2026_03_27_032000` and `cancellation_type`/`scheduled_cancel_at` via `2026_03_28_310000`).
+- **Client dashboard blank** — redesigned `Client/Dashboard.vue` with a personalised welcome banner, outstanding balance alert (amber strip with total due + pay-now link when unpaid invoices exist), clickable stat cards (services, unpaid invoices, open tickets, account credit), services list with colour-coded due-date proximity indicator, improved empty state with "Browse Plans" CTA, and unpaid/tickets side-by-side with billing history full-width below.
+- **Active Sessions visible to clients** — "Sessions" link in the shared Account nav was rendered for all users; filtered with `settingsNav.filter(i => isAdmin || i.name !== 'Sessions')` so it appears only for admin/staff.
+
+---
+
 ## [1.0.15] — 2026-04-02
 
 ### Added
@@ -194,4 +204,4 @@ All emails use `Mail::send()` with silent `try/catch`. PATCH/PUT/DELETE method-s
 
 ---
 
-*Last updated: 2026-04-02 — 1.0.10 tagged*
+*Last updated: 2026-04-02 — 1.0.16*

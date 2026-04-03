@@ -2,7 +2,7 @@
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
 
-> Complete feature inventory as of 1.0-Beta (2026-03-29).
+> Complete feature inventory as of v1.0.16 (2026-04-02).
 > Updated after each release. See [CHANGELOG.md](CHANGELOG.md) for history.
 
 ---
@@ -266,9 +266,12 @@
 ## Client Portal
 
 ### Dashboard
-- Active services panel
-- Unpaid invoices panel
-- Recent support tickets panel
+- Personalised welcome banner with user name and company name
+- Outstanding balance alert (amber strip) when unpaid invoices exist — shows total due with direct Pay Now link
+- Stat cards: active services, unpaid invoices, open tickets, account credit — each links to the relevant section; cards highlight when non-zero
+- Services list with colour-coded due-date indicator (red ≤7 days, amber ≤14 days) and billing cycle suffix
+- Empty state with "Browse Plans" CTA when no services exist
+- Unpaid invoices and support tickets side-by-side; billing history full-width below
 
 ### Order / Checkout
 - Product catalog with type badges and billing cycle pricing
@@ -336,10 +339,11 @@
 - Enable / disable TOTP two-factor authentication
 - QR code display and confirmation flow
 
-### Sessions
+### Sessions (admin/staff only)
 - View all active sessions with device/IP info
 - Revoke individual sessions
 - Revoke all other sessions
+- Not shown in client-facing navigation
 
 ---
 
@@ -476,4 +480,4 @@ All of the following work on CWP/shared hosting without a queue worker:
 
 ---
 
-*Last updated: 2026-04-01*
+*Last updated: 2026-04-02 — v1.0.16*

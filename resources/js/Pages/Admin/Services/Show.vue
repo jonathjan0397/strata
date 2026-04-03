@@ -28,6 +28,9 @@ function approveCancellation() {
 function rejectCancellation() {
   router.post(route('admin.services.reject-cancellation', props.service.id))
 }
+function resendWelcome() {
+  router.post(route('admin.services.resend-welcome', props.service.id))
+}
 
 function fmt(val) {
   if (!val) return '—'
@@ -136,6 +139,11 @@ function removeAddon(saId) {
               @click="terminate"
               class="w-full px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
             >Terminate Service</button>
+            <button
+              v-if="['active','suspended'].includes(service.status)"
+              @click="resendWelcome"
+              class="w-full px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 border border-gray-200"
+            >Resend Welcome Email</button>
           </template>
         </div>
       </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,6 +15,8 @@ class DashboardController extends Controller
         $user = $request->user();
 
         return Inertia::render('Client/Dashboard', [
+            'creditBalance' => (float) $user->credit_balance,
+            'companyName'   => Setting::get('company_name', config('app.name')),
             'stats' => [
                 'active_services' => $user->services()->where('status', 'active')->count(),
                 'unpaid_invoices' => $user->invoices()->where('status', 'unpaid')->count(),

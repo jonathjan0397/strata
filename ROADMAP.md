@@ -10,25 +10,11 @@ See [CHANGELOG.md](CHANGELOG.md) for a detailed history of what changed in each 
 
 ---
 
-## Current Release: 1.0-Beta
+## Current Release: v1.0.16 (Stable)
 
-Released 2026-03-28 / 2026-03-29 (Beta.2 polish pass). Includes the complete feature set described in the CHANGELOG: full admin panel, client portal, public glassmorphism portal, embeddable widget, all four provisioning modules, all four domain registrars, all three payment gateways, full billing automation suite, automation workflows, affiliate program, quote system, and advanced order features. The 1.0-Beta.2 pass added portal branding, 4 color themes, domain search on the public portal, registrar integration settings UI, staff ticket creation, and the reorganized Settings → Integrations tab.
+The stable release track began at **1.0.0** (2026-04-01) and is now at **v1.0.16** (2026-04-02). The full feature set is production-ready: admin panel, client portal, public glassmorphism portal, embeddable widget, five provisioning modules (cPanel, Plesk, DirectAdmin, HestiaCP, CWP), four domain registrars, three payment gateways, full billing automation, automation workflows, affiliate program, quote system, and advanced order features.
 
----
-
-## Road to 1.0 Stable
-
-The following items must be completed before `1.0` is tagged as a stable release.
-
-### Must-fix before stable
-- **BF-015** — Remove debug logging from `InstallerController`: `INSTALL_DB_TEST` log entries include password hex dumps; must be removed or gated behind `APP_DEBUG` before any production recommendation
-- End-to-end install verification on fresh CWP, cPanel, Plesk, and DirectAdmin environments
-
-### Should-complete before stable
-- **Authorize.Net Accept.js** — client-side Vue component for card entry; currently uses redirect/AIM flow only
-- **Bank transfer / manual payment gateway** — allow invoices to be paid offline with admin confirmation
-- **Upgrade wizard** — browser-based installer for upgrading between Strata versions; replaces changed files and runs `artisan migrate` without CLI
-- **Documentation review pass** — verify all README sections, FEATURES.md, and README-INSTALL.md reflect the stable feature set
+Patch releases since 1.0.0 resolved: Active Sessions (session driver config), OAuth button visibility (settings key prefix fix), activation email delivery (sync send, resend button), portal branding consolidation, rich-text announcements, invoice list SQL GROUP BY error (BF-036), service cancellation enum gap (BF-037), and client dashboard redesign (BF-038).
 
 ---
 
@@ -99,10 +85,11 @@ Strata ships on two tracks. Both use the same browser installer at `/install`.
 |-----------|-------|--------|
 | **1.0-Beta** | Initial release — full feature set, browser installer, all integrations | Released 2026-03-28 |
 | **1.0-Beta.2** | Portal branding, themes, domain search, integrations settings UI polish | Released 2026-03-29 |
-| **1.0 Stable** | BF-015 fix, Authorize.Net Accept.js, bank transfer, upgrade wizard, doc review | Planned |
+| **1.0 Stable** | BF-015 fix, Authorize.Net Accept.js, bank transfer, upgrade wizard, doc review | Released 2026-04-01 |
+| **1.0.x patches** | OAuth, email delivery, sessions, SQL errors, cancellation enum, dashboard redesign | Released 2026-04-02 (latest: v1.0.16) |
 | **1.1** | Client billing history, ticket search, satisfaction analytics, HTML reply editor | Planned |
 | **1.2** | REST API + OpenAPI, webhook UI, multiple contacts, bulk service actions | Planned |
 | **2.0** | Metered billing, multi-currency, i18n, GDPR, IP allowlist, exportable reports | Planned |
 | **Future** | White-label reseller, migration wizard, PWA, Pterodactyl/Proxmox/Cloudflare, multi-tenant | Backlog |
 
-*Last updated: 2026-03-29*
+*Last updated: 2026-04-02*

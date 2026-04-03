@@ -1,7 +1,13 @@
 <script setup>
 import PortalLayout from '@/Layouts/PortalLayout.vue'
 import DomainSearch from '@/Components/DomainSearch.vue'
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
+
+function stripHtml(html) {
+  if (!html) return ''
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+}
 
 defineOptions({ layout: PortalLayout })
 
@@ -12,6 +18,48 @@ const props = defineProps({
   siteName:             String,
   tagline:              String,
   registrarConfigured:  Boolean,
+})
+
+const branding = computed(() => usePage().props.portalBranding ?? {})
+const heroBadge = computed(() => branding.value.heroBadge || 'Hosting & Services Platform')
+const heroTitle = computed(() => branding.value.heroTitle || null)
+
+const THEME_BTNS = {
+  blue:      { btn1: '#0ea5e9', btn2: '#6366f1' },
+  red:       { btn1: '#dc2626', btn2: '#b91c1c' },
+  green:     { btn1: '#059669', btn2: '#047857' },
+  lightblue: { btn1: '#3b82f6', btn2: '#6366f1' },
+}
+const theme = computed(() => {
+  const key = usePage().props.portalTheme ?? 'blue'
+  const base = THEME_BTNS[key] ?? THEME_BTNS.blue
+  return {
+    btn1: branding.value.primaryColor || base.btn1,
+    btn2: branding.value.accentColor  || base.btn2,
+  }
+})
+
+const DEFAULT_FEATURE_CARDS = [
+  { icon: '🛡️', title: 'Secure & Reliable',   desc: 'Enterprise-grade infrastructure with 99.9% uptime SLA and proactive monitoring.' },
+  { icon: '⚡', title: 'Instant Provisioning', desc: 'Services are provisioned automatically the moment your order is confirmed.' },
+  { icon: '💬', title: 'Real Support',          desc: 'Talk to humans, not bots. Our team responds fast via your support portal.' },
+]
+const DEFAULT_STAT_ITEMS = [
+  { value: '99.9%', label: 'Uptime' },
+  { value: '24/7',  label: 'Support' },
+  { value: 'SSL',   label: 'Included' },
+]
+
+const featureCards = computed(() => {
+  const cards = branding.value.featureCards ?? null
+  if (!cards) return DEFAULT_FEATURE_CARDS
+  return cards.filter(c => c.enabled !== false)
+})
+
+const statItems = computed(() => {
+  const stats = branding.value.statItems ?? null
+  if (!stats) return DEFAULT_STAT_ITEMS
+  return stats.filter(s => s.enabled !== false)
 })
 
 const cycleLabel = {
@@ -36,13 +84,16 @@ const typeColor = {
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium text-sky-300 mb-6"
       style="background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3);">
       <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
-      Hosting &amp; Services Platform
+      {{ heroBadge }}
     </div>
     <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-      Professional Hosting<br class="hidden sm:block">
-      <span style="background: linear-gradient(135deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-        Made Simple
-      </span>
+      <template v-if="heroTitle">{{ heroTitle }}</template>
+      <template v-else>
+        Professional Hosting<br class="hidden sm:block">
+        <span :style="`background: linear-gradient(135deg, ${theme.btn1}, ${theme.btn2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;`">
+          Made Simple
+        </span>
+      </template>
     </h1>
     <p class="text-lg text-white/60 max-w-xl mx-auto mb-10">
       {{ tagline }}
@@ -50,7 +101,7 @@ const typeColor = {
     <div class="flex flex-wrap justify-center gap-4">
       <Link :href="route('portal.products')"
         class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all"
-        style="background: linear-gradient(135deg, #0ea5e9, #6366f1); box-shadow: 0 4px 20px rgba(14,165,233,0.4);">
+        :style="`background: linear-gradient(135deg, ${theme.btn1}, ${theme.btn2}); box-shadow: 0 4px 20px rgba(14,165,233,0.4);`">
         View Services
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
@@ -66,11 +117,11 @@ const typeColor = {
     </div>
 
     <!-- Stats row -->
-    <div class="mt-16 grid grid-cols-3 gap-6 max-w-md mx-auto">
-      <div v-for="s in [{n:'99.9%',l:'Uptime'},{n:'24/7',l:'Support'},{n:'SSL',l:'Included'}]" :key="s.l"
-        class="text-center">
-        <div class="text-2xl font-bold text-white">{{ s.n }}</div>
-        <div class="text-xs text-white/50 mt-1">{{ s.l }}</div>
+    <div v-if="statItems.length" class="mt-16 grid gap-6 max-w-md mx-auto"
+      :style="{ gridTemplateColumns: `repeat(${statItems.length}, minmax(0, 1fr))` }">
+      <div v-for="s in statItems" :key="s.label" class="text-center">
+        <div class="text-2xl font-bold text-white">{{ s.value }}</div>
+        <div class="text-xs text-white/50 mt-1">{{ s.label }}</div>
       </div>
     </div>
   </section>
@@ -116,7 +167,7 @@ const typeColor = {
           </div>
           <Link :href="route('register')"
             class="block w-full text-center px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
-            style="background: linear-gradient(135deg, #0ea5e9, #6366f1);"
+            :style="`background: linear-gradient(135deg, ${theme.btn1}, ${theme.btn2});`"
             onmouseover="this.style.opacity='0.85'"
             onmouseout="this.style.opacity='1'">
             Order Now
@@ -127,14 +178,11 @@ const typeColor = {
   </section>
 
   <!-- Feature highlights -->
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
-    <div class="rounded-2xl p-8 sm:p-12 grid grid-cols-1 md:grid-cols-3 gap-8"
+  <section v-if="featureCards.length" class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+    <div class="rounded-2xl p-8 sm:p-12 grid grid-cols-1 gap-8"
+      :class="featureCards.length === 1 ? 'md:grid-cols-1' : featureCards.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'"
       style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(8px);">
-      <div v-for="f in [
-        { icon: '🛡️', title: 'Secure & Reliable',   desc: 'Enterprise-grade infrastructure with 99.9% uptime SLA and proactive monitoring.' },
-        { icon: '⚡', title: 'Instant Provisioning', desc: 'Services are provisioned automatically the moment your order is confirmed.' },
-        { icon: '💬', title: 'Real Support',          desc: 'Talk to humans, not bots. Our team responds fast via your support portal.' },
-      ]" :key="f.title" class="text-center sm:text-left">
+      <div v-for="f in featureCards" :key="f.title" class="text-center sm:text-left">
         <div class="text-3xl mb-3">{{ f.icon }}</div>
         <h3 class="font-semibold text-white mb-2">{{ f.title }}</h3>
         <p class="text-sm text-white/55 leading-relaxed">{{ f.desc }}</p>
@@ -156,7 +204,7 @@ const typeColor = {
           {{ a.published_at ? new Date(a.published_at).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }) : '' }}
         </div>
         <h3 class="font-semibold text-white mb-2 leading-snug">{{ a.title }}</h3>
-        <p class="text-sm text-white/55 line-clamp-3 leading-relaxed">{{ a.body }}</p>
+        <p class="text-sm text-white/55 line-clamp-3 leading-relaxed">{{ stripHtml(a.body) }}</p>
       </div>
     </div>
   </section>

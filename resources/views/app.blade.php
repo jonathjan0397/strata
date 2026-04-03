@@ -6,6 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 
     <title inertia>{{ \App\Models\Setting::get('site_title', config('app.name')) }}</title>
+    @php $faviconPath = \App\Models\Setting::get('favicon_path') @endphp
+    @if($faviconPath)
+        <link rel="icon" type="image/png" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($faviconPath) }}" />
+    @endif
     <script>window.__SITE_NAME__ = @json(\App\Models\Setting::get('site_title', config('app.name')));</script>
 
     @routes

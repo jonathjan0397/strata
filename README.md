@@ -6,14 +6,14 @@ A self-hosted billing, client management, and support platform built for web hos
 
 ---
 
-> ## Beta Notice — 1.0-Beta
+> ## Release Notice — 1.0.16
 >
-> Strata is currently in **1.0-Beta**. It is suitable for testing and staging environments but should not be used in production with real client data at this stage.
+> Strata is at **v1.0.16** (stable release track). The platform is production-ready for hosting businesses.
 >
-> **Help us reach stable:** Install Strata in a safe, isolated environment and report any bugs or unexpected behavior by [opening an issue on GitHub](https://github.com/jonathjan0397/strata/issues). See the issue tracker for known issues before filing a duplicate.
+> **Found a bug?** [Open an issue on GitHub](https://github.com/jonathjan0397/strata/issues). See the issue tracker before filing a duplicate.
 >
-> - Do **not** use real client data or live payment credentials during beta testing.
-> - Back up your database before upgrading between beta builds.
+> - Back up your database before upgrading between versions.
+> - Review `CHANGELOG.md` for migration notes before each upgrade.
 
 ---
 
@@ -82,7 +82,7 @@ Strata ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathja
 
 | Section | Capabilities |
 |---------|-------------|
-| **Dashboard** | Active services, unpaid invoices, recent support tickets |
+| **Dashboard** | Welcome banner with user name; outstanding balance alert; active services, unpaid invoices, open tickets, account credit stat cards; colour-coded service due dates; billing history |
 | **Order / Checkout** | Product catalog; live domain availability check; promo codes (percent/fixed/free-setup-fee); group discount + tax; client notes; fraud scoring |
 | **Services** | List and detail; submit cancellation request (immediate or end-of-period); **upgrade/downgrade plan** with prorated invoice or credit; **addons** (view active, order new) |
 | **Quotes** | View quotes sent by admin; accept or decline; link to converted invoice |
@@ -94,7 +94,7 @@ Strata ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathja
 | **Announcements** | Paginated published announcements |
 | **Affiliate** | Apply to join; referral link; stats (balance, total earned, referral count); payout requests |
 | **Security** | Enable/disable TOTP 2FA; QR code and confirmation |
-| **Sessions** | View active sessions; revoke individual or all others |
+| **Sessions** | View active sessions; revoke individual or all others (admin/staff only — not shown in client nav) |
 
 ### Public Portal (Glassmorphism UI)
 
@@ -280,4 +280,4 @@ Full license text in [LICENSE.md](LICENSE.md).
 
 ---
 
-*Strata 1.0-Beta — test in a non-production environment. [Report issues on GitHub.](https://github.com/jonathjan0397/strata/issues)*
+*Strata v1.0.16 — [Report issues on GitHub.](https://github.com/jonathjan0397/strata/issues)*

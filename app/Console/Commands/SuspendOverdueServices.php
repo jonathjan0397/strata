@@ -20,7 +20,8 @@ class SuspendOverdueServices extends Command
             ? (int) $this->option('grace')
             : (int) Setting::get('grace_period_days', 3);
         $cutoff = now()->subDays($grace)->startOfDay();
-        $count = 0;
+        $count       = 0;
+        $panelFailed = [];
 
         $services = Service::with(['user', 'product'])
             ->where('status', 'active')
@@ -31,20 +32,36 @@ class SuspendOverdueServices extends Command
             )
             ->get();
 
-        foreach ($services as $service) {
+        foreach ($services as $index => $service) {
+            // Space out panel API calls to avoid CWP rate-limiting on bulk operations.
+            // Skip the delay on the first service.
+            if ($index > 0 && ($service->module_data['module_id'] ?? null) && $service->username) {
+                sleep(1);
+            }
+
             try {
                 OrderProvisioner::suspend($service, 'Payment overdue');
+                $this->line("  ✓ Suspended service #{$service->id} ({$service->domain})");
             } catch (\Throwable $e) {
                 Log::error("Failed to suspend service #{$service->id} on panel: ".$e->getMessage());
-                // Still mark suspended in DB so billing flow continues
+                // Mark suspended in DB so billing flow continues, but track the panel failure.
                 $service->update(['status' => 'suspended']);
+                $panelFailed[] = "#{$service->id} ({$service->domain}): ".$e->getMessage();
+                $this->warn("  ⚠ DB-only — panel call failed for service #{$service->id}: ".$e->getMessage());
             }
 
             $count++;
-            $this->line("Suspended service #{$service->id} ({$service->domain})");
         }
 
         $this->info("Suspended {$count} service(s).");
+
+        if (count($panelFailed) > 0) {
+            $this->warn(count($panelFailed).' service(s) marked suspended in DB but panel API call failed:');
+            foreach ($panelFailed as $msg) {
+                $this->warn("  - {$msg}");
+            }
+            Log::warning('SuspendOverdueServices: '.count($panelFailed).' panel call(s) failed.', $panelFailed);
+        }
 
         return self::SUCCESS;
     }

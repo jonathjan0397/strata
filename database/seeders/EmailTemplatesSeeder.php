@@ -109,6 +109,27 @@ class EmailTemplatesSeeder extends Seeder
                 'body_plain' => "Hi {{name}},\n\nWe've prepared a quote for you.\n\nQuote #: {{quote_id}}\nTotal: \${{total}}\nValid Until: {{valid_until}}\n\nView & Accept: {{quote_url}}\n\nThanks,\nThe {{app_name}} Team",
             ],
             [
+                'slug' => 'domain.expiring',
+                'name' => 'Domain Expiry Reminder',
+                'subject' => 'Your domain {{domain}} expires in {{days_until}} days',
+                'body_html' => '<p>Hi {{name}},</p><p>This is a reminder that your domain <strong>{{domain}}</strong> is set to expire on <strong>{{expires_at}}</strong> — that\'s {{days_until}} day(s) from now.</p><p>Please renew it before it expires to avoid disruption to your website and email services.</p><p><a href="{{renew_url}}" class="btn">Renew Domain</a></p><p>If you no longer need this domain, no action is required.</p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nYour domain {{domain}} expires on {{expires_at}} ({{days_until}} days from now).\n\nPlease renew it here: {{renew_url}}\n\nThanks,\nThe {{app_name}} Team",
+            ],
+            [
+                'slug' => 'invoice.reminder',
+                'name' => 'Payment Reminder',
+                'subject' => 'Payment Reminder — Invoice #{{invoice_id}} Due {{due_date}}',
+                'body_html' => '<p>Hi {{name}},</p><p>This is a friendly reminder that Invoice #{{invoice_id}} for <strong>${{amount}}</strong> is due on <strong>{{due_date}}</strong> — {{days_until}} day(s) from now.</p><p>Please pay before the due date to avoid any service interruption.</p><p><a href="{{invoice_url}}" class="btn">Pay Invoice</a></p><p>If you have already paid, please disregard this message.</p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nInvoice #{{invoice_id}} for \${{amount}} is due on {{due_date}} ({{days_until}} days from now).\n\nPay here: {{invoice_url}}\n\nThanks,\nThe {{app_name}} Team",
+            ],
+            [
+                'slug' => 'ticket.auto_reply',
+                'name' => 'Support Ticket Auto-Reply',
+                'subject' => 'We received your request — Ticket #{{ticket_id}}: {{ticket_subject}}',
+                'body_html' => '<p>Hi {{name}},</p><p>Thanks for reaching out! We\'ve received your support request and created a ticket for you.</p><blockquote style="border-left:3px solid #e5e7eb;margin:16px 0;padding:12px 16px;color:#6b7280">{{reply_body}}</blockquote><p>A member of our team will review your ticket and respond as soon as possible.</p><p><a href="{{ticket_url}}" class="btn">View Your Ticket</a></p><p>Thanks,<br>The {{app_name}} Team</p>',
+                'body_plain' => "Hi {{name}},\n\nWe've received your support request.\n\nTicket: #{{ticket_id}}: {{ticket_subject}}\n\n{{reply_body}}\n\nView your ticket: {{ticket_url}}\n\nThanks,\nThe {{app_name}} Team",
+            ],
+            [
                 'slug' => 'auth.email_verify',
                 'name' => 'Email Address Verification',
                 'subject' => 'Please verify your email address',

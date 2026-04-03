@@ -1,10 +1,14 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
 const props = defineProps({ user: Object })
+
+const page = usePage()
+const flashSuccess = computed(() => page.props.flash?.success)
 
 const form = useForm({
   name:    props.user.name,
@@ -12,6 +16,12 @@ const form = useForm({
   phone:   props.user.phone   ?? '',
   country: props.user.country ?? '',
   state:   props.user.state   ?? '',
+})
+
+const pwForm = useForm({
+  current_password:      '',
+  password:              '',
+  password_confirmation: '',
 })
 
 // ISO 3166-1 alpha-2 country list (common subset)
@@ -42,8 +52,8 @@ const countries = [
 </script>
 
 <template>
-  <div class="max-w-lg">
-    <h1 class="text-xl font-bold text-gray-900 mb-6">My Profile</h1>
+  <div class="max-w-lg space-y-8">
+    <h1 class="text-xl font-bold text-gray-900">My Profile</h1>
 
     <form @submit.prevent="form.patch(route('profile.update'))" class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
 
@@ -97,5 +107,45 @@ const countries = [
         </button>
       </div>
     </form>
+
+    <!-- Change Password -->
+    <div>
+      <h2 class="text-base font-semibold text-gray-900 mb-4">Change Password</h2>
+
+      <div v-if="flashSuccess" class="mb-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+        {{ flashSuccess }}
+      </div>
+
+      <form @submit.prevent="pwForm.put(route('profile.password'), { onSuccess: () => pwForm.reset() })"
+        class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+          <input v-model="pwForm.current_password" type="password" autocomplete="current-password"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <p v-if="pwForm.errors.current_password" class="text-red-500 text-xs mt-1">{{ pwForm.errors.current_password }}</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+          <input v-model="pwForm.password" type="password" autocomplete="new-password"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <p v-if="pwForm.errors.password" class="text-red-500 text-xs mt-1">{{ pwForm.errors.password }}</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+          <input v-model="pwForm.password_confirmation" type="password" autocomplete="new-password"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" :disabled="pwForm.processing"
+            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors">
+            {{ pwForm.processing ? 'Updating…' : 'Update Password' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
