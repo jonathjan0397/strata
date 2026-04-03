@@ -12,7 +12,7 @@ class LogSentEmail
     {
         $message = $event->message;
 
-        $toAddresses = array_keys($message->getTo() ?? []);
+        $toAddresses = array_map(fn ($a) => $a->getAddress(), $message->getTo() ?? []);
         $to = implode(', ', $toAddresses);
         $subject = $message->getSubject() ?? '(no subject)';
         $body = $message->getHtmlBody() ?? $message->getTextBody();

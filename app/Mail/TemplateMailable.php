@@ -8,6 +8,8 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
+class TemplateMailable extends Mailable
+{
     public string $renderedSubject;
 
     public string $renderedHtml;

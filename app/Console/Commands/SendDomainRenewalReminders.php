@@ -32,14 +32,16 @@ class SendDomainRenewalReminders extends Command
                     continue;
                 }
 
-                Mail::to($domain->user->email)->queue(new TemplateMailable('domain.expiring', [
-                    'name' => $domain->user->name,
-                    'app_name' => config('app.name'),
-                    'domain' => $domain->name,
-                    'expires_at' => $domain->expires_at->format('M d, Y'),
-                    'days_until' => $days,
-                    'renew_url' => route('client.services.index'),
-                ]));
+                try {
+                    Mail::to($domain->user->email)->send(new TemplateMailable('domain.expiring', [
+                        'name' => $domain->user->name,
+                        'app_name' => config('app.name'),
+                        'domain' => $domain->name,
+                        'expires_at' => $domain->expires_at->format('M d, Y'),
+                        'days_until' => $days,
+                        'renew_url' => route('client.services.index'),
+                    ]));
+                } catch (\Throwable) {}
 
                 WorkflowEngine::fire('domain.expiring', $domain);
 

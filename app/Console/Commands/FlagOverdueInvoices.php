@@ -23,14 +23,16 @@ class FlagOverdueInvoices extends Command
         foreach ($invoices as $invoice) {
             $invoice->update(['status' => 'overdue']);
 
-            Mail::to($invoice->user->email)->queue(new TemplateMailable('invoice.overdue', [
-                'name' => $invoice->user->name,
-                'app_name' => config('app.name'),
-                'invoice_id' => $invoice->id,
-                'amount' => number_format((float) $invoice->amount_due, 2),
-                'due_date' => $invoice->due_date->format('M d, Y'),
-                'invoice_url' => route('client.invoices.show', $invoice->id),
-            ]));
+            try {
+                Mail::to($invoice->user->email)->send(new TemplateMailable('invoice.overdue', [
+                    'name' => $invoice->user->name,
+                    'app_name' => config('app.name'),
+                    'invoice_id' => $invoice->id,
+                    'amount' => number_format((float) $invoice->amount_due, 2),
+                    'due_date' => $invoice->due_date->format('M d, Y'),
+                    'invoice_url' => route('client.invoices.show', $invoice->id),
+                ]));
+            } catch (\Throwable) {}
         }
 
         $this->info("Flagged {$invoices->count()} invoice(s) as overdue.");
