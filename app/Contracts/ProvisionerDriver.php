@@ -7,9 +7,21 @@ interface ProvisionerDriver
     /**
      * Create a hosting account.
      *
-     * @return array{username: string, password: string, domain: string}
+     * @param  array{
+     *   name?: string,
+     *   email?: string,
+     *   password?: string,
+     *   php_version?: string,
+     *   disk_mb?: int,
+     *   bandwidth_mb?: int,
+     *   max_domains?: int,
+     *   max_email_accounts?: int,
+     *   max_databases?: int,
+     *   max_ftp_accounts?: int
+     * }  $options
+     * @return array{username: string, password: string, domain: string, remote_id?: int|string}
      */
-    public function createAccount(string $domain, ?string $plan = null): array;
+    public function createAccount(string $domain, ?string $plan = null, array $options = []): array;
 
     /** Suspend an account. */
     public function suspendAccount(string $username, string $reason = 'Billing'): void;

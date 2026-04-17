@@ -11,7 +11,7 @@ class SettingsSeeder extends Seeder
     {
         $defaults = [
             // General
-            'company_name' => config('app.name', 'Strata'),
+            'company_name' => config('app.name', 'Strata Service Billing and Support Platform'),
             'timezone' => 'UTC',
             'date_format' => 'M d, Y',
 

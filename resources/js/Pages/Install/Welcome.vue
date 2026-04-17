@@ -30,7 +30,7 @@ const env = reactive({
 })
 
 const site = reactive({
-  name: 'Strata',
+  name: 'Strata Service Billing and Support Platform',
   url:  window.location.origin,
 })
 
@@ -141,7 +141,7 @@ function b64(str) {
     <!-- Header -->
     <div class="mb-10 text-center">
       <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-2xl mx-auto mb-4">S</div>
-      <h1 class="text-3xl font-bold text-white tracking-tight">Strata</h1>
+      <h1 class="text-3xl font-bold text-white tracking-tight">Strata Service Billing and Support Platform</h1>
       <p class="text-gray-400 mt-1 text-sm">Billing &amp; Automation Platform — Setup Wizard</p>
     </div>
 
@@ -164,7 +164,7 @@ function b64(str) {
 
       <!-- Step 1: Welcome -->
       <div v-if="step === 1">
-        <h2 class="text-xl font-semibold text-white mb-3">Welcome to Strata</h2>
+        <h2 class="text-xl font-semibold text-white mb-3">Welcome to Strata Service Billing and Support Platform</h2>
         <p class="text-sm text-gray-400 mb-5 leading-relaxed">
           This wizard will guide you through configuring your database, creating your admin account,
           and completing the installation. No command-line access is required.
@@ -348,7 +348,7 @@ function b64(str) {
         <div class="space-y-3 mb-6">
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Site Name</label>
-            <input v-model="site.name" type="text" placeholder="Strata"
+            <input v-model="site.name" type="text" placeholder="Strata Service Billing and Support Platform"
               class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div>
@@ -421,7 +421,7 @@ function b64(str) {
           <button @click="step = 5" class="flex-1 border border-gray-700 text-gray-300 hover:bg-gray-800 rounded-lg py-2.5 text-sm transition-colors">← Back</button>
           <button @click="runInstall" :disabled="!adminValid"
             class="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-medium rounded-lg py-2.5 text-sm transition-colors">
-            Install Strata →
+            Install Strata Service Billing and Support Platform →
           </button>
         </div>
       </div>
@@ -453,7 +453,7 @@ function b64(str) {
         </div>
         <h2 class="text-xl font-semibold text-white mb-2 text-center">Installation Complete!</h2>
         <p class="text-sm text-gray-400 mb-5 text-center">
-          Strata has been installed successfully.<br>
+          Strata Service Billing and Support Platform has been installed successfully.<br>
           The setup wizard has been locked and cannot be run again.
         </p>
 
@@ -512,6 +512,6 @@ function b64(str) {
     </div>
 
     <!-- Footer -->
-    <p class="mt-6 text-xs text-gray-600">Strata — Licensed under FSL-1.1-Apache-2.0</p>
+    <p class="mt-6 text-xs text-gray-600">Strata Service Billing and Support Platform — Licensed under FSL-1.1-Apache-2.0</p>
   </div>
 </template>

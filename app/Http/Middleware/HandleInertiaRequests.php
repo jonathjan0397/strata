@@ -92,29 +92,31 @@ class HandleInertiaRequests extends Middleware
 
     private function resolveLicense(): array
     {
-        $managed = (bool) config('strata.license_server_url');
-
-        if (! $managed) {
+        if (! StrataLicense::isManaged()) {
             return [
                 'managed'         => false,
                 'active'          => true,
                 'status'          => 'active',
                 'features'        => [],
-                'trial_used'      => false,
-                'expires_in_days' => null,
+                'messages'        => [],
+                'first_run'       => false,
+                'stale'           => false,
                 'synced_at'       => null,
             ];
         }
 
-        $payload = StrataLicense::payload();
+        $payload = StrataLicense::cached();
+        $user = request()->user();
+        $showAdminMessages = $user?->hasAnyRole(['super-admin', 'admin']) ?? false;
 
         return [
             'managed'         => true,
             'active'          => ($payload['status'] ?? 'active') === 'active',
             'status'          => $payload['status'] ?? 'active',
-            'features'        => $payload['features'] ?? [],
-            'trial_used'      => $payload['trial_used'] ?? false,
-            'expires_in_days' => $payload['expires_in_days'] ?? null,
+            'features'        => StrataLicense::features(),
+            'messages'        => $showAdminMessages ? StrataLicense::messages() : [],
+            'first_run'       => $showAdminMessages ? StrataLicense::isFreshInstall() : false,
+            'stale'           => $showAdminMessages ? StrataLicense::isStale() : false,
             'synced_at'       => $payload['synced_at'] ?? null,
         ];
     }

@@ -13,7 +13,11 @@ class StrataSync extends Command
 
     public function handle(): int
     {
-        StrataLicense::refresh();
+        $payload = StrataLicense::sync();
+
+        $this->info('Status: ' . ($payload['status'] ?? 'unknown'));
+        $this->info('Features: ' . (implode(', ', StrataLicense::features()) ?: 'none'));
+        $this->info('Messages: ' . count($payload['messages'] ?? []));
 
         return Command::SUCCESS;
     }

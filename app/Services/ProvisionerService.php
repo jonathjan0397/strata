@@ -9,6 +9,7 @@ use App\Services\Provisioners\CwpProvisioner;
 use App\Services\Provisioners\DirectAdminProvisioner;
 use App\Services\Provisioners\HestiaProvisioner;
 use App\Services\Provisioners\PleskProvisioner;
+use App\Services\Provisioners\StrataPanelProvisioner;
 use InvalidArgumentException;
 
 class ProvisionerService
@@ -19,6 +20,7 @@ class ProvisionerService
         'directadmin' => DirectAdminProvisioner::class,
         'hestia'      => HestiaProvisioner::class,
         'cwp'         => CwpProvisioner::class,
+        'strata_panel' => StrataPanelProvisioner::class,
     ];
 
     /** Return a driver instance for the given module. */

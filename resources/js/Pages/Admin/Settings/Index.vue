@@ -6,7 +6,7 @@ import { ref, computed, watch } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
-const props = defineProps({ settings: Object, appUrl: String })
+const props = defineProps({ settings: Object, appUrl: String, backups: Array })
 
 const tab = ref('general')
 
@@ -288,6 +288,7 @@ const tabs = [
     { key: 'billing',      label: 'Billing' },
     { key: 'email',        label: 'Email' },
     { key: 'integrations', label: 'Integrations' },
+    { key: 'backups',      label: 'Backups' },
     { key: 'portal',       label: 'Portal' },
 ]
 
@@ -303,6 +304,11 @@ const timezones = [
 // ── License sync ──────────────────────────────────────────────────────────────
 const syncingLicense = ref(false)
 const syncResult     = ref(null)
+const backupRestoreForm = useForm({
+    archive: null,
+    password: '',
+    confirmation: '',
+})
 
 function syncLicense() {
     syncingLicense.value = true
@@ -318,6 +324,28 @@ function syncLicense() {
         },
         onFinish: () => { syncingLicense.value = false },
     })
+}
+
+function onBackupArchiveChange(e) {
+    backupRestoreForm.archive = e.target.files[0] ?? null
+}
+
+function restoreBackup() {
+    backupRestoreForm.post(route('admin.settings.backups.restore'), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            backupRestoreForm.reset()
+            backupRestoreForm.archive = null
+        },
+    })
+}
+
+function formatBackupSize(bytes) {
+    if (!bytes || bytes < 1024) return `${bytes || 0} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
 </script>
 
@@ -962,7 +990,7 @@ function syncLicense() {
               </span>
             </div>
             <div class="bg-white p-5 space-y-3">
-              <p class="text-xs text-gray-500">Force an immediate re-ping to the license server and refresh the cached feature list. The license syncs automatically every 12 hours.</p>
+              <p class="text-xs text-gray-500">Force an immediate re-ping to the license server and refresh the cached feature and message state. The license syncs automatically every 3 hours.</p>
               <div class="flex items-center gap-4">
                 <button type="button" @click="syncLicense"
                   :disabled="syncingLicense"
@@ -1231,6 +1259,110 @@ function syncLicense() {
                 <span v-if="mailForm.recentlySuccessful" class="text-sm text-green-600">Saved.</span>
             </div>
         </form>
+
+        <div v-else-if="tab === 'backups'" class="space-y-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Create Backup Archive</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Downloads a ZIP archive containing the billing database, customer files on the public disk, and install metadata.</p>
+                    </div>
+                    <a
+                        :href="route('admin.settings.backups.download')"
+                        class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+                    >
+                        Download New Backup
+                    </a>
+                </div>
+
+                <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
+                    Backup archives include customer records, invoices, tickets, attachments, branding assets, and stored app settings. They do not include web server configuration or database credentials from your server environment.
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <div>
+                    <p class="text-sm font-semibold text-gray-800">Recent Backup Archives</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Archives generated from this installation and stored on the server.</p>
+                </div>
+
+                <div v-if="(props.backups ?? []).length" class="space-y-2">
+                    <div
+                        v-for="backup in props.backups"
+                        :key="backup.filename"
+                        class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 px-4 py-3"
+                    >
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ backup.filename }}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">{{ fmt(backup.created_at) }} · {{ formatBackupSize(backup.size) }}</p>
+                        </div>
+                        <a
+                            :href="route('admin.settings.backups.file', backup.filename)"
+                            class="shrink-0 px-3 py-1.5 border border-gray-300 text-sm text-gray-700 rounded-lg hover:bg-gray-50"
+                        >
+                            Download
+                        </a>
+                    </div>
+                </div>
+                <p v-else class="text-sm text-gray-500">No server-side backup archives have been created yet.</p>
+            </div>
+
+            <form @submit.prevent="restoreBackup" class="bg-white rounded-xl border border-red-200 p-5 space-y-4">
+                <div>
+                    <p class="text-sm font-semibold text-red-700">Restore Backup Archive</p>
+                    <p class="text-xs text-red-500 mt-0.5">This replaces the current billing database, customer uploads, and stored settings with the contents of the uploaded archive.</p>
+                </div>
+
+                <div class="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700">
+                    Use restore only on a fresh redeployment or when you intentionally want to overwrite the current installation state. This action is destructive.
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Backup ZIP Archive</label>
+                    <input
+                        type="file"
+                        accept=".zip"
+                        @change="onBackupArchiveChange"
+                        class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                    />
+                    <p v-if="backupRestoreForm.errors.archive" class="text-xs text-red-500 mt-1">{{ backupRestoreForm.errors.archive }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Current Admin Password</label>
+                    <input
+                        v-model="backupRestoreForm.password"
+                        type="password"
+                        autocomplete="current-password"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                    <p v-if="backupRestoreForm.errors.password" class="text-xs text-red-500 mt-1">{{ backupRestoreForm.errors.password }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirmation Phrase</label>
+                    <input
+                        v-model="backupRestoreForm.confirmation"
+                        type="text"
+                        placeholder="RESTORE BILLING DATA"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Type <span class="font-mono">RESTORE BILLING DATA</span> exactly to confirm.</p>
+                    <p v-if="backupRestoreForm.errors.confirmation" class="text-xs text-red-500 mt-1">{{ backupRestoreForm.errors.confirmation }}</p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button
+                        type="submit"
+                        :disabled="backupRestoreForm.processing"
+                        class="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
+                    >
+                        {{ backupRestoreForm.processing ? 'Restoring…' : 'Restore Backup' }}
+                    </button>
+                    <span v-if="backupRestoreForm.recentlySuccessful" class="text-sm text-green-600">Restore completed.</span>
+                </div>
+            </form>
+        </div>
 
         <form v-else @submit.prevent="form.patch(route('admin.settings.update'))" class="space-y-4">
 

@@ -1,4 +1,4 @@
-# Strata — Current Features
+# Strata Service Billing and Support Platform — Current Features
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
 
@@ -427,7 +427,7 @@ Embed on any external website via `<div data-strata-widget="[type]"></div>`.
 - `ProvisionerDriver` contract + `ProvisionerService` factory; extensible driver pattern
 - Server selection by capacity
 - Service updated with credentials and `module_data` on provision
-- **Package sync** — admin can list all packages on any connected server, annotated with matching Strata products; import selected packages as hidden/$0 Strata products for use in the product catalog
+- **Package sync** — admin can list all packages on any connected server, annotated with matching platform products; import selected packages as hidden/$0 platform products for use in the product catalog
 - **Auto-create packages** — product configuration exposes disk/bandwidth/auto-create fields; at provisioning time, if the package doesn't exist on the server it is created automatically before account setup
 - **Package push** — admin can create a new package directly on any panel from the Package Sync wizard
 

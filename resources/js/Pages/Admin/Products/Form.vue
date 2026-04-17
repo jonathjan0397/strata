@@ -38,10 +38,12 @@ const PANEL_TYPES = [
   { value: 'plesk',       label: 'Plesk' },
   { value: 'hestia',      label: 'HestiaCP' },
   { value: 'cwp',         label: 'CWP (Control Web Panel)' },
+  { value: 'strata_panel', label: 'Strata Hosting Panel' },
 ]
 
 // Panels that support creating reseller accounts via API
 const RESELLER_PANELS = ['cpanel', 'plesk', 'directadmin', 'cwp']
+const LIMIT_DRIVEN_PANELS = ['strata_panel']
 
 // Servers of the currently selected panel type
 const serversOfType = computed(() =>
@@ -364,7 +366,7 @@ const CATEGORIES     = ['Shared Hosting','VPS Hosting','Dedicated Servers','Rese
           </div>
 
           <!-- Package resource limits (used for auto-create) -->
-          <div v-if="form.module_config.plan" class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+            <div v-if="form.module_config.plan || LIMIT_DRIVEN_PANELS.includes(form.module)" class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">
                 Disk Quota (MB)
@@ -381,7 +383,7 @@ const CATEGORIES     = ['Shared Hosting','VPS Hosting','Dedicated Servers','Rese
               <input v-model.number="form.module_config.bandwidth_mb" type="number" min="0" placeholder="e.g. 51200"
                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-            <div class="col-span-2">
+            <div v-if="!LIMIT_DRIVEN_PANELS.includes(form.module)" class="col-span-2">
               <label class="flex items-start gap-2 cursor-pointer">
                 <input v-model="form.module_config.auto_create_package" type="checkbox"
                   class="h-4 w-4 mt-0.5 rounded border-slate-300 text-blue-600" />
@@ -390,6 +392,9 @@ const CATEGORIES     = ['Shared Hosting','VPS Hosting','Dedicated Servers','Rese
                   <span class="block text-xs text-slate-400 font-normal">When the first account is provisioned, Strata will create the package on the panel using the disk/bandwidth values above if it isn't already there.</span>
                 </span>
               </label>
+            </div>
+            <div v-else class="col-span-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
+              Strata Hosting Panel package creation is managed inside the panel. Use a synced hosting package above, or leave Package / Plan blank and provision with the account limits entered here.
             </div>
           </div>
 

@@ -29,7 +29,7 @@ class ModuleController extends Controller
     {
         $data = $request->validate([
             'name'           => ['required', 'string', 'max:255'],
-            'type'           => ['required', 'in:cpanel,plesk,directadmin,hestia,cwp,vestacp,cyberpanel,generic'],
+            'type'           => ['required', 'in:cpanel,plesk,directadmin,hestia,cwp,strata_panel,vestacp,cyberpanel,generic'],
             'hostname'       => ['required', 'string'],
             'port'           => ['required', 'integer', 'min:1', 'max:65535'],
             'local_hostname' => ['nullable', 'string'],

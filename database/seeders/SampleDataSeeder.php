@@ -119,7 +119,7 @@ class SampleDataSeeder extends Seeder
         $emma = $this->makeClient('Emma Brown', 'emma@demo.strata', 'demo1234', 'DE', '', '');
 
         // ── Announcement ───────────────────────────────────────────────────────
-        Announcement::firstOrCreate(['title' => 'Welcome to Strata — Beta Testing'], [
+        Announcement::firstOrCreate(['title' => 'Welcome to Strata Service Billing and Support Platform — Beta Testing'], [
             'body' => '<p>Welcome! This installation includes <strong>sample data</strong> to help you explore all features. All clients, invoices, and services shown are fictional and for demonstration purposes only.</p><p>Use the admin panel to explore billing, services, support tickets, quotes, and more. Default demo client password: <code>demo1234</code></p>',
             'published' => true,
             'published_at' => now(),

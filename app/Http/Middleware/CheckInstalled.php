@@ -18,7 +18,7 @@ class CheckInstalled
 
         // If already installed and trying to access the installer, block it
         if ($installed && $request->is('install', 'install/*')) {
-            abort(403, 'Strata is already installed.');
+            abort(403, 'Strata Service Billing and Support Platform is already installed.');
         }
 
         return $next($request);

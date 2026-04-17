@@ -3,7 +3,7 @@
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
 
 > **Beta-1** — Test in a non-production environment.
-> Report bugs and issues at: https://github.com/jonathjan0397/strata/issues
+> Report bugs and issues at: https://github.com/jonathjan0397/strata-billing-support-platform/issues
 
 ---
 
@@ -72,13 +72,13 @@ The setup wizard will guide you through:
 5. **Admin account** — creates your first administrator login
 6. **Sample data** *(optional)* — installs demo clients, invoices, tickets, and quotes for testing
 
-Click **Install Strata** to complete setup. This typically takes 15–45 seconds.
+Click **Install Strata Service Billing and Support Platform** to complete setup. This typically takes 15–45 seconds.
 
 ---
 
 ### Step 4 — Set up the cron job
 
-Strata requires a cron job for automated invoice generation, overdue checks, and domain renewal reminders.
+Strata Service Billing and Support Platform requires a cron job for automated invoice generation, overdue checks, and domain renewal reminders.
 
 **cPanel Cron Jobs** — add the following (replace the path with your actual `artisan` path):
 
@@ -140,9 +140,9 @@ No command line required. The upgrade wizard handles everything in your browser.
 
 ### 403 Forbidden on the installer
 
-If you see **"You don't have permission to access this resource"** when visiting `/install`, the cause depends on how Strata is installed.
+If you see **"You don't have permission to access this resource"** when visiting `/install`, the cause depends on how Strata Service Billing and Support Platform is installed.
 
-**Scenario A — Strata is in a subdirectory (e.g. `public_html/billing/`)**
+**Scenario A — Strata Service Billing and Support Platform is in a subdirectory (e.g. `public_html/billing/`)**
 
 Apache processes `.htaccess` files top-down, starting from the domain root. If your hosting does not grant `AllowOverride` access to subdirectories, the `billing/.htaccess` that routes requests through Laravel is silently ignored, and Apache returns 403.
 
@@ -158,7 +158,7 @@ If you must keep a subdirectory URL, add the following to your **main** `public_
 ```apache
 RewriteEngine On
 
-# Route /billing/* through Strata's front controller
+# Route /billing/* through the Strata Service Billing and Support Platform front controller
 RewriteCond %{REQUEST_URI} ^/billing
 RewriteCond %{DOCUMENT_ROOT}/billing/public/%{REQUEST_URI} !-f
 RewriteRule ^billing(/.*)?$ /billing/public/index.php [L,QSA]
@@ -166,7 +166,7 @@ RewriteRule ^billing(/.*)?$ /billing/public/index.php [L,QSA]
 
 Replace `billing` with your actual subdirectory name. Be careful not to break any existing rules if your main domain already has a `.htaccess`.
 
-**Scenario B — Strata is the only app at the domain root**
+**Scenario B — Strata Service Billing and Support Platform is the only app at the domain root**
 
 If files are uploaded to `public_html/` (or equivalent) but you did **not** point the document root to `public/`, Apache may deny access to PHP files or return 403 on directory requests.
 
@@ -196,7 +196,7 @@ If you installed sample data, the following demo client accounts are available:
 
 ## Support & Bug Reports
 
-- **GitHub Issues:** https://github.com/jonathjan0397/strata/issues
+- **GitHub Issues:** https://github.com/jonathjan0397/strata-billing-support-platform/issues
 - **Documentation:** See `README.md` for full feature documentation
 - **Changelog:** See `CHANGELOG.md`
 

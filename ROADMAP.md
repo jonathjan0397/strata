@@ -1,8 +1,8 @@
-# Strata — Product Roadmap
+# Strata Service Billing and Support Platform — Product Roadmap
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
 
-**Strata Service Billing and Support Platform** is a self-hosted billing, client management, and support platform built for web hosting providers. It ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathjan0397/strata/releases) and installs entirely through a browser wizard — no CLI, Composer, or Node required on the target server.
+**Strata Service Billing and Support Platform** is a self-hosted billing, client management, and support platform built for web hosting providers. It ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathjan0397/strata-billing-support-platform/releases) and installs entirely through a browser wizard — no CLI, Composer, or Node required on the target server.
 
 **Release naming convention:** Releases are named by milestone (`1.0-Beta`, `1.0-Beta.2`, `1.0`, `1.1`, etc.). There were no public v0.x or v2.x releases; those were internal session tracking numbers. The product shipped publicly as `1.0-Beta` in March 2026.
 
@@ -32,7 +32,7 @@ Focused on filling in the remaining gaps in the end-client and support-staff exp
 
 ## 1.2 — Extensibility
 
-Developer and integrator-facing features that allow Strata to connect with external systems.
+Developer and integrator-facing features that allow Strata Service Billing and Support Platform to connect with external systems.
 
 - **REST API with OpenAPI 3.0 spec** — full API coverage for all core resources (clients, invoices, services, tickets, products) with API key management and scoped permissions
 - **Webhook management UI** — configure outbound webhooks per event type from the admin panel; delivery log with retry
@@ -62,13 +62,13 @@ Items under consideration for post-2.0 releases. No committed timeline.
 - **Migration import wizard** — import clients, services, products, invoices, and tickets from WHMCS or other billing platform database dumps; dry-run mode with conflict resolution
 - **PWA client portal** — Progressive Web App manifest and service worker; push notifications for payment due and ticket replies
 - **Additional provisioning modules** — Pterodactyl (game servers), Proxmox VE (VPS), Cloudflare DNS
-- **Multi-tenant SaaS mode** — run Strata as a hosted platform serving multiple independent billing instances from one codebase
+- **Multi-tenant SaaS mode** — run Strata Service Billing and Support Platform as a hosted platform serving multiple independent billing instances from one codebase
 
 ---
 
 ## Distribution
 
-Strata ships on two tracks. Both use the same browser installer at `/install`.
+Strata Service Billing and Support Platform ships on two tracks. Both use the same browser installer at `/install`.
 
 | Track | Target | How to install |
 |-------|--------|---------------|

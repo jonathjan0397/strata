@@ -1,4 +1,4 @@
-# Strata — Bug Fix Log
+# Strata Service Billing and Support Platform — Bug Fix Log
 
 > Tracks bugs discovered and resolved through 1.0-Beta development, including installer testing on stratadev.hosted-tech.net.
 > Status: OPEN | FIXED | WONTFIX | DEFERRED

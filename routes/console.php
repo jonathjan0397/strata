@@ -86,8 +86,8 @@ Schedule::command('mail:fetch')
     ->withoutOverlapping()
     ->runInBackground();
 
-// Platform telemetry / license sync — every 12 hours at 04:15 and 16:15
+// Platform telemetry / license sync — every 3 hours
 Schedule::command('strata:sync')
-    ->twiceDaily(4, 16)
+    ->cron('0 */3 * * *')
     ->withoutOverlapping()
     ->runInBackground();

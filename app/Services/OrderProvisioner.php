@@ -65,14 +65,29 @@ class OrderProvisioner
                     }
                 }
 
-                $result = $driver->createAccount($service->domain ?? '', $plan);
+                $result = $driver->createAccount($service->domain ?? '', $plan, [
+                    'name' => $service->user?->name,
+                    'email' => $service->user?->email,
+                    'php_version' => $product->module_config['php_version'] ?? null,
+                    'disk_mb' => isset($product->module_config['disk_mb']) ? (int) $product->module_config['disk_mb'] : null,
+                    'bandwidth_mb' => isset($product->module_config['bandwidth_mb']) ? (int) $product->module_config['bandwidth_mb'] : null,
+                    'max_domains' => isset($product->module_config['max_domains']) ? (int) $product->module_config['max_domains'] : null,
+                    'max_email_accounts' => isset($product->module_config['max_email_accounts']) ? (int) $product->module_config['max_email_accounts'] : null,
+                    'max_databases' => isset($product->module_config['max_databases']) ? (int) $product->module_config['max_databases'] : null,
+                    'max_ftp_accounts' => isset($product->module_config['max_ftp_accounts']) ? (int) $product->module_config['max_ftp_accounts'] : null,
+                ]);
+
+                $moduleData = ['module_id' => $module->id, 'provisioned_at' => now()->toIso8601String()];
+                if (! empty($result['remote_id'])) {
+                    $moduleData['remote_account_id'] = $result['remote_id'];
+                }
 
                 $credentials = [
                     'username' => $result['username'],
                     'password_enc' => encrypt($result['password']),
                     'server_hostname' => $module->hostname,
                     'server_port' => $module->port,
-                    'module_data' => ['module_id' => $module->id, 'provisioned_at' => now()->toIso8601String()],
+                    'module_data' => $moduleData,
                 ];
 
                 $module->increment('current_accounts');

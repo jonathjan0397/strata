@@ -201,6 +201,7 @@ class ServerImportController extends Controller
                     'server_port'       => $module->port,
                     'module_data'       => [
                         'module_id'        => $module->id,
+                        'remote_account_id' => $acct['remote_id'] ?? null,
                         'imported_at'      => now()->toISOString(),
                         'email_placeholder' => $isNew && ! $email,
                     ],

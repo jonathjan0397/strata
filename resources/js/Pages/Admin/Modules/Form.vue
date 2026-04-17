@@ -13,6 +13,7 @@ const PANEL_TYPES = [
   { value: 'directadmin', label: 'DirectAdmin',     port: 2222, note: 'HTTP API' },
   { value: 'hestia',      label: 'HestiaCP',        port: 8083, note: 'REST API' },
   { value: 'cwp',         label: 'CWP (Control Web Panel)', port: 2304, note: 'REST API' },
+  { value: 'strata_panel', label: 'Strata Hosting Panel', port: 443, note: 'REST API v1 / Sanctum token' },
   { value: 'vestacp',     label: 'VestaCP',         port: 8083, note: 'API (manual provisioning)' },
   { value: 'cyberpanel',  label: 'CyberPanel',      port: 8090, note: 'API (manual provisioning)' },
   { value: 'generic',     label: 'Generic / Other', port: 2087, note: 'Manual provisioning only' },
@@ -119,6 +120,9 @@ function submit() {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">API Token {{ module ? '(leave blank to keep)' : '' }}</label>
             <input v-model="form.api_token" type="password" :required="!module" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <p v-if="form.type === 'strata_panel'" class="text-xs text-gray-400 mt-1">
+              Use a Strata Hosting Panel admin API token with `accounts:*` and `catalog:read` abilities.
+            </p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Max Accounts (blank = unlimited)</label>

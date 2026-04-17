@@ -12,10 +12,32 @@ const sidebarOpen = ref(false);
 const isAdmin          = computed(() => user.value?.roles?.some(r => ['super-admin','admin','staff'].includes(r.name)));
 const twoFactorWarning = computed(() => page.props.twoFactorWarning);
 const license          = computed(() => page.props.license ?? { managed: false, active: true, features: [] });
+const dismissedLicenseMessages = ref({})
+
+const visibleLicenseMessages = computed(() => {
+    const messages = license.value.messages ?? []
+
+    return messages.filter((message) => {
+        if (message.type === 'security') return true
+
+        const key = `${message.type}:${message.body}`
+        return !dismissedLicenseMessages.value[key]
+    })
+})
 
 function hasFeature(key) {
     if (!license.value.managed) return true;
     return license.value.features?.includes(key) ?? false;
+}
+
+function dismissLicenseMessage(message) {
+    const key = `${message.type}:${message.body}`
+    dismissedLicenseMessages.value = {
+        ...dismissedLicenseMessages.value,
+        [key]: true,
+    }
+
+    sessionStorage.setItem('dismissed-license-messages', JSON.stringify(dismissedLicenseMessages.value))
 }
 
 // ── Admin nav groups ──────────────────────────────────────────────────────────
@@ -166,6 +188,12 @@ const darkMode = ref(false)
 onMounted(() => {
     darkMode.value = localStorage.getItem('adminDark') === '1'
     document.documentElement.classList.toggle('dark', darkMode.value)
+
+    try {
+        dismissedLicenseMessages.value = JSON.parse(sessionStorage.getItem('dismissed-license-messages') ?? '{}')
+    } catch {
+        dismissedLicenseMessages.value = {}
+    }
 })
 
 function toggleDark() {
@@ -194,7 +222,10 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
             <!-- Logo -->
             <div class="flex h-16 shrink-0 items-center gap-2.5 px-5 border-b border-blue-800/40">
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 shadow-lg shadow-blue-500/30 text-white font-bold text-sm">S</div>
-                <span class="text-white font-semibold text-lg tracking-tight">Strata</span>
+                <span class="text-white font-semibold text-[11px] leading-tight tracking-tight">
+                    <span class="block">Strata Service Billing</span>
+                    <span class="block text-blue-100/90">and Support Platform</span>
+                </span>
                 <span class="ml-auto text-xs text-blue-400/60 font-mono">{{ appVersion ?? '…' }}</span>
             </div>
 
@@ -400,6 +431,33 @@ const ICON_CHEVRON = 'M8.25 4.5l7.5 7.5-7.5 7.5';
                 </div>
                 <div v-if="flash.error" class="rounded-xl bg-red-50/80 dark:bg-red-900/30 backdrop-blur-sm border border-red-200/60 dark:border-red-700/40 px-4 py-3 text-sm text-red-800 dark:text-red-300 shadow-sm">
                     {{ flash.error }}
+                </div>
+            </div>
+
+            <!-- License messages -->
+            <div v-if="visibleLicenseMessages.length" class="px-4 sm:px-6 pt-4 space-y-3">
+                <div
+                    v-for="message in visibleLicenseMessages"
+                    :key="`${message.type}:${message.body}`"
+                    class="rounded-xl border px-4 py-3 text-sm shadow-sm flex items-start gap-3"
+                    :class="message.type === 'security'
+                        ? 'bg-red-50/90 border-red-200/70 text-red-800'
+                        : message.type === 'update'
+                            ? 'bg-blue-50/90 border-blue-200/70 text-blue-900'
+                            : 'bg-slate-50/95 border-slate-200/80 text-slate-800'"
+                >
+                    <div class="flex-1">
+                        <p class="font-semibold capitalize">{{ message.type }}</p>
+                        <p class="mt-0.5">{{ message.body }}</p>
+                    </div>
+                    <button
+                        v-if="message.type !== 'security'"
+                        type="button"
+                        class="shrink-0 text-current/60 hover:text-current"
+                        @click="dismissLicenseMessage(message)"
+                    >
+                        Dismiss
+                    </button>
                 </div>
             </div>
 

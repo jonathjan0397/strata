@@ -49,7 +49,7 @@ class DirectAdminProvisioner implements ProvisionerDriver
             ->first(fn (Module $m) => $m->hasCapacity());
     }
 
-    public function createAccount(string $domain, ?string $plan = null): array
+    public function createAccount(string $domain, ?string $plan = null, array $options = []): array
     {
         $username = $this->generateUsername($domain);
         $password = Str::password(16, symbols: false);
@@ -226,3 +226,4 @@ class DirectAdminProvisioner implements ProvisionerDriver
         return $base.Str::lower(Str::random(2));
     }
 }
+

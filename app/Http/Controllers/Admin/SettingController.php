@@ -6,13 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\AuditLogger;
 use App\Services\StrataLicense;
+use App\Services\SystemBackup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SettingController extends Controller
 {
@@ -21,6 +26,7 @@ class SettingController extends Controller
         return Inertia::render('Admin/Settings/Index', [
             'settings' => Setting::allKeyed(),
             'appUrl' => rtrim(config('app.url'), '/'),
+            'backups' => SystemBackup::listBackups(),
         ]);
     }
 
@@ -48,25 +54,21 @@ class SettingController extends Controller
             'tagline' => ['nullable', 'string', 'max:255'],
             'portal_theme' => ['nullable', 'in:blue,red,green,lightblue'],
             'domain_search_tlds' => ['nullable', 'string', 'max:500'],
-            // Two-Factor Authentication
             'otp_enabled' => ['nullable', 'boolean'],
             'otp_lifetime' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'otp_keep_alive' => ['nullable', 'boolean'],
-            // Bank Transfer
             'bank_transfer_instructions' => ['nullable', 'string', 'max:2000'],
-            // Affiliate defaults
             'affiliate_default_commission_type' => ['nullable', 'in:percent,fixed'],
             'affiliate_default_commission_value' => ['nullable', 'numeric', 'min:0'],
             'affiliate_default_payout_threshold' => ['nullable', 'numeric', 'min:0'],
-            // Portal branding
-            'brand_primary_color'  => ['nullable', 'string', 'max:20', 'regex:/^(#[0-9A-Fa-f]{3,8})?$/'],
-            'brand_accent_color'   => ['nullable', 'string', 'max:20', 'regex:/^(#[0-9A-Fa-f]{3,8})?$/'],
-            'portal_hero_badge'    => ['nullable', 'string', 'max:100'],
-            'portal_hero_title'    => ['nullable', 'string', 'max:100'],
-            'portal_footer_links'    => ['nullable', 'string', 'max:3000'],
-            'portal_feature_cards'   => ['nullable', 'string', 'max:5000'],
-            'portal_stat_items'      => ['nullable', 'string', 'max:1000'],
-            'portal_custom_css'      => ['nullable', 'string', 'max:10000'],
+            'brand_primary_color' => ['nullable', 'string', 'max:20', 'regex:/^(#[0-9A-Fa-f]{3,8})?$/'],
+            'brand_accent_color' => ['nullable', 'string', 'max:20', 'regex:/^(#[0-9A-Fa-f]{3,8})?$/'],
+            'portal_hero_badge' => ['nullable', 'string', 'max:100'],
+            'portal_hero_title' => ['nullable', 'string', 'max:100'],
+            'portal_footer_links' => ['nullable', 'string', 'max:3000'],
+            'portal_feature_cards' => ['nullable', 'string', 'max:5000'],
+            'portal_stat_items' => ['nullable', 'string', 'max:1000'],
+            'portal_custom_css' => ['nullable', 'string', 'max:10000'],
         ]);
 
         Setting::setMany($data);
@@ -109,8 +111,6 @@ class SettingController extends Controller
         $from = Setting::get('mail_from_address', config('mail.from.address'));
         $to = $request->input('to');
 
-        // For sendmail: bypass Laravel's mail system and call the binary directly
-        // so we can detect hangs and return a clean error.
         if ($mailer === 'sendmail') {
             $path = Setting::get('mail_sendmail_path', '/usr/sbin/sendmail -t -i');
             $bin = explode(' ', $path)[0];
@@ -148,7 +148,7 @@ class SettingController extends Controller
         try {
             $siteName = Setting::get('site_title', Setting::get('company_name', config('app.name')));
             Mail::raw("This is a test email from {$siteName}. Your mail configuration is working.", function ($msg) use ($to, $siteName) {
-                $msg->to($to)->subject("{$siteName} — Mail Test");
+                $msg->to($to)->subject("{$siteName} - Mail Test");
             });
 
             return response()->json(['success' => true, 'message' => 'Test email sent.']);
@@ -160,63 +160,48 @@ class SettingController extends Controller
     public function updateIntegrations(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            // Google OAuth
             'integration_google_client_id' => ['nullable', 'string', 'max:255'],
             'integration_google_client_secret' => ['nullable', 'string', 'max:500'],
-            // Microsoft OAuth
             'integration_microsoft_client_id' => ['nullable', 'string', 'max:255'],
             'integration_microsoft_client_secret' => ['nullable', 'string', 'max:500'],
             'integration_microsoft_tenant' => ['nullable', 'string', 'max:100'],
-            // Stripe
             'integration_stripe_key' => ['nullable', 'string', 'max:255'],
             'integration_stripe_secret' => ['nullable', 'string', 'max:255'],
             'integration_stripe_webhook_secret' => ['nullable', 'string', 'max:255'],
-            // PayPal
             'integration_paypal_client_id' => ['nullable', 'string', 'max:255'],
             'integration_paypal_client_secret' => ['nullable', 'string', 'max:255'],
             'integration_paypal_mode' => ['nullable', 'in:sandbox,live'],
-            // Authorize.Net
             'integration_authorizenet_login_id' => ['nullable', 'string', 'max:100'],
             'integration_authorizenet_transaction_key' => ['nullable', 'string', 'max:100'],
             'integration_authorizenet_client_key' => ['nullable', 'string', 'max:255'],
             'integration_authorizenet_sandbox' => ['nullable', 'boolean'],
-            // Fraud check (MaxMind minFraud)
             'fraud_check_enabled' => ['nullable', 'boolean'],
             'fraud_maxmind_account_id' => ['nullable', 'string', 'max:20'],
             'fraud_maxmind_license_key' => ['nullable', 'string', 'max:255'],
             'fraud_score_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
             'fraud_action' => ['nullable', 'in:flag,reject'],
-            // Domain registrar
             'integration_registrar_driver' => ['nullable', 'in:namecheap,enom,opensrs,hexonet'],
-            // Namecheap
             'integration_namecheap_api_user' => ['nullable', 'string', 'max:100'],
             'integration_namecheap_api_key' => ['nullable', 'string', 'max:255'],
             'integration_namecheap_client_ip' => ['nullable', 'ip'],
             'integration_namecheap_sandbox' => ['nullable', 'boolean'],
-            // eNom
             'integration_enom_uid' => ['nullable', 'string', 'max:100'],
             'integration_enom_pw' => ['nullable', 'string', 'max:255'],
             'integration_enom_sandbox' => ['nullable', 'boolean'],
-            // OpenSRS
             'integration_opensrs_api_key' => ['nullable', 'string', 'max:255'],
             'integration_opensrs_reseller_username' => ['nullable', 'string', 'max:100'],
             'integration_opensrs_sandbox' => ['nullable', 'boolean'],
-            // Hexonet
             'integration_hexonet_login' => ['nullable', 'string', 'max:100'],
             'integration_hexonet_password' => ['nullable', 'string', 'max:255'],
             'integration_hexonet_sandbox' => ['nullable', 'boolean'],
-            // Namecheap VAS
             'integration_namecheap_offer_privacy' => ['nullable', 'boolean'],
             'integration_namecheap_default_privacy' => ['nullable', 'boolean'],
             'integration_namecheap_default_lock' => ['nullable', 'boolean'],
-            // eNom VAS
             'integration_enom_offer_privacy' => ['nullable', 'boolean'],
             'integration_enom_default_lock' => ['nullable', 'boolean'],
-            // OpenSRS VAS
             'integration_opensrs_offer_privacy' => ['nullable', 'boolean'],
             'integration_opensrs_default_privacy' => ['nullable', 'boolean'],
             'integration_opensrs_default_lock' => ['nullable', 'boolean'],
-            // Hexonet VAS
             'integration_hexonet_offer_privacy' => ['nullable', 'boolean'],
             'integration_hexonet_default_privacy' => ['nullable', 'boolean'],
             'integration_hexonet_default_lock' => ['nullable', 'boolean'],
@@ -235,7 +220,6 @@ class SettingController extends Controller
             'logo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
         ]);
 
-        // Delete old logo if present
         $old = Setting::get('logo_path');
         if ($old) {
             Storage::disk('public')->delete($old);
@@ -267,29 +251,69 @@ class SettingController extends Controller
 
     public function syncLicense(): RedirectResponse
     {
-        $result = StrataLicense::refresh();
+        $result = StrataLicense::sync();
 
         $status = $result['status'] ?? 'unknown';
-        $features = implode(', ', $result['features'] ?? []) ?: 'none';
+        $features = implode(', ', StrataLicense::features()) ?: 'none';
+        $messages = count($result['messages'] ?? []);
 
         AuditLogger::log('settings.license_synced', null, ['status' => $status]);
 
         return back()->with('flash', [
-            'success' => "License synced — status: {$status}, features: {$features}.",
+            'success' => "License synced - status: {$status}, features: {$features}, messages: {$messages}.",
         ]);
     }
 
-    public function startTrial(): RedirectResponse
+    public function downloadBackup(): BinaryFileResponse
     {
-        $result = StrataLicense::startTrial();
+        $backup = SystemBackup::createBackup();
 
-        if (isset($result['error'])) {
-            return back()->with('flash', ['error' => $result['error']]);
+        AuditLogger::log('settings.backup_created', null, [
+            'filename' => $backup['filename'],
+        ]);
+
+        return response()->download($backup['path'], $backup['filename']);
+    }
+
+    public function downloadBackupFile(string $filename): BinaryFileResponse
+    {
+        $safeFilename = basename($filename);
+        $path = storage_path('app/backups/'.$safeFilename);
+
+        abort_unless(is_file($path), 404);
+
+        return response()->download($path, $safeFilename);
+    }
+
+    public function restoreBackup(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'archive' => ['required', 'file', 'mimes:zip', 'max:512000'],
+            'password' => ['required', 'string'],
+            'confirmation' => ['required', 'string'],
+        ]);
+
+        if (! Hash::check($request->input('password'), (string) Auth::user()?->password)) {
+            throw ValidationException::withMessages([
+                'password' => 'Your current password is required to restore a backup.',
+            ]);
         }
 
-        AuditLogger::log('settings.trial_started', null);
+        if (trim((string) $request->input('confirmation')) !== 'RESTORE BILLING DATA') {
+            throw ValidationException::withMessages([
+                'confirmation' => 'Type RESTORE BILLING DATA to confirm this destructive restore.',
+            ]);
+        }
 
-        return back()->with('flash', ['success' => 'Trial activated — all premium features are now available for 14 days.']);
+        SystemBackup::restoreFromUpload($request->file('archive'));
+
+        AuditLogger::log('settings.backup_restored', null, [
+            'filename' => $request->file('archive')->getClientOriginalName(),
+        ]);
+
+        return back()->with('flash', [
+            'success' => 'Backup restored. The billing database, customer files, and stored settings were replaced from the archive.',
+        ]);
     }
 
     public function emailDeliverability(): JsonResponse
@@ -297,7 +321,7 @@ class SettingController extends Controller
         $fromAddress = Setting::get('mail_from_address', config('mail.from.address'));
 
         if (! $fromAddress || ! filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
-            return response()->json(['error' => 'No valid From address is configured in Settings → Email.'], 422);
+            return response()->json(['error' => 'No valid From address is configured in Settings -> Email.'], 422);
         }
 
         $sendingDomain = strtolower(substr(strrchr($fromAddress, '@'), 1));
@@ -305,13 +329,11 @@ class SettingController extends Controller
         $orgDomain = count($parts) >= 2 ? implode('.', array_slice($parts, -2)) : $sendingDomain;
         $isSubdomain = $sendingDomain !== $orgDomain;
 
-        // Best-effort server IP detection
         $serverIp = request()->server('SERVER_ADDR', '');
         if (! $serverIp || $serverIp === '::1' || $serverIp === '127.0.0.1') {
             $serverIp = @gethostbyname((string) gethostname()) ?: 'YOUR_SERVER_IP';
         }
 
-        // ── SPF ──────────────────────────────────────────────────────────────
         $spfFound = false;
         $spfRecord = null;
         $records = @dns_get_record($sendingDomain, DNS_TXT) ?: [];
@@ -323,7 +345,6 @@ class SettingController extends Controller
             }
         }
 
-        // ── DKIM (probe common selectors) ─────────────────────────────────────
         $dkimFound = false;
         $dkimSelector = null;
         $dkimRecord = null;
@@ -333,13 +354,12 @@ class SettingController extends Controller
                 if (isset($r['txt']) && str_contains($r['txt'], 'v=DKIM1')) {
                     $dkimFound = true;
                     $dkimSelector = $sel;
-                    $dkimRecord = strlen($r['txt']) > 80 ? substr($r['txt'], 0, 80).'…' : $r['txt'];
+                    $dkimRecord = strlen($r['txt']) > 80 ? substr($r['txt'], 0, 80).'...' : $r['txt'];
                     break 2;
                 }
             }
         }
 
-        // ── DMARC (always on organisational domain) ───────────────────────────
         $dmarcFound = false;
         $dmarcRecord = null;
         $dmarcHost = '_dmarc.'.$orgDomain;
@@ -353,27 +373,27 @@ class SettingController extends Controller
         }
 
         return response()->json([
-            'from_address'   => $fromAddress,
+            'from_address' => $fromAddress,
             'sending_domain' => $sendingDomain,
-            'org_domain'     => $orgDomain,
-            'is_subdomain'   => $isSubdomain,
-            'server_ip'      => $serverIp,
+            'org_domain' => $orgDomain,
+            'is_subdomain' => $isSubdomain,
+            'server_ip' => $serverIp,
             'spf' => [
-                'status'    => $spfFound ? 'pass' : 'missing',
-                'record'    => $spfRecord,
-                'host'      => $sendingDomain,
+                'status' => $spfFound ? 'pass' : 'missing',
+                'record' => $spfRecord,
+                'host' => $sendingDomain,
                 'suggested' => "v=spf1 ip4:{$serverIp} ~all",
             ],
             'dkim' => [
-                'status'   => $dkimFound ? 'pass' : 'missing',
+                'status' => $dkimFound ? 'pass' : 'missing',
                 'selector' => $dkimSelector,
-                'record'   => $dkimRecord,
-                'host'     => "mail._domainkey.{$sendingDomain}",
+                'record' => $dkimRecord,
+                'host' => "mail._domainkey.{$sendingDomain}",
             ],
             'dmarc' => [
-                'status'    => $dmarcFound ? 'pass' : 'missing',
-                'record'    => $dmarcRecord,
-                'host'      => $dmarcHost,
+                'status' => $dmarcFound ? 'pass' : 'missing',
+                'record' => $dmarcRecord,
+                'host' => $dmarcHost,
                 'suggested' => "v=DMARC1; p=quarantine; rua=mailto:postmaster@{$orgDomain}",
             ],
         ]);

@@ -74,6 +74,7 @@ Route::prefix('upgrade')->name('upgrade.')->withoutMiddleware([
 ])->group(function () {
     Route::get('/', [UpgradeController::class, 'index'])->name('index');
     Route::post('/verify', [UpgradeController::class, 'verify'])->name('verify');
+    Route::get('/release', [UpgradeController::class, 'release'])->name('release');
     Route::post('/peek', [UpgradeController::class, 'peekZip'])->name('peek');
     Route::post('/run', [UpgradeController::class, 'run'])->name('run');
 });
@@ -246,7 +247,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/favicon', [Admin\SettingController::class, 'uploadFavicon'])->name('settings.favicon');
         Route::patch('settings/integrations', [Admin\SettingController::class, 'updateIntegrations'])->name('settings.integrations');
         Route::post('settings/license-sync', [Admin\SettingController::class, 'syncLicense'])->name('settings.license-sync');
-        Route::post('settings/license-trial', [Admin\SettingController::class, 'startTrial'])->name('settings.license-trial');
+        Route::get('settings/backups/download', [Admin\SettingController::class, 'downloadBackup'])->name('settings.backups.download');
+        Route::get('settings/backups/files/{filename}', [Admin\SettingController::class, 'downloadBackupFile'])->where('filename', '.*')->name('settings.backups.file');
+        Route::post('settings/backups/restore', [Admin\SettingController::class, 'restoreBackup'])->name('settings.backups.restore');
 
         // Maintenance page + actions (super-admin only)
         Route::get('maintenance', fn () => Inertia::render('Admin/Maintenance'))
@@ -268,9 +271,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             abort_unless(auth()->user()?->hasRole('super-admin'), 403);
             $lines = [];
             try {
-                // 1. modules.type enum — add hestia + cwp if missing
-                DB::statement("ALTER TABLE modules MODIFY COLUMN type ENUM('cpanel','plesk','directadmin','hestia','cwp','vestacp','cyberpanel','generic') NOT NULL DEFAULT 'generic'");
-                $lines[] = '✓ modules.type enum updated (hestia, cwp added)';
+                // 1. modules.type enum — add newer provisioner types if missing
+                DB::statement("ALTER TABLE modules MODIFY COLUMN type ENUM('cpanel','plesk','directadmin','hestia','cwp','strata_panel','vestacp','cyberpanel','generic') NOT NULL DEFAULT 'generic'");
+                $lines[] = '✓ modules.type enum updated (hestia, cwp, strata_panel added)';
             } catch (\Throwable $e) { $lines[] = '✗ modules.type: '.$e->getMessage(); }
 
             try {

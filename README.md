@@ -6,22 +6,22 @@ A self-hosted billing, client management, and support platform built for web hos
 
 ---
 
-> ## Release Notice — 1.0.16
+> ## Release Notice — 1.0.17
 >
-> Strata is at **v1.0.16** (stable release track). The platform is production-ready for hosting businesses.
+> Strata Service Billing and Support Platform is at **v1.0.17** (stable release track). The platform is production-ready for hosting businesses.
 >
-> **Found a bug?** [Open an issue on GitHub](https://github.com/jonathjan0397/strata/issues). See the issue tracker before filing a duplicate.
+> **Found a bug?** [Open an issue on GitHub](https://github.com/jonathjan0397/strata-billing-support-platform/issues). See the issue tracker before filing a duplicate.
 >
 > - Back up your database before upgrading between versions.
 > - Review `CHANGELOG.md` for migration notes before each upgrade.
 
 ---
 
-## What is Strata?
+## What is Strata Service Billing and Support Platform?
 
-Strata is a self-hosted billing and client management platform built for web hosting providers. Manage client accounts, automate recurring invoices, process payments through Stripe, PayPal, or Authorize.Net, provision cPanel and Plesk hosting accounts, register domains through major registrars, and handle support tickets — all through a clean, modern browser-based interface.
+Strata Service Billing and Support Platform is a self-hosted billing and client management platform built for web hosting providers. Manage client accounts, automate recurring invoices, process payments through Stripe, PayPal, or Authorize.Net, provision cPanel and Plesk hosting accounts, register domains through major registrars, and handle support tickets — all through a clean, modern browser-based interface.
 
-Strata ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathjan0397/strata/releases) and installs entirely through a browser wizard at `/install`. No CLI, Composer, or Node.js is required on the target server.
+Strata Service Billing and Support Platform ships as a pre-built ZIP on [GitHub Releases](https://github.com/jonathjan0397/strata-billing-support-platform/releases) and installs entirely through a browser wizard at `/install`. No CLI, Composer, or Node.js is required on the target server.
 
 ---
 
@@ -233,7 +233,7 @@ All features work on CWP/shared hosting without a queue worker:
 
 ## Quick Install (Shared Hosting — No CLI Required)
 
-1. Download the latest **pre-built ZIP** from [GitHub Releases](https://github.com/jonathjan0397/strata/releases)
+1. Download the latest **pre-built ZIP** from [GitHub Releases](https://github.com/jonathjan0397/strata-billing-support-platform/releases)
 2. Extract and upload all files to your server **above** `public_html`
 3. Point your domain's document root to the `public/` subdirectory
 4. Visit `https://yourdomain.com/install` — the browser wizard handles everything
@@ -248,7 +248,7 @@ Full step-by-step instructions, screenshots, and troubleshooting guidance are in
 **Requirements:** PHP 8.3+, MySQL 8+ / MariaDB 10.5+, Composer 2, Node 18+
 
 ```bash
-git clone https://github.com/jonathjan0397/strata.git
+git clone https://github.com/jonathjan0397/strata-billing-support-platform.git
 cd strata
 composer install
 npm ci && npm run build
@@ -263,7 +263,7 @@ For local development, select **Sync** queue mode during installation unless you
 
 The Functional Source License 1.1, Apache 2.0 Future License (**FSL-1.1-Apache-2.0**).
 
-- You may use, modify, and deploy Strata for your own hosting business
+- You may use, modify, and deploy Strata Service Billing and Support Platform for your own hosting business
 - You may not use this codebase to build a competing billing platform (for 2 years per version)
 - Each version converts to Apache 2.0 automatically after 2 years
 
@@ -275,10 +275,10 @@ Full license text in [LICENSE.md](LICENSE.md).
 
 ## Bug Reports & Feedback
 
-- **Bug reports:** [GitHub Issues](https://github.com/jonathjan0397/strata/issues)
+- **Bug reports:** [GitHub Issues](https://github.com/jonathjan0397/strata-billing-support-platform/issues)
 - **Feature requests:** open an issue with the `feature-request` label
 - **Email:** [Jonathan.r.covington@gmail.com](mailto:Jonathan.r.covington@gmail.com)
 
 ---
 
-*Strata v1.0.16 — [Report issues on GitHub.](https://github.com/jonathjan0397/strata/issues)*
+*Strata Service Billing and Support Platform v1.0.17 — [Report issues on GitHub.](https://github.com/jonathjan0397/strata-billing-support-platform/issues)*
