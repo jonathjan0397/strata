@@ -1,20 +1,21 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import axios from 'axios'
 
-const props = defineProps({
-  currentVersion: { type: String, default: 'unknown' },
-  codeVersion: { type: String, default: 'unknown' },
+defineProps({
+  currentVersion: { type: [String, null], default: null },
+  codeVersion: { type: [String, null], default: null },
   alreadyUpdated: { type: Boolean, default: false },
   hasZipExtension: { type: Boolean, default: false },
   checks: { type: Array, default: () => [] },
   hardFail: { type: Boolean, default: false },
-  installedAt: { type: String, default: null },
-  lastUpgradedAt: { type: String, default: null },
-  updateRepo: { type: String, default: '' },
+  installedAt: { type: [String, null], default: null },
+  lastUpgradedAt: { type: [String, null], default: null },
+  updateRepo: { type: [String, null], default: null },
 })
 
 const step = ref(1)
+const authToken = ref('')
 const authError = ref(null)
 const upgradeError = ref(null)
 const upgradeLog = ref([])
@@ -26,6 +27,17 @@ const downloadLatest = ref(false)
 const release = ref(null)
 const releaseLoading = ref(false)
 const releaseError = ref(null)
+const upgradeContext = ref({
+  currentVersion: null,
+  codeVersion: null,
+  alreadyUpdated: false,
+  hasZipExtension: false,
+  checks: [],
+  hardFail: false,
+  installedAt: null,
+  lastUpgradedAt: null,
+  updateRepo: null,
+})
 
 const auth = {
   email: ref(''),
@@ -33,7 +45,7 @@ const auth = {
 }
 
 const checksAllPass = computed(() =>
-  props.checks.every(check => check.pass || check.warn)
+  upgradeContext.value.checks.every(check => check.pass || check.warn)
 )
 
 const authValid = computed(() =>
@@ -47,21 +59,21 @@ const canUpgrade = computed(() => {
 })
 
 const targetVersion = computed(() => {
-  if (skipExtract.value) return props.codeVersion
+  if (skipExtract.value) return upgradeContext.value.codeVersion ?? '...'
   if (downloadLatest.value) return release.value?.tag ?? '...'
   return zipInfo.value?.version ?? '...'
 })
 
-onMounted(() => {
-  fetchRelease()
-})
-
 async function fetchRelease() {
+  if (!authToken.value) return
+
   releaseLoading.value = true
   releaseError.value = null
 
   try {
-    const { data } = await axios.get('/upgrade/release')
+    const { data } = await axios.get('/upgrade/release', {
+      params: { auth_token: authToken.value },
+    })
     release.value = data.release ?? null
   } catch (error) {
     releaseError.value = error.response?.data?.error ?? 'Could not check for the latest release.'
@@ -74,12 +86,19 @@ async function verifyAuth() {
   authError.value = null
 
   try {
-    await axios.post('/upgrade/verify', {
+    const { data } = await axios.post('/upgrade/verify', {
       email: auth.email.value.trim(),
       password: b64(auth.password.value),
     })
 
-    step.value = 3
+    authToken.value = data.auth_token ?? ''
+    upgradeContext.value = {
+      ...upgradeContext.value,
+      ...(data.context ?? {}),
+    }
+    release.value = null
+    fetchRelease()
+    step.value = 2
   } catch (error) {
     authError.value = error.response?.data?.error ?? 'Verification failed.'
   }
@@ -97,6 +116,7 @@ async function onZipSelected(event) {
   try {
     const formData = new FormData()
     formData.append('zip', file)
+    formData.append('auth_token', authToken.value)
     const { data } = await axios.post('/upgrade/peek', formData)
 
     if (data.success) {
@@ -141,8 +161,7 @@ async function runUpgrade() {
 
   try {
     const formData = new FormData()
-    formData.append('email', auth.email.value.trim())
-    formData.append('password', b64(auth.password.value))
+    formData.append('auth_token', authToken.value)
     formData.append('skip_extract', skipExtract.value ? '1' : '0')
     formData.append('download_latest', downloadLatest.value ? '1' : '0')
 
@@ -205,6 +224,48 @@ function releaseNotesSnippet(body) {
 
       <div v-if="step === 1" class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-5">
         <div>
+          <h2 class="text-lg font-semibold text-white mb-1">Verify admin credentials</h2>
+          <p class="text-sm text-gray-400">Enter your super-admin email and password to unlock upgrade details and authorize the upgrade.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Admin Email</label>
+            <input
+              v-model="auth.email.value"
+              type="email"
+              autocomplete="email"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="admin@example.com"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Password</label>
+            <input
+              v-model="auth.password.value"
+              type="password"
+              autocomplete="current-password"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="********"
+            >
+          </div>
+        </div>
+
+        <div v-if="authError" class="rounded-lg bg-red-900/30 border border-red-700/50 px-4 py-3 text-sm text-red-300">
+          {{ authError }}
+        </div>
+
+        <button
+          @click="verifyAuth"
+          :disabled="!authValid"
+          class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl transition-colors"
+        >
+          Verify
+        </button>
+      </div>
+
+      <div v-if="step === 2" class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-5">
+        <div>
           <h2 class="text-lg font-semibold text-white mb-1">Pre-upgrade checks</h2>
           <p class="text-sm text-gray-400">Review your current installation and latest available release before proceeding.</p>
         </div>
@@ -212,19 +273,19 @@ function releaseNotesSnippet(body) {
         <div class="rounded-xl bg-gray-800/60 border border-gray-700 p-4 text-sm space-y-2">
           <div class="flex justify-between">
             <span class="text-gray-400">Installed version</span>
-            <span class="font-mono font-medium text-white">{{ currentVersion }}</span>
+            <span class="font-mono font-medium text-white">{{ upgradeContext.currentVersion }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-400">Code version on disk</span>
-            <span class="font-mono font-medium" :class="alreadyUpdated ? 'text-amber-400' : 'text-gray-300'">{{ codeVersion }}</span>
+            <span class="font-mono font-medium" :class="upgradeContext.alreadyUpdated ? 'text-amber-400' : 'text-gray-300'">{{ upgradeContext.codeVersion }}</span>
           </div>
-          <div v-if="installedAt" class="flex justify-between text-xs pt-1 border-t border-gray-700 mt-1">
+          <div v-if="upgradeContext.installedAt" class="flex justify-between text-xs pt-1 border-t border-gray-700 mt-1">
             <span class="text-gray-500">Originally installed</span>
-            <span class="text-gray-500">{{ fmt(installedAt) }}</span>
+            <span class="text-gray-500">{{ fmt(upgradeContext.installedAt) }}</span>
           </div>
-          <div v-if="lastUpgradedAt" class="flex justify-between text-xs">
+          <div v-if="upgradeContext.lastUpgradedAt" class="flex justify-between text-xs">
             <span class="text-gray-500">Last upgraded</span>
-            <span class="text-gray-500">{{ fmt(lastUpgradedAt) }}</span>
+            <span class="text-gray-500">{{ fmt(upgradeContext.lastUpgradedAt) }}</span>
           </div>
         </div>
 
@@ -232,7 +293,7 @@ function releaseNotesSnippet(body) {
           <div class="flex items-start justify-between gap-4">
             <div>
               <p class="text-sm font-medium text-white">Built-in updates</p>
-              <p class="text-xs text-gray-500">Repository: {{ release?.repo || updateRepo || 'not configured' }}</p>
+              <p class="text-xs text-gray-500">Repository: {{ release?.repo || upgradeContext.updateRepo || 'not configured' }}</p>
             </div>
             <button
               type="button"
@@ -270,7 +331,7 @@ function releaseNotesSnippet(body) {
         </div>
 
         <ul class="space-y-2">
-          <li v-for="check in checks" :key="check.label" class="flex items-start gap-3 text-sm">
+          <li v-for="check in upgradeContext.checks" :key="check.label" class="flex items-start gap-3 text-sm">
             <span
               :class="[
                 'mt-0.5 h-4 w-4 shrink-0 rounded-full flex items-center justify-center text-xs font-bold',
@@ -286,64 +347,22 @@ function releaseNotesSnippet(body) {
           </li>
         </ul>
 
-        <div v-if="hardFail" class="rounded-lg bg-red-900/30 border border-red-700/50 px-4 py-3 text-sm text-red-300">
+        <div v-if="upgradeContext.hardFail" class="rounded-lg bg-red-900/30 border border-red-700/50 px-4 py-3 text-sm text-red-300">
           One or more required checks failed. Fix the issues above before continuing.
         </div>
 
-        <div v-if="alreadyUpdated" class="rounded-lg bg-amber-900/20 border border-amber-700/40 px-4 py-3 text-sm text-amber-300">
+        <div v-if="upgradeContext.alreadyUpdated" class="rounded-lg bg-amber-900/20 border border-amber-700/40 px-4 py-3 text-sm text-amber-300">
           Your code files already show a different version than the lock file. If you already uploaded new files manually, the wizard can skip extraction and only run migrations and cache rebuilds.
-        </div>
-
-        <button
-          :disabled="hardFail || !checksAllPass"
-          @click="step = 2"
-          class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl transition-colors"
-        >
-          Continue
-        </button>
-      </div>
-
-      <div v-if="step === 2" class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-5">
-        <div>
-          <h2 class="text-lg font-semibold text-white mb-1">Verify admin credentials</h2>
-          <p class="text-sm text-gray-400">Enter your super-admin email and password to authorize the upgrade.</p>
-        </div>
-
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">Admin Email</label>
-            <input
-              v-model="auth.email.value"
-              type="email"
-              autocomplete="email"
-              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="admin@example.com"
-            >
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">Password</label>
-            <input
-              v-model="auth.password.value"
-              type="password"
-              autocomplete="current-password"
-              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="********"
-            >
-          </div>
-        </div>
-
-        <div v-if="authError" class="rounded-lg bg-red-900/30 border border-red-700/50 px-4 py-3 text-sm text-red-300">
-          {{ authError }}
         </div>
 
         <div class="flex gap-3">
           <button @click="step = 1" class="flex-1 border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 font-medium py-2.5 rounded-xl transition-colors text-sm">Back</button>
           <button
-            @click="verifyAuth"
-            :disabled="!authValid"
+            :disabled="upgradeContext.hardFail || !checksAllPass"
+            @click="step = 3"
             class="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl transition-colors"
           >
-            Verify
+            Continue
           </button>
         </div>
       </div>
@@ -382,7 +401,7 @@ function releaseNotesSnippet(body) {
             <p class="text-xs text-gray-500">Use an official Strata Service Billing and Support Platform ZIP package.</p>
           </div>
 
-          <div v-if="hasZipExtension">
+          <div v-if="upgradeContext.hasZipExtension">
             <label class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-700 hover:border-indigo-500 rounded-xl p-8 cursor-pointer transition-colors group">
               <svg class="h-10 w-10 text-gray-600 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -437,7 +456,7 @@ function releaseNotesSnippet(body) {
         <div class="rounded-xl bg-gray-800/60 border border-gray-700 p-4 text-sm space-y-2.5">
           <div class="flex justify-between items-center">
             <span class="text-gray-400">Upgrading from</span>
-            <span class="font-mono text-white">{{ currentVersion }}</span>
+            <span class="font-mono text-white">{{ upgradeContext.currentVersion }}</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-gray-400">Upgrading to</span>
@@ -446,7 +465,7 @@ function releaseNotesSnippet(body) {
           <div class="flex justify-between items-center border-t border-gray-700 pt-2.5 mt-1">
             <span class="text-gray-400">Package source</span>
             <span class="text-gray-300">
-              {{ skipExtract ? 'Already uploaded files' : downloadLatest ? `Built-in download from ${release?.repo || updateRepo}` : 'Uploaded ZIP package' }}
+              {{ skipExtract ? 'Already uploaded files' : downloadLatest ? `Built-in download from ${release?.repo || upgradeContext.updateRepo}` : 'Uploaded ZIP package' }}
             </span>
           </div>
           <div class="flex justify-between items-center">

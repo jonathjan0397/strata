@@ -123,7 +123,7 @@ No command line required. The upgrade wizard handles everything in your browser.
 2. Download the latest release ZIP from the releases page.
 3. **Extract and upload** the ZIP over your existing install — it is safe to overwrite all files. The ZIP never contains `.env`, `storage/installed.lock`, your uploaded files, or your logs, so nothing important is overwritten.
 4. Visit **`https://yourdomain.com/upgrade`** in your browser.
-5. Enter your super-admin email and password to authorize — the wizard runs all database migrations, rebuilds caches, and updates the version automatically.
+5. Enter your super-admin email and password to authorize — upgrade details stay hidden until verification succeeds; the wizard then runs all database migrations, rebuilds caches, and updates the version automatically.
 
 ---
 

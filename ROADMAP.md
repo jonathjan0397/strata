@@ -10,11 +10,11 @@ See [CHANGELOG.md](CHANGELOG.md) for a detailed history of what changed in each 
 
 ---
 
-## Current Release: v1.0.16 (Stable)
+## Current Release: v1.0.18 (Stable)
 
-The stable release track began at **1.0.0** (2026-04-01) and is now at **v1.0.16** (2026-04-03). The full feature set is production-ready: admin panel, client portal, public glassmorphism portal, embeddable widget, five provisioning modules (cPanel, Plesk, DirectAdmin, HestiaCP, CWP), four domain registrars, three payment gateways, full billing automation, automation workflows, affiliate program, quote system, and advanced order features.
+The stable release track began at **1.0.0** (2026-04-01) and is now at **v1.0.18** (2026-04-18). The full feature set is production-ready: admin panel, client portal, public glassmorphism portal, embeddable widget, five provisioning modules (cPanel, Plesk, DirectAdmin, HestiaCP, CWP), four domain registrars, three payment gateways, full billing automation, automation workflows, affiliate program, quote system, and advanced order features.
 
-Patch releases since 1.0.0 resolved: Active Sessions (session driver config), OAuth button visibility (settings key prefix fix), activation email delivery (sync send, resend button), portal branding consolidation, rich-text announcements, invoice list SQL GROUP BY error (BF-036), service cancellation enum gap (BF-037), client dashboard redesign (BF-038), dashboard Ziggy route crash (BF-039), password change for all user roles, and email log address extraction + scheduler queue() calls (BF-040).
+Patch releases since 1.0.0 resolved: Active Sessions (session driver config), OAuth button visibility (settings key prefix fix), activation email delivery (sync send, resend button), portal branding consolidation, rich-text announcements, invoice list SQL GROUP BY error (BF-036), service cancellation enum gap (BF-037), client dashboard redesign (BF-038), dashboard Ziggy route crash (BF-039), password change for all user roles, email log address extraction + scheduler queue() calls (BF-040), automatic managed-license refresh when cron is absent, and upgrade wizard hardening so operational details are not exposed before super-admin verification.
 
 ---
 
@@ -86,10 +86,10 @@ Strata Service Billing and Support Platform ships on two tracks. Both use the sa
 | **1.0-Beta** | Initial release — full feature set, browser installer, all integrations | Released 2026-03-28 |
 | **1.0-Beta.2** | Portal branding, themes, domain search, integrations settings UI polish | Released 2026-03-29 |
 | **1.0 Stable** | BF-015 fix, Authorize.Net Accept.js, bank transfer, upgrade wizard, doc review | Released 2026-04-01 |
-| **1.0.x patches** | OAuth, email delivery, sessions, SQL errors, cancellation enum, dashboard redesign, password change | Released 2026-04-03 (latest: v1.0.16) |
+| **1.0.x patches** | OAuth, email delivery, sessions, SQL errors, cancellation enum, dashboard redesign, password change, license sync hardening, upgrade auth hardening | Released 2026-04-18 (latest: v1.0.18) |
 | **1.1** | Client billing history, ticket search, satisfaction analytics, HTML reply editor | Planned |
 | **1.2** | REST API + OpenAPI, webhook UI, multiple contacts, bulk service actions | Planned |
 | **2.0** | Metered billing, multi-currency, i18n, GDPR, IP allowlist, exportable reports | Planned |
 | **Future** | White-label reseller, migration wizard, PWA, Pterodactyl/Proxmox/Cloudflare, multi-tenant | Backlog |
 
-*Last updated: 2026-04-03*
+*Last updated: 2026-04-18*

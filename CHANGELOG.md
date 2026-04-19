@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.0.18] — 2026-04-18
+
+### Fixed
+- **Managed license ping not occurring without cron** — the UI only read cached license state, so managed installations never re-pinged unless `strata:sync` ran or an admin clicked the manual sync action; added guarded on-request refresh logic with stale detection, retry cooldown, and a short lock to prevent request stampedes while preserving the manual forced sync path.
+- **Upgrade wizard leaked operational details to unauthenticated visitors** — `/upgrade` exposed installed version, writable path checks, release metadata, and ZIP inspection before authorization; the upgrade flow now starts with a super-admin credential gate and issues a short-lived auth token, and `/upgrade/release`, `/upgrade/peek`, and `/upgrade/run` now require that token before returning sensitive data or performing upgrade work.
+
+---
+
 ## [1.0.16] — 2026-04-03
 
 ### Added

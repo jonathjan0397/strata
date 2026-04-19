@@ -6,9 +6,9 @@ A self-hosted billing, client management, and support platform built for web hos
 
 ---
 
-> ## Release Notice — 1.0.17
+> ## Release Notice — 1.0.18
 >
-> Strata Service Billing and Support Platform is at **v1.0.17** (stable release track). The platform is production-ready for hosting businesses.
+> Strata Service Billing and Support Platform is at **v1.0.18** (stable release track). The platform is production-ready for hosting businesses.
 >
 > **Found a bug?** [Open an issue on GitHub](https://github.com/jonathjan0397/strata-billing-support-platform/issues). See the issue tracker before filing a duplicate.
 >
@@ -281,4 +281,4 @@ Full license text in [LICENSE.md](LICENSE.md).
 
 ---
 
-*Strata Service Billing and Support Platform v1.0.17 — [Report issues on GitHub.](https://github.com/jonathjan0397/strata-billing-support-platform/issues)*
+*Strata Service Billing and Support Platform v1.0.18 — [Report issues on GitHub.](https://github.com/jonathjan0397/strata-billing-support-platform/issues)*

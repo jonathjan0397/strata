@@ -8,6 +8,7 @@ use App\Services\StrataLicense;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -20,57 +21,23 @@ use ZipArchive;
 
 class UpgradeController extends Controller
 {
+    private const AUTH_TOKEN_PREFIX = 'upgrade_auth_token:';
+    private const AUTH_TOKEN_TTL_SECONDS = 900;
+
     public function index(): Response
     {
         abort_unless(file_exists(storage_path('installed.lock')), 404, 'Strata Service Billing and Support Platform is not installed.');
 
-        $lock = $this->readLock();
-        $currentVersion = $lock['version'] ?? 'unknown';
-        $codeVersion = $this->appVersion();
-
-        $checks = [
-            [
-                'label' => 'PHP >= 8.3',
-                'pass' => version_compare(PHP_VERSION, '8.3.0', '>='),
-                'detail' => PHP_VERSION,
-            ],
-            [
-                'label' => 'PHP ext-zip (file extraction)',
-                'pass' => extension_loaded('zip'),
-                'detail' => extension_loaded('zip') ? 'available' : 'missing - upload files via FTP and use "files already uploaded" mode',
-                'warn' => true,
-            ],
-            [
-                'label' => 'App root writable',
-                'pass' => is_writable(base_path()),
-                'detail' => base_path(),
-            ],
-            [
-                'label' => 'Storage writable',
-                'pass' => is_writable(storage_path()),
-                'detail' => storage_path(),
-            ],
-            [
-                'label' => 'Bootstrap cache writable',
-                'pass' => is_writable(base_path('bootstrap/cache')),
-                'detail' => base_path('bootstrap/cache'),
-            ],
-        ];
-
-        $hardFail = collect($checks)->contains(
-            fn ($check) => ! $check['pass'] && empty($check['warn'])
-        );
-
         return Inertia::render('Install/Upgrade', [
-            'currentVersion' => $currentVersion,
-            'codeVersion' => $codeVersion,
-            'alreadyUpdated' => $currentVersion !== $codeVersion,
-            'hasZipExtension' => extension_loaded('zip'),
-            'checks' => $checks,
-            'hardFail' => $hardFail,
-            'installedAt' => $lock['installed_at'] ?? null,
-            'lastUpgradedAt' => $lock['upgraded_at'] ?? null,
-            'updateRepo' => config('strata.update_repo'),
+            'currentVersion' => null,
+            'codeVersion' => null,
+            'alreadyUpdated' => false,
+            'hasZipExtension' => false,
+            'checks' => [],
+            'hardFail' => false,
+            'installedAt' => null,
+            'lastUpgradedAt' => null,
+            'updateRepo' => null,
         ]);
     }
 
@@ -90,15 +57,22 @@ class UpgradeController extends Controller
                 return response()->json(['valid' => false, 'error' => 'Invalid credentials or account is not a super-admin.'], 401);
             }
 
-            return response()->json(['valid' => true]);
+            $token = $this->issueAuthToken($user->id);
+
+            return response()->json([
+                'valid' => true,
+                'auth_token' => $token,
+                'context' => $this->upgradeContext(),
+            ]);
         } catch (Throwable $e) {
             return response()->json(['valid' => false, 'error' => 'Database error: '.$e->getMessage()], 500);
         }
     }
 
-    public function release(): JsonResponse
+    public function release(Request $request): JsonResponse
     {
         try {
+            $this->authorizeRequest($request);
             $release = $this->fetchLatestRelease();
 
             return response()->json([
@@ -115,6 +89,8 @@ class UpgradeController extends Controller
 
     public function peekZip(Request $request): JsonResponse
     {
+        $this->authorizeRequest($request);
+
         if (! $request->hasFile('zip') || ! $request->file('zip')->isValid()) {
             return response()->json(['success' => false, 'error' => 'No ZIP uploaded.'], 422);
         }
@@ -139,15 +115,8 @@ class UpgradeController extends Controller
     {
         @set_time_limit(0);
 
-        $email = trim((string) $request->input('email', ''));
-        $password = base64_decode((string) $request->input('password', ''), true);
-
         try {
-            $user = $this->resolveSuperAdmin($email);
-
-            if (! $user || ! $password || ! Hash::check($password, $user->password)) {
-                return response()->json(['success' => false, 'error' => 'Credential check failed.'], 401);
-            }
+            $user = $this->authorizeRequest($request);
 
             if (! $user->hasVerifiedEmail()) {
                 $user->forceFill(['email_verified_at' => now()])->save();
@@ -247,6 +216,103 @@ class UpgradeController extends Controller
                 @unlink($tempZipPath);
             }
         }
+    }
+
+    private function upgradeContext(): array
+    {
+        $lock = $this->readLock();
+        $currentVersion = $lock['version'] ?? 'unknown';
+        $codeVersion = $this->appVersion();
+
+        $checks = [
+            [
+                'label' => 'PHP >= 8.3',
+                'pass' => version_compare(PHP_VERSION, '8.3.0', '>='),
+                'detail' => PHP_VERSION,
+            ],
+            [
+                'label' => 'PHP ext-zip (file extraction)',
+                'pass' => extension_loaded('zip'),
+                'detail' => extension_loaded('zip') ? 'available' : 'missing - upload files via FTP and use "files already uploaded" mode',
+                'warn' => true,
+            ],
+            [
+                'label' => 'App root writable',
+                'pass' => is_writable(base_path()),
+                'detail' => base_path(),
+            ],
+            [
+                'label' => 'Storage writable',
+                'pass' => is_writable(storage_path()),
+                'detail' => storage_path(),
+            ],
+            [
+                'label' => 'Bootstrap cache writable',
+                'pass' => is_writable(base_path('bootstrap/cache')),
+                'detail' => base_path('bootstrap/cache'),
+            ],
+        ];
+
+        $hardFail = collect($checks)->contains(
+            fn ($check) => ! $check['pass'] && empty($check['warn'])
+        );
+
+        return [
+            'currentVersion' => $currentVersion,
+            'codeVersion' => $codeVersion,
+            'alreadyUpdated' => $currentVersion !== $codeVersion,
+            'hasZipExtension' => extension_loaded('zip'),
+            'checks' => $checks,
+            'hardFail' => $hardFail,
+            'installedAt' => $lock['installed_at'] ?? null,
+            'lastUpgradedAt' => $lock['upgraded_at'] ?? null,
+            'updateRepo' => config('strata.update_repo'),
+        ];
+    }
+
+    private function issueAuthToken(int $userId): string
+    {
+        $token = Str::random(64);
+
+        Cache::put(
+            self::AUTH_TOKEN_PREFIX.$token,
+            ['user_id' => $userId],
+            now()->addSeconds(self::AUTH_TOKEN_TTL_SECONDS)
+        );
+
+        return $token;
+    }
+
+    private function authorizeRequest(Request $request): User
+    {
+        $token = trim((string) $request->input('auth_token', ''));
+
+        if ($token === '') {
+            abort(response()->json(['success' => false, 'error' => 'Upgrade authorization is required.'], 401));
+        }
+
+        $payload = Cache::get(self::AUTH_TOKEN_PREFIX.$token);
+        $userId = $payload['user_id'] ?? null;
+
+        if (! is_int($userId) && ! ctype_digit((string) $userId)) {
+            abort(response()->json(['success' => false, 'error' => 'Upgrade authorization has expired.'], 401));
+        }
+
+        $user = User::whereKey((int) $userId)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'super-admin'))
+            ->first();
+
+        if (! $user) {
+            abort(response()->json(['success' => false, 'error' => 'Upgrade authorization is no longer valid.'], 401));
+        }
+
+        Cache::put(
+            self::AUTH_TOKEN_PREFIX.$token,
+            ['user_id' => $user->id],
+            now()->addSeconds(self::AUTH_TOKEN_TTL_SECONDS)
+        );
+
+        return $user;
     }
 
     private function resolveSuperAdmin(string $email): ?User

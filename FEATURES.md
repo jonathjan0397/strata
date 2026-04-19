@@ -2,7 +2,7 @@
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/jonathan0397)
 
-> Complete feature inventory as of v1.0.16 (2026-04-03).
+> Complete feature inventory as of v1.0.18 (2026-04-18).
 > Updated after each release. See [CHANGELOG.md](CHANGELOG.md) for history.
 
 ---
@@ -35,6 +35,7 @@
 | Database connection test | Live test before committing credentials |
 | Scoped `.env` write | Written with mode `0600`; safe handling of special characters (base64 transport) |
 | Auto-run migrations + seeders | Runs in-browser via `Artisan::call` |
+| Protected upgrade wizard | `/upgrade` withholds release metadata, environment checks, and package inspection until a super-admin verifies credentials |
 | Queue mode selector | Sync (shared hosting) or Database (VPS); installer writes `QUEUE_CONNECTION` to `.env` |
 | Optional sample data | 5 demo clients, products, services, invoices, tickets, quotes, domains, affiliate, promo codes, and credit note |
 | Lock file | `storage/installed.lock` prevents re-running |
@@ -256,6 +257,7 @@
 **OAuth / Social Login**
 - Google — client ID and client secret
 - Microsoft — client ID and client secret
+- Managed license refresh — admin can force a manual sync, and stale managed-license state now auto-refreshes during normal admin use when cron has not run
 
 ### Maintenance
 - In-browser migration runner — runs `artisan migrate --force`
@@ -481,4 +483,4 @@ All of the following work on CWP/shared hosting without a queue worker:
 
 ---
 
-*Last updated: 2026-04-03 — v1.0.16*
+*Last updated: 2026-04-18 — v1.0.18*
