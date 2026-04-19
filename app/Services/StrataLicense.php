@@ -15,8 +15,12 @@ class StrataLicense
 {
     private const CACHE_KEY = 'strata_license_response';
     private const CACHE_TTL = 172800;
+    private const ATTEMPT_CACHE_KEY = 'strata_license_last_attempt_at';
+    private const LOCK_CACHE_KEY = 'strata_license_sync_lock';
     private const APPLICATION_NAME = 'strata-billing-platform';
     private const PING_TIMEOUT = 15;
+    private const AUTO_SYNC_INTERVAL_HOURS = 3;
+    private const RETRY_COOLDOWN_SECONDS = 900;
 
     public static function sync(): array
     {
@@ -77,6 +81,33 @@ class StrataLicense
     public static function refresh(): array
     {
         return self::sync();
+    }
+
+    public static function ensureCurrent(bool $force = false): array
+    {
+        if (! self::isManaged()) {
+            return self::fallback();
+        }
+
+        if (! $force && ! self::needsSync()) {
+            return self::cached();
+        }
+
+        if (! $force && ! self::retryWindowElapsed()) {
+            return self::cached();
+        }
+
+        if (! Cache::add(self::LOCK_CACHE_KEY, true, 60)) {
+            return self::cached();
+        }
+
+        try {
+            Cache::forever(self::ATTEMPT_CACHE_KEY, now()->toIso8601String());
+
+            return self::sync();
+        } finally {
+            Cache::forget(self::LOCK_CACHE_KEY);
+        }
     }
 
     public static function status(): string
@@ -156,6 +187,21 @@ class StrataLicense
         }
     }
 
+    public static function needsSync(int $hours = self::AUTO_SYNC_INTERVAL_HOURS): bool
+    {
+        $syncedAt = self::cached()['synced_at'] ?? null;
+
+        if (! $syncedAt) {
+            return true;
+        }
+
+        try {
+            return now()->diffInHours(Carbon::parse($syncedAt)) >= $hours;
+        } catch (Throwable) {
+            return true;
+        }
+    }
+
     private static function useCachedOrFallback(): array
     {
         if (Cache::has(self::CACHE_KEY)) {
@@ -173,6 +219,21 @@ class StrataLicense
             'messages' => [],
             'synced_at' => null,
         ];
+    }
+
+    private static function retryWindowElapsed(): bool
+    {
+        $attemptedAt = Cache::get(self::ATTEMPT_CACHE_KEY);
+
+        if (! $attemptedAt) {
+            return true;
+        }
+
+        try {
+            return Carbon::parse($attemptedAt)->diffInSeconds(now()) >= self::RETRY_COOLDOWN_SECONDS;
+        } catch (Throwable) {
+            return true;
+        }
     }
 
     private static function resolveAdminEmail(): string

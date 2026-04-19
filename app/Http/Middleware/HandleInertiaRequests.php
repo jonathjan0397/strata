@@ -105,7 +105,7 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
-        $payload = StrataLicense::cached();
+        $payload = StrataLicense::ensureCurrent();
         $user = request()->user();
         $showAdminMessages = $user?->hasAnyRole(['super-admin', 'admin']) ?? false;
 

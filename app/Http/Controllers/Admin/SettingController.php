@@ -251,7 +251,7 @@ class SettingController extends Controller
 
     public function syncLicense(): RedirectResponse
     {
-        $result = StrataLicense::sync();
+        $result = StrataLicense::ensureCurrent(true);
 
         $status = $result['status'] ?? 'unknown';
         $features = implode(', ', StrataLicense::features()) ?: 'none';
